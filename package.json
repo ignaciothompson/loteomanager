@@ -1,0 +1,13 @@
+{
+  "name": "@loteomanager/source",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {},
+  "private": true,
+  "devDependencies": {
+    "@nx/angular": "^22.7.1",
+    "@nx/js": "22.7.1",
+    "@nx/workspace": "22.7.1",
+    "nx": "22.7.1"
+  }
+}
