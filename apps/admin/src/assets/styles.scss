@@ -1,0 +1,6 @@
+/* Global styles for the LoteoManager admin panel.
+ * Imports PrimeIcons and the Sakai layout SCSS (sidebar, topbar, menu, etc.).
+ * Demo styles are excluded since we removed Sakai demo pages.
+ */
+@use 'primeicons/primeicons.css';
+@use '@/assets/layout/layout.scss';

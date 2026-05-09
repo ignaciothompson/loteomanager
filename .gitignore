@@ -1,15 +1,19 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# See http://help.github.com/ignore-files/ for more about ignoring files.
 
 # compiled output
-dist
-tmp
-out-tsc
+/dist
+/tmp
+/out-tsc
+/bazel-out
 
-# dependencies
-node_modules
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+*.log
 
 # IDEs and editors
-/.idea
+.idea/
 .project
 .classpath
 .c9/
@@ -24,21 +28,17 @@ node_modules
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
+# Nx
+.nx/cache
+.nx/workspace-data
 
 # System Files
 .DS_Store
 Thumbs.db
 
-.nx/cache
-.nx/workspace-data
-.claude/worktrees
-.claude/settings.local.json
+# Environment variables
+.env
+.env.local
+
+# PocketBase data
+pb_data/

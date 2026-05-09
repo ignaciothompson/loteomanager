@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  main:
+    name: Nx Cloud - Main Job
+    uses: nrwl/ci/.github/workflows/nx-cloud-main.yml@v0.14.3
+    with:
+      number-of-agents: 3
+      init-commands: |
+        npm ci
+      parallel-commands: |
+        npx nx affected -t lint
+        npx nx affected -t test
+        npx nx affected -t build

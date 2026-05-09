@@ -1,0 +1,9 @@
+/* TypeScript config for admin app tests. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "types": []
+  },
+  "include": ["src/**/*.spec.ts", "src/**/*.d.ts"]
+}
