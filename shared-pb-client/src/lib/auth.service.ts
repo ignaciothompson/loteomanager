@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { POCKETBASE } from './pocketbase.config';
 
 @Injectable({
@@ -9,6 +9,10 @@ export class AuthService {
 
   public currentUser = signal<Record<string, unknown> | null>(this.pb.authStore.model as Record<string, unknown> | null);
   public isAuthenticated = signal<boolean>(this.pb.authStore.isValid);
+  public currentRole = computed(() => {
+    const user = this.currentUser();
+    return user ? (user['role'] as string) : null;
+  });
 
   constructor() {
     this.pb.authStore.onChange((token, model) => {

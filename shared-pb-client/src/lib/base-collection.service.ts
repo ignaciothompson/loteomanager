@@ -36,6 +36,24 @@ export abstract class BaseCollectionService<T> {
     return data;
   }
 
+  async listAsync(filter?: string): Promise<T[]> {
+    try {
+      const records = await this.collection.getFullList({ filter });
+      return records as unknown as T[];
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async getAsync(id: string): Promise<T> {
+    try {
+      const record = await this.collection.getOne(id);
+      return record as unknown as T;
+    } catch (err) {
+      throw err;
+    }
+  }
+
   async create(data: Partial<T>): Promise<T> {
     try {
       const record = await this.collection.create(data);

@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "dev:admin": "nx serve admin",
-    "dev:landing": "nx serve landing --ssr",
+    "dev:landing": "nx serve landing",
     "build:all": "nx run-many -t build --projects=admin,landing",
     "lint:all": "nx run-many -t lint",
     "test:all": "nx run-many -t test",
@@ -61,6 +61,7 @@
     "@primeuix/themes": "^2.0.3",
     "@tailwindcss/postcss": "^4.3.0",
     "chart.js": "^4.4.2",
+    "exceljs": "^4.4.0",
     "express": "^4.21.2",
     "pocketbase": "^0.26.8",
     "primeclt": "^0.1.5",

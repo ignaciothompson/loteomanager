@@ -25,4 +25,11 @@ export const appRoutes: Route[] = [
         (m) => m.LoteDetailComponent
       ),
   },
+  {
+    path: 'c/:token',
+    loadComponent: () =>
+      import('./pages/comparativa/comparativa.component').then(
+        (m) => m.ComparativaComponent
+      ),
+  },
 ];

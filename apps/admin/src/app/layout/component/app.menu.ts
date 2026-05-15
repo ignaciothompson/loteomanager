@@ -2,11 +2,12 @@
  * Main navigation menu for the LoteoManager admin panel.
  * Defines the sidebar menu structure with real business sections.
  */
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
+import { AuthService } from '@loteomanager/shared-pb-client';
 
 @Component({
     selector: 'app-menu',
@@ -24,8 +25,11 @@ import { AppMenuitem } from './app.menuitem';
 })
 export class AppMenu {
     model: MenuItem[] = [];
+    private authService = inject(AuthService);
 
     ngOnInit() {
+        const role = this.authService.currentRole() || 'vendedor';
+
         this.model = [
             {
                 label: 'Home',
@@ -40,7 +44,6 @@ export class AppMenu {
             {
                 label: 'Inventario',
                 icon: 'pi pi-fw pi-box',
-                path: '/inventario',
                 items: [
                     {
                         label: 'Barrios',
@@ -48,7 +51,7 @@ export class AppMenu {
                         routerLink: ['/barrios']
                     },
                     {
-                        label: 'Lotes',
+                        label: 'Lotes / Unidades',
                         icon: 'pi pi-fw pi-th-large',
                         routerLink: ['/lotes']
                     }
@@ -57,7 +60,6 @@ export class AppMenu {
             {
                 label: 'Ventas',
                 icon: 'pi pi-fw pi-shopping-cart',
-                path: '/ventas',
                 items: [
                     {
                         label: 'Interesados',
@@ -65,16 +67,18 @@ export class AppMenu {
                         routerLink: ['/interesados']
                     },
                     {
-                        label: 'Enlaces compartibles',
+                        label: 'Comparativas',
                         icon: 'pi pi-fw pi-link',
                         routerLink: ['/enlaces']
                     }
                 ]
-            },
-            {
-                label: 'Directorio',
-                icon: 'pi pi-fw pi-address-book',
-                path: '/directorio',
+            }
+        ];
+
+        if (role === 'admin') {
+            this.model.push({
+                label: 'Directorio y Configuración',
+                icon: 'pi pi-fw pi-cog',
                 items: [
                     {
                         label: 'Arquitectos',
@@ -85,9 +89,14 @@ export class AppMenu {
                         label: 'Usuarios',
                         icon: 'pi pi-fw pi-user',
                         routerLink: ['/usuarios']
+                    },
+                    {
+                        label: 'Importador',
+                        icon: 'pi pi-fw pi-cloud-upload',
+                        routerLink: ['/importador']
                     }
                 ]
-            }
-        ];
+            });
+        }
     }
 }

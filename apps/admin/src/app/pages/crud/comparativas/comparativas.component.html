@@ -1,0 +1,69 @@
+<div class="card">
+    <p-toast></p-toast>
+    <div class="flex justify-between items-center mb-4">
+        <h5 class="m-0">Enlaces Comparativos para Clientes</h5>
+        <button pButton icon="pi pi-plus" label="Nueva Comparativa" class="p-button-success" (click)="openNew()"></button>
+    </div>
+
+    <p-table [value]="comparativas()" responsiveLayout="scroll" [rows]="10" [paginator]="true">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Fecha</th>
+                <th>Interesado</th>
+                <th>Unidades Seleccionadas</th>
+                <th>Link Público</th>
+                <th>Acciones</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-comp>
+            <tr>
+                <td>{{ comp.created | date:'short' }}</td>
+                <td>{{ comp.cliente_destinatario_nombre || 'Sin nombre' }}</td>
+                <td>{{ comp.unidades_ids?.length || 0 }} unidades</td>
+                <td>
+                    <div class="flex align-items-center">
+                        <a [href]="publicUrl(comp.token_publico)" target="_blank" class="text-blue-500 hover:underline mr-2 truncate w-[200px] inline-block" title="{{publicUrl(comp.token_publico)}}">
+                            {{ publicUrl(comp.token_publico) }}
+                        </a>
+                        <button pButton icon="pi pi-copy" class="p-button-text p-button-sm" (click)="copyLink(comp.token_publico)"></button>
+                    </div>
+                </td>
+                <td>
+                    <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger" (click)="deleteComparativa(comp)"></button>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="5">No hay comparativas creadas.</td>
+            </tr>
+        </ng-template>
+    </p-table>
+
+    <p-dialog [(visible)]="displayDialog" [style]="{width: '550px'}" header="Generar Enlace Comparativo" [modal]="true">
+        <ng-template pTemplate="content">
+            <div class="flex flex-col gap-4 mt-4">
+                <div class="flex flex-col gap-2">
+                    <label for="interesado" class="font-semibold">Seleccionar Lead / Interesado</label>
+                    <p-select id="interesado" [options]="interesados()" [(ngModel)]="selectedInteresadoId" optionLabel="nombre" optionValue="id" placeholder="Buscar interesado..." styleClass="w-full"></p-select>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label for="unidades" class="font-semibold">Seleccionar Unidades a Comparar</label>
+                    <p-multiSelect id="unidades" [options]="unidadesDisponibles()" [(ngModel)]="currentComparativa.unidades_ids" optionLabel="codigo_interno" optionValue="id" defaultLabel="Seleccionar unidades..." display="chip" styleClass="w-full"></p-multiSelect>
+                    <small class="text-muted-color">Solo se muestran unidades con estado "disponible".</small>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="notas" class="font-semibold">Mensaje / Notas para el cliente</label>
+                    <textarea pInputTextarea id="notas" [(ngModel)]="currentComparativa.mensaje_personalizado" rows="3" class="w-full"></textarea>
+                </div>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="footer">
+            <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text text-surface-600" (click)="displayDialog.set(false)"></button>
+            <button pButton pRipple label="Generar y Obtener Link" icon="pi pi-link" class="p-button-primary" (click)="saveComparativa()" [disabled]="!selectedInteresadoId || !currentComparativa.unidades_ids || currentComparativa.unidades_ids.length === 0"></button>
+        </ng-template>
+    </p-dialog>
+</div>

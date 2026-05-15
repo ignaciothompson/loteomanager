@@ -1,0 +1,21 @@
+/* Landing Home Styles */
+.hero {
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: var(--surface-50);
+    transform: skewY(-2deg);
+    z-index: 1;
+}
+
+:host-context(.dark) .hero::after {
+    background: var(--surface-900);
+}

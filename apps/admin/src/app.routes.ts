@@ -6,11 +6,13 @@
  */
 import { Routes } from '@angular/router';
 import { AppLayout } from './app/layout/component/app.layout';
+import { authGuard } from './app/core/guards/auth.guard';
 
 export const appRoutes: Routes = [
     {
         path: '',
         component: AppLayout,
+        canActivate: [authGuard],
         children: [
             {
                 path: '',
@@ -19,23 +21,23 @@ export const appRoutes: Routes = [
             // --- Inventario ---
             {
                 path: 'barrios',
-                loadComponent: () => import('./app/pages/placeholder.page').then(m => m.PlaceholderPage),
+                loadComponent: () => import('./app/pages/crud/barrios/barrios.component').then(m => m.BarriosComponent),
                 data: { title: 'Barrios' }
             },
             {
                 path: 'lotes',
-                loadComponent: () => import('./app/pages/placeholder.page').then(m => m.PlaceholderPage),
+                loadComponent: () => import('./app/pages/crud/unidades/unidades.component').then(m => m.UnidadesComponent),
                 data: { title: 'Lotes' }
             },
             // --- Ventas ---
             {
                 path: 'interesados',
-                loadComponent: () => import('./app/pages/placeholder.page').then(m => m.PlaceholderPage),
+                loadComponent: () => import('./app/pages/crud/interesados/interesados.component').then(m => m.InteresadosComponent),
                 data: { title: 'Interesados' }
             },
             {
                 path: 'enlaces',
-                loadComponent: () => import('./app/pages/placeholder.page').then(m => m.PlaceholderPage),
+                loadComponent: () => import('./app/pages/crud/comparativas/comparativas.component').then(m => m.ComparativasComponent),
                 data: { title: 'Enlaces Compartibles' }
             },
             // --- Directorio ---
@@ -54,6 +56,10 @@ export const appRoutes: Routes = [
     {
         path: 'notfound',
         loadComponent: () => import('./app/pages/notfound/notfound').then(m => m.Notfound)
+    },
+    {
+        path: 'login',
+        loadComponent: () => import('./app/pages/auth/login').then(m => m.Login)
     },
     { path: '**', redirectTo: '/notfound' }
 ];

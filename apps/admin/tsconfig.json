@@ -21,7 +21,11 @@
     "module": "ES2022",
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@loteomanager/shared-types": ["../../shared-types/src/index.ts"],
+      "@loteomanager/shared-pb-client": ["../../shared-pb-client/src/index.ts"],
+      "@loteomanager/shared-ui": ["../../shared-ui/src/index.ts"],
+      "@loteomanager/shared-utils": ["../../shared-utils/src/index.ts"]
     }
   },
   "angularCompilerOptions": {

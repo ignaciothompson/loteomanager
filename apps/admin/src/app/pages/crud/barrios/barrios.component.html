@@ -1,0 +1,79 @@
+<div class="card">
+    <p-toast></p-toast>
+    <div class="flex justify-between items-center mb-4">
+        <h5 class="m-0">Gestión de Barrios</h5>
+        <button pButton icon="pi pi-plus" label="Nuevo Barrio" class="p-button-success" (click)="openNew()"></button>
+    </div>
+
+    <p-table [value]="barrios()" responsiveLayout="scroll" [rows]="10" [paginator]="true">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Nombre</th>
+                <th>Ubicación</th>
+                <th>Acciones</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-barrio>
+            <tr>
+                <td>{{ barrio.nombre }}</td>
+                <td>{{ barrio.ubicacion_texto }}</td>
+                <td>
+                    <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" (click)="editBarrio(barrio)"></button>
+                    <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger" (click)="deleteBarrio(barrio)"></button>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="3">No hay barrios cargados.</td>
+            </tr>
+        </ng-template>
+    </p-table>
+
+    <p-dialog [(visible)]="displayDialog" [style]="{width: '450px'}" [header]="isEdit() ? 'Editar Barrio' : 'Nuevo Barrio'" [modal]="true">
+        <ng-template pTemplate="content">
+            <div class="flex flex-col gap-4 mt-4">
+                <div class="flex flex-col gap-2">
+                    <label for="nombre" class="font-semibold">Nombre</label>
+                    <input type="text" pInputText id="nombre" [(ngModel)]="currentBarrio.nombre" required autofocus class="w-full" />
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label for="ubicacion" class="font-semibold">Ubicación (Texto)</label>
+                    <input type="text" pInputText id="ubicacion" [(ngModel)]="currentBarrio.ubicacion_texto" class="w-full" />
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label for="slug" class="font-semibold">Slug (URL)</label>
+                    <input type="text" pInputText id="slug" [(ngModel)]="currentBarrio.slug" required class="w-full" />
+                </div>
+                
+                <div class="flex flex-col gap-2 mt-4 border-t border-surface-200 dark:border-surface-700 pt-4">
+                    <div class="flex justify-between items-center">
+                        <label class="font-semibold text-lg">Amenities / Extras</label>
+                        <button pButton icon="pi pi-plus" class="p-button-outlined p-button-sm" label="Agregar Extra" (click)="addExtra()" tabindex="-1"></button>
+                    </div>
+                    
+                    <div *ngIf="currentExtras.length === 0" class="text-surface-500 text-sm mt-2">
+                        No hay extras configurados.
+                    </div>
+
+                    <div *ngFor="let extra of currentExtras; let i = index" class="grid grid-cols-[1fr_auto_auto] gap-2 items-end mt-2 p-2 bg-surface-50 dark:bg-surface-800 rounded">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-semibold text-surface-600">Nombre (ej: Piscina)</label>
+                            <input type="text" pInputText [(ngModel)]="extra.nombre" class="w-full p-inputtext-sm" />
+                        </div>
+                        <div class="flex flex-col gap-1 w-40">
+                            <label class="text-xs font-semibold text-surface-600">Disponibilidad</label>
+                            <p-select [options]="amenityOptions" [(ngModel)]="extra.estado" styleClass="w-full" size="small"></p-select>
+                        </div>
+                        <button pButton icon="pi pi-trash" class="p-button-danger p-button-text p-button-sm mb-1" (click)="removeExtra(i)" tabindex="-1"></button>
+                    </div>
+                </div>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="footer">
+            <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text text-surface-600" (click)="displayDialog.set(false)"></button>
+            <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-primary" (click)="saveBarrio()" [disabled]="!currentBarrio.nombre || !currentBarrio.slug"></button>
+        </ng-template>
+    </p-dialog>
+</div>
