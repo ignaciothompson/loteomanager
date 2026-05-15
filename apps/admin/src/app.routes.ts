@@ -16,50 +16,50 @@ export const appRoutes: Routes = [
         children: [
             {
                 path: '',
-                loadComponent: () => import('./app/pages/dashboard/dashboard').then(m => m.Dashboard)
+                loadComponent: () => import('./app/features/dashboard/dashboard').then(m => m.Dashboard)
             },
             // --- Inventario ---
             {
                 path: 'barrios',
-                loadComponent: () => import('./app/pages/crud/barrios/barrios.component').then(m => m.BarriosComponent),
+                loadComponent: () => import('./app/features/barrios/barrios.component').then(m => m.BarriosComponent),
                 data: { title: 'Barrios' }
             },
             {
                 path: 'lotes',
-                loadComponent: () => import('./app/pages/crud/unidades/unidades.component').then(m => m.UnidadesComponent),
+                loadComponent: () => import('./app/features/unidades/unidades.component').then(m => m.UnidadesComponent),
                 data: { title: 'Lotes' }
             },
             // --- Ventas ---
             {
                 path: 'interesados',
-                loadComponent: () => import('./app/pages/crud/interesados/interesados.component').then(m => m.InteresadosComponent),
+                loadComponent: () => import('./app/features/interesados/interesados.component').then(m => m.InteresadosComponent),
                 data: { title: 'Interesados' }
             },
             {
                 path: 'enlaces',
-                loadComponent: () => import('./app/pages/crud/comparativas/comparativas.component').then(m => m.ComparativasComponent),
+                loadComponent: () => import('./app/features/comparativas/comparativas.component').then(m => m.ComparativasComponent),
                 data: { title: 'Enlaces Compartibles' }
             },
             // --- Directorio ---
-            {
-                path: 'arquitectos',
-                loadComponent: () => import('./app/pages/placeholder.page').then(m => m.PlaceholderPage),
-                data: { title: 'Arquitectos' }
-            },
-            {
-                path: 'usuarios',
-                loadComponent: () => import('./app/pages/placeholder.page').then(m => m.PlaceholderPage),
-                data: { title: 'Usuarios' }
-            }
+            // {
+            //     path: 'arquitectos',
+            //     loadComponent: () => import('./app/features/arquitectos/arquitectos.component').then(m => m.ArquitectosComponent),
+            //     data: { title: 'Arquitectos' }
+            // },
+            // {
+            //     path: 'usuarios',
+            //     loadComponent: () => import('./app/features/usuarios/usuarios.component').then(m => m.UsuariosComponent),
+            //     data: { title: 'Usuarios' }
+            // }
         ]
     },
     {
         path: 'notfound',
-        loadComponent: () => import('./app/pages/notfound/notfound').then(m => m.Notfound)
+        loadComponent: () => import('./app/features/notfound/notfound').then(m => m.Notfound)
     },
     {
         path: 'login',
-        loadComponent: () => import('./app/pages/auth/login').then(m => m.Login)
+        loadComponent: () => import('./app/features/auth/login').then(m => m.Login)
     },
     { path: '**', redirectTo: '/notfound' }
 ];
