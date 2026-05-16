@@ -10,13 +10,16 @@
  *
  * Hooks implementados:
  *   1. Auditoría (unidades, barrios, interesados, comparativas, users)
- *   2. Permisos por campo en unidades (vendedor vs admin)
+ *   2. Permisos por campo en unidades (vendedor vs admin); incluye acceso directo + por zona
  *   3. Fechas comerciales automáticas al cambiar estado
  *   4. Duplicados en interesados (misma unidad+email en 5 min)
  *   5. Cierre interesado ganado → actualiza unidad a vendido
  *   6. Token público + snapshot `contenido_snapshot` en comparativas
  *   7. Singleton config
  *   8. Extras/estados configurables (validación, sync nombre, borrados, endpoint replace; lógica en lm_extras_estados_shared.js + require en handlers)
+ *   B. Update `ultimo_acceso` al login (users)
+ *   C. Protección de role y activo en users updates
+ *   D. Validación de zona al crear vendedor_zonas
  */
 
 // ─── HOOK 1 — AUDITORÍA ───────────────────────────────────────────────────────
@@ -110,17 +113,36 @@ onRecordUpdateRequest((e) => {
     throw new BadRequestError("Esta unidad no pertenece a ningún barrio y no podés editarla.");
   }
 
-  let asignaciones = [];
+  // Check direct barrio assignment
+  let tieneAccesoDirecto = false;
   try {
-    asignaciones = $app.findRecordsByFilter(
+    const directos = $app.findRecordsByFilter(
       "vendedor_barrios",
       `vendedor_id = '${vendedorId}' && barrio_id = '${barrioId}'`,
       "-created", 1, 0,
     );
+    tieneAccesoDirecto = directos.length > 0;
   } catch (_e) {}
 
-  if (!asignaciones || asignaciones.length === 0) {
-    throw new ForbiddenError("No tenés permiso sobre el barrio de esta unidad.");
+  // Check zone assignment if no direct access
+  if (!tieneAccesoDirecto) {
+    let tieneAccesoPorZona = false;
+    try {
+      const barrio = $app.findRecordById("barrios", barrioId);
+      const zona = barrio.get("zona");
+      if (zona) {
+        const zonas = $app.findRecordsByFilter(
+          "vendedor_zonas",
+          `vendedor_id = '${vendedorId}' && zona = '${zona}'`,
+          "-created", 1, 0,
+        );
+        tieneAccesoPorZona = zonas.length > 0;
+      }
+    } catch (_e) {}
+
+    if (!tieneAccesoPorZona) {
+      throw new ForbiddenError("No tenés permiso sobre el barrio de esta unidad.");
+    }
   }
 
   const body = e.requestInfo().body || {};
@@ -423,6 +445,68 @@ onRecordUpdateRequest((e) => {
   }
   e.next();
 }, "interesados");
+
+// ─── HOOK B — ULTIMO_ACCESO AL LOGIN ─────────────────────────────────────────
+
+onRecordAuthRequest((e) => {
+  try {
+    e.record.set("ultimo_acceso", new Date().toISOString());
+    $app.save(e.record);
+  } catch (err) {
+    console.error("[ultimo_acceso] Error:", err);
+  }
+  e.next();
+}, "users");
+
+// ─── HOOK C — PROTECCIÓN DE ROLE Y ACTIVO EN USERS ───────────────────────────
+
+onRecordUpdateRequest((e) => {
+  if (!e.auth) { e.next(); return; }
+
+  // Solo admin puede cambiar role
+  let originalRole = "";
+  try {
+    const orig = $app.findRecordById("users", e.record.id);
+    originalRole = orig.get("role");
+  } catch (_) {}
+
+  const nuevoRole = e.record.get("role");
+  if (e.auth.get("role") !== "admin" && nuevoRole !== originalRole) {
+    throw new ForbiddenError("No podés cambiar el role de un usuario.");
+  }
+
+  // Ningún usuario puede desactivarse a sí mismo
+  if (e.record.id === e.auth.id && e.record.get("activo") === false) {
+    throw new BadRequestError("No podés desactivarte a vos mismo.");
+  }
+
+  e.next();
+}, "users");
+
+// ─── HOOK D — VALIDACIÓN DE ZONA EN VENDEDOR_ZONAS ───────────────────────────
+
+onRecordCreateRequest((e) => {
+  const zona = e.record.get("zona");
+  if (!zona) { e.next(); return; }
+
+  let zonaExiste = false;
+  try {
+    const barrios = $app.findRecordsByFilter(
+      "barrios",
+      `zona = '${zona}'`,
+      "", 1, 0,
+    );
+    zonaExiste = barrios.length > 0;
+  } catch (_e) {}
+
+  if (!zonaExiste) {
+    throw new BadRequestError(
+      `La zona '${zona}' no existe en ningún barrio. Asigná la zona a un barrio primero.`
+    );
+  }
+
+  e.next();
+}, "vendedor_zonas");
 
 // --- Endpoint admin: reemplazar estado y borrar definición custom ---
 routerAdd(

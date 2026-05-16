@@ -20,6 +20,10 @@
                 <p-password id="password" name="password" [(ngModel)]="password" placeholder="Contraseña" [toggleMask]="true" styleClass="mb-12" inputStyleClass="w-full p-3 md:w-[30rem]" [feedback]="false" required></p-password>
 
                 <button pButton pRipple label="Ingresar" class="w-full p-4 text-xl" [loading]="loading()"></button>
+
+                <div class="text-center mt-6">
+                  <a routerLink="/auth/recuperar" class="text-primary text-sm cursor-pointer hover:underline">¿Olvidaste tu contraseña?</a>
+                </div>
               </div>
             </form>
           </div>

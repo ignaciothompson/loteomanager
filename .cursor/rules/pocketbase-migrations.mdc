@@ -1,0 +1,13 @@
+---
+description: Migraciones JS de PocketBase en pb_migrations
+globs: loteomanager/pb_migrations/**/*.js
+alwaysApply: false
+---
+
+# PocketBase — `pb_migrations`
+
+- Cada archivo usa la API **`migrate((app) => { ... }, (app) => { ... })`**: primer callback crea/altera esquema; el segundo revierte (p. ej. `findCollectionByNameOrId` + `app.delete(collection)`).
+- Mantener **`/// <reference path="../pb_data/types.d.ts" />`** al inicio como en migraciones existentes.
+- Nombres de archivo: prefijo numérico creciente coherente con el repo (p. ej. `17xxxxxxxx_descripcion.js`).
+- Nombres de colección y campos alineados con **`shared-pb-client`** (`collectionName`) y con **`shared-types`** tras regenerar tipos.
+- Reglas (`listRule`, `viewRule`, `createRule`, etc.) explícitas; revisar coherencia con roles (`admin`, auth).

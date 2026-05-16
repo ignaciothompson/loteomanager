@@ -1,0 +1,24 @@
+---
+description: Librerías compartidas — imports, PocketBase client y tipos
+globs: loteomanager/shared-types/**/*,loteomanager/shared-pb-client/**/*,loteomanager/shared-ui/**/*,loteomanager/shared-utils/**/*
+alwaysApply: false
+---
+
+# Paquetes `@loteomanager/*`
+
+- Importar desde aliases de **`tsconfig.base.json`**: `@loteomanager/shared-types`, `shared-pb-client`, `shared-ui`, `shared-utils`. No usar rutas relativas largas cruzando el monorepo desde apps si el alias existe.
+
+## shared-pb-client
+
+- Servicios de colección: extender **`BaseCollectionService<T>`**, definir `collectionName`, reutilizar `list` / `get` / CRUD async según necesidad.
+- Registrar **`provideHttpClient`** + interceptor de auth donde corresponda (ya cableado en la app).
+- Exportar nuevos servicios en **`shared-pb-client/src/index.ts`**.
+
+## shared-types
+
+- **`pocketbase-types.ts`** es generado con `npm run pb:types` (DB en `docker/pb_data/data.db`). No editarlo a mano salvo emergencia; preferir regenerar y ajustar el schema/migraciones.
+- Tipos de dominio reexportados desde **`shared-types/src/index.ts`**.
+
+## shared-ui / shared-utils
+
+- Componentes y helpers reutilizables entre apps; mantener dependencias mínimas y sin acoplar lógica de una sola pantalla de admin.

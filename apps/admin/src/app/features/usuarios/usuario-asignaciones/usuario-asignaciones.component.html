@@ -1,0 +1,142 @@
+<p-toast />
+<p-dialog
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [header]="'Asignaciones: ' + (user?.name || user?.email || '')"
+  [modal]="true"
+  [style]="{ width: '720px' }"
+  appendTo="body"
+>
+  <ng-template pTemplate="content">
+    @if (loading()) {
+      <div class="flex justify-center py-8">
+        <p-progressSpinner strokeWidth="4" />
+      </div>
+    } @else {
+      <p-tabs [(value)]="activeTab">
+        <p-tablist>
+          <p-tab value="directos">Barrios directos</p-tab>
+          <p-tab value="zonas">Por zona</p-tab>
+        </p-tablist>
+
+        <p-tabpanels>
+          <!-- Tab 1: Asignación directa de barrios -->
+          <p-tabpanel value="directos">
+            <div class="mt-3">
+              <p class="text-500 text-sm mb-3">
+                Mové barrios entre las listas para asignar o quitar el acceso directo.
+              </p>
+              <p-pickList
+                [source]="barriosDisponibles()"
+                [target]="barriosAsignados()"
+                sourceHeader="Disponibles"
+                targetHeader="Asignados"
+                [dragdrop]="true"
+                [responsive]="true"
+                [sourceStyle]="{ height: '280px' }"
+                [targetStyle]="{ height: '280px' }"
+                (onMoveToTarget)="onMoveToTarget($event)"
+                (onMoveToSource)="onMoveToSource($event)"
+                (onMoveAllToTarget)="onMoveAllToTarget()"
+                (onMoveAllToSource)="onMoveAllToSource()"
+                filterBy="nombre"
+                sourceFilterPlaceholder="Buscar..."
+                targetFilterPlaceholder="Buscar..."
+                breakpoint="1400px"
+              >
+                <ng-template let-barrio pTemplate="item">
+                  <div class="flex align-items-center gap-2 py-1">
+                    <i class="pi pi-map-marker text-500"></i>
+                    <span>{{ barrio.nombre }}</span>
+                    @if (getZona(barrio)) {
+                      <span class="text-xs text-500 ml-auto">{{ getZona(barrio) }}</span>
+                    }
+                  </div>
+                </ng-template>
+              </p-pickList>
+              <div class="flex justify-end mt-3">
+                <p-button
+                  label="Guardar asignación de barrios"
+                  icon="pi pi-save"
+                  [loading]="savingDirectos()"
+                  (click)="saveDirectos()"
+                />
+              </div>
+            </div>
+          </p-tabpanel>
+
+          <!-- Tab 2: Asignación por zona -->
+          <p-tabpanel value="zonas">
+            <div class="mt-3 flex flex-col gap-4">
+              <p class="text-500 text-sm m-0">
+                Seleccioná las zonas a las que el vendedor tendrá acceso. Se aplicará a todos los barrios de esa zona.
+              </p>
+
+              <div class="flex flex-col gap-2">
+                <label class="font-semibold">Zonas disponibles</label>
+                <p-multiselect
+                  [(ngModel)]="zonasSeleccionadas"
+                  [options]="zonasDisponibles()"
+                  optionLabel="zona"
+                  optionValue="zona"
+                  placeholder="Seleccioná una o más zonas"
+                  [showClear]="true"
+                  display="chip"
+                  class="w-full"
+                />
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="font-semibold">Agregar nueva zona</label>
+                <div class="flex gap-2">
+                  <input
+                    pInputText
+                    [(ngModel)]="nuevaZona"
+                    placeholder="Nombre de la zona"
+                    class="flex-1"
+                    (keyup.enter)="agregarZona()"
+                  />
+                  <p-button
+                    icon="pi pi-plus"
+                    label="Agregar"
+                    severity="secondary"
+                    (click)="agregarZona()"
+                    [disabled]="!nuevaZona.trim()"
+                  />
+                </div>
+              </div>
+
+              <div class="flex justify-end">
+                <p-button
+                  label="Guardar asignación de zonas"
+                  icon="pi pi-save"
+                  [loading]="savingZonas()"
+                  (click)="saveZonas()"
+                />
+              </div>
+            </div>
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
+
+      <!-- Summary -->
+      <div class="mt-4 p-3 border-round bg-surface-50 text-sm text-500">
+        <i class="pi pi-info-circle mr-1"></i>
+        Acceso a
+        <strong>{{ barriosAsignados().length }} barrios directos</strong>
+        +
+        <strong>{{ zonasSeleccionadas.length }} zonas asignadas</strong>
+      </div>
+    }
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cerrar"
+      icon="pi pi-times"
+      severity="secondary"
+      [text]="true"
+      (click)="visibleChange.emit(false)"
+    />
+  </ng-template>
+</p-dialog>

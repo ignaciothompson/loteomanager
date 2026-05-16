@@ -1,0 +1,17 @@
+---
+description: Convenciones Angular para apps/admin y apps/landing
+globs: loteomanager/apps/**/*.ts,loteomanager/apps/**/*.html,loteomanager/apps/**/*.scss,loteomanager/apps/**/*.css
+alwaysApply: false
+---
+
+# Angular (apps)
+
+- **Standalone**: `standalone: true`; dependencias en `imports` del `@Component`.
+- **DI**: preferir `inject()` en lugar de constructor injection salvo que el archivo ya use otro estilo de forma consistente.
+- **Rutas (admin)**: definir en `apps/admin/src/app.routes.ts` con `loadComponent` lazy; rutas autenticadas bajo `AppLayout` + `authGuard`; usar `data: { title: '...' }` para título de página.
+- **Selector / prefijo**: proyecto admin usa prefijo `app` (`apps/admin/project.json`).
+- **UI**: PrimeNG importando módulos concretos (`ButtonModule`, `TableModule`, etc.); `MessageService` en `providers` del componente cuando haga falta.
+- **Estado**: usar `signal` / `computed` donde el resto del feature ya lo hace (p. ej. datos expuestos como `Signal` desde servicios).
+- **Copy**: textos de interfaz y mensajes al usuario en **español** (voseo/tuteo según lo ya usado en la pantalla).
+- **Estilos**: admin combina SCSS global (`assets/styles.scss`) y Tailwind (`assets/tailwind.css`); landing usa `styles.scss` — respetar el stack de cada app.
+- **Estructura de archivos**: cada componente **siempre** en 3 archivos separados: `*.component.ts`, `*.component.html`, `*.component.css`. Nunca usar `template` o `styles` inline en el decorador `@Component`. Usar siempre `templateUrl` y `styleUrls`. El `.css` puede quedar vacío si no hay estilos propios.

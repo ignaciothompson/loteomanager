@@ -1,0 +1,24 @@
+---
+description: Monorepo Nx LoteoManager — mapa del repo y comandos
+alwaysApply: true
+---
+
+# LoteoManager (workspace)
+
+- El código activo vive en **`loteomanager/`** (Nx 22, Angular 21, TypeScript 5.9). No confundir con `loteomanager/sakai-temp/` (referencia/plantilla).
+- **Apps**: `loteomanager/apps/admin` (panel), `loteomanager/apps/landing` (SSR).
+- **Libs**: `shared-types`, `shared-pb-client`, `shared-ui`, `shared-utils` (aliases `@loteomanager/...` en `tsconfig.base.json`).
+- **PocketBase**: migraciones en `loteomanager/pb_migrations/`; datos locales típicos en `docker/` según tu setup.
+
+## Comandos (desde `loteomanager/`)
+
+- `npm run dev:admin` — `nx serve admin`
+- `npm run dev:landing` — `nx serve landing`
+- `npm run build:all` — build admin + landing
+- `npm run lint:all` / `npm run test:all`
+- `npm run pb:types` — regenera tipos en `shared-types/src/lib/pocketbase-types.ts` (`tools/pb-typegen.mjs`; requiere `./docker/pb_data/data.db`).
+
+## Seguridad y notas
+
+- No commitear `.env`, credenciales ni `pb_data` con datos sensibles.
+- `code-sessions/` puede contener notas de sesión; no es código de producción.
