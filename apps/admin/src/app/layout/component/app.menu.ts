@@ -81,6 +81,16 @@ export class AppMenu {
                 icon: 'pi pi-fw pi-cog',
                 items: [
                     {
+                        label: 'Extras',
+                        icon: 'pi pi-fw pi-list',
+                        routerLink: ['/config/extras']
+                    },
+                    {
+                        label: 'Estados',
+                        icon: 'pi pi-fw pi-flag',
+                        routerLink: ['/config/estados']
+                    },
+                    {
                         label: 'Arquitectos',
                         icon: 'pi pi-fw pi-building',
                         routerLink: ['/arquitectos']

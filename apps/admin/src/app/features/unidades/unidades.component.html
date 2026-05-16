@@ -23,9 +23,18 @@
                 <td class="capitalize">{{ unidad.tipo_unidad }}</td>
                 <td>{{ unidad.precio | currency: unidad.moneda }}</td>
                 <td>
-                    <p-select [options]="estados" [(ngModel)]="unidad.estado" 
-                        (onChange)="quickCambiarEstado(unidad, $event.value)" appendTo="body">
-                    </p-select>
+                    <div class="flex align-items-center gap-2 flex-wrap">
+                        <lib-estado-badge [code]="unidad.estado" [entidad]="'unidades'" />
+                        <p-select
+                            [options]="unidadEstadoOpts()"
+                            [ngModel]="unidad.estado"
+                            (ngModelChange)="quickCambiarEstado(unidad, $event)"
+                            optionLabel="label"
+                            optionValue="value"
+                            appendTo="body"
+                            styleClass="w-14rem"
+                        />
+                    </div>
                 </td>
                 <td>
                     <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" (click)="editUnidad(unidad)"></button>
@@ -40,7 +49,7 @@
         </ng-template>
     </p-table>
 
-    <p-dialog [(visible)]="displayDialog" [style]="{width: '550px'}" [header]="isEdit() ? 'Editar Unidad' : 'Nueva Unidad'" [modal]="true">
+    <p-dialog [(visible)]="displayDialog" [style]="{width: '640px'}" [header]="isEdit() ? 'Editar Unidad' : 'Nueva Unidad'" [modal]="true" appendTo="body" [contentStyle]="{ overflow: 'visible' }">
         <ng-template pTemplate="content">
             <div class="grid grid-cols-2 gap-4 mt-4">
                 <div class="flex flex-col gap-2">
@@ -57,7 +66,7 @@
             
                 <div class="flex flex-col gap-2">
                     <label for="tipo" class="font-semibold">Tipo</label>
-                    <p-select id="tipo" [options]="tipos" [(ngModel)]="currentUnidad.tipo_unidad" styleClass="w-full"></p-select>
+                    <p-select id="tipo" [options]="tipos" [(ngModel)]="currentUnidad.tipo_unidad" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body"></p-select>
                 </div>
                 <div class="flex flex-col gap-2">
                     <label for="metros" class="font-semibold">Metros Cuadrados</label>
@@ -66,7 +75,7 @@
 
                 <div class="flex flex-col gap-2">
                     <label for="moneda" class="font-semibold">Moneda</label>
-                    <p-select id="moneda" [options]="monedas" [(ngModel)]="currentUnidad.moneda" styleClass="w-full"></p-select>
+                    <p-select id="moneda" [options]="monedas" [(ngModel)]="currentUnidad.moneda" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body"></p-select>
                 </div>
                 <div class="flex flex-col gap-2">
                     <label for="precio" class="font-semibold">Precio</label>
@@ -74,8 +83,13 @@
                 </div>
 
                 <div class="flex flex-col gap-2 col-span-2">
-                    <label for="estado" class="font-semibold">Estado Inicial</label>
-                    <p-select id="estado" [options]="estados" [(ngModel)]="currentUnidad.estado" [disabled]="isEdit()" styleClass="w-full"></p-select>
+                    <label for="estado" class="font-semibold">Estado</label>
+                    <p-select id="estado" [options]="unidadEstadoOpts()" [(ngModel)]="currentUnidad.estado" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body"></p-select>
+                </div>
+
+                <div class="flex flex-col gap-2 col-span-2 border-t border-surface-200 dark:border-surface-700 pt-3">
+                    <label class="font-semibold">Extras</label>
+                    <lib-extras-editor [(extras)]="extrasModel" [entidad]="'unidades'" />
                 </div>
             </div>
         </ng-template>

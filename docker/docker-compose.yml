@@ -12,6 +12,9 @@ services:
       - "8080:8080"
     volumes:
       - ./pb_data:/pb_data
+      # Migraciones y hooks desde el repo (sin esto hay que reconstruir la imagen tras cada cambio)
+      - ../pb_migrations:/pb_migrations
+      - ../pb_hooks:/pb_hooks
     networks:
       - loteo_network
     environment:

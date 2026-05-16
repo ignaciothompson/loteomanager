@@ -5,6 +5,7 @@ import { AppTopbar } from './app.topbar';
 import { AppSidebar } from './app.sidebar';
 import { AppFooter } from './app.footer';
 import { LayoutService } from '@/app/layout/service/layout.service';
+import { DefinicionesCacheService } from '@loteomanager/shared-pb-client';
 
 @Component({
     selector: 'app-layout',
@@ -24,8 +25,11 @@ import { LayoutService } from '@/app/layout/service/layout.service';
 })
 export class AppLayout {
     layoutService = inject(LayoutService);
+    private definicionesCache = inject(DefinicionesCacheService);
 
     constructor() {
+        this.definicionesCache.load().catch(console.error);
+
         effect(() => {
             const state = this.layoutService.layoutState();
             if (state.mobileMenuActive) {

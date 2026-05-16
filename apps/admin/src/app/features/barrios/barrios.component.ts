@@ -1,14 +1,14 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, model, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BarriosService } from '@loteomanager/shared-pb-client';
-import { BarriosRecord, BarriosResponse } from '@loteomanager/shared-types';
+import { BarriosRecord, BarriosResponse, ExtraPersistido, sanitizeExtrasPayload } from '@loteomanager/shared-types';
+import { ExtrasEditorComponent } from '@loteomanager/shared-ui';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 
@@ -16,14 +16,14 @@ import { MessageService } from 'primeng/api';
   selector: 'app-barrios',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    TableModule, 
-    ButtonModule, 
-    DialogModule, 
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    DialogModule,
     InputTextModule,
     ToastModule,
-    SelectModule
+    ExtrasEditorComponent
   ],
   providers: [MessageService],
   templateUrl: './barrios.component.html',
@@ -34,26 +34,31 @@ export class BarriosComponent implements OnInit {
   private messageService = inject(MessageService);
 
   barrios = this.barriosService.list();
-  
+
   displayDialog = signal(false);
   isEdit = signal(false);
   currentBarrio: Partial<BarriosRecord> = {};
   currentId = '';
 
-  amenityOptions = [
-    { label: 'Incluida', value: 'incluida' },
-    { label: 'Socios', value: 'socios' },
-    { label: 'No', value: 'no' }
-  ];
-  currentExtras: { nombre: string, estado: string }[] = [];
+  extrasModel = model<ExtraPersistido[]>([]);
 
   ngOnInit() {
     // Service handles loading via signal
   }
 
+  private parseExtras(raw: unknown): ExtraPersistido[] {
+    if (!Array.isArray(raw) || raw.length === 0) return [];
+    const first = raw[0] as { extra_id?: string };
+    if (first && typeof first.extra_id === 'string') {
+      return raw as ExtraPersistido[];
+    }
+    return [];
+  }
+
   openNew() {
     this.currentBarrio = {};
-    this.currentExtras = [];
+    this.currentId = '';
+    this.extrasModel.set([]);
     this.isEdit.set(false);
     this.displayDialog.set(true);
   }
@@ -61,22 +66,14 @@ export class BarriosComponent implements OnInit {
   editBarrio(barrio: BarriosResponse) {
     this.currentBarrio = { ...barrio };
     this.currentId = barrio.id;
-    this.currentExtras = Array.isArray(barrio.extras) ? [...barrio.extras] : [];
+    this.extrasModel.set(this.parseExtras(barrio.extras));
     this.isEdit.set(true);
     this.displayDialog.set(true);
   }
 
-  addExtra() {
-    this.currentExtras.push({ nombre: '', estado: 'incluida' });
-  }
-
-  removeExtra(index: number) {
-    this.currentExtras.splice(index, 1);
-  }
-
   async saveBarrio() {
     try {
-      this.currentBarrio.extras = this.currentExtras as any; // Cast as json expects any
+      this.currentBarrio.extras = sanitizeExtrasPayload(this.extrasModel()) as unknown as BarriosRecord['extras'];
 
       if (this.isEdit()) {
         await this.barriosService.update(this.currentId, this.currentBarrio);
@@ -86,10 +83,10 @@ export class BarriosComponent implements OnInit {
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Barrio creado' });
       }
       this.displayDialog.set(false);
-      // Reload list
       this.barrios = this.barriosService.list();
-    } catch (err: any) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: err.message || 'Error al guardar' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
     }
   }
 
@@ -99,7 +96,7 @@ export class BarriosComponent implements OnInit {
         await this.barriosService.delete(barrio.id);
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Barrio eliminado' });
         this.barrios = this.barriosService.list();
-      } catch (err: any) {
+      } catch {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el barrio' });
       }
     }
