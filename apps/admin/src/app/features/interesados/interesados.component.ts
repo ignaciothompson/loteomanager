@@ -1,8 +1,9 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, model, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { InteresadosService, UnidadesService, BarriosService, AuthService } from '@loteomanager/shared-pb-client';
-import { InteresadosRecord, InteresadosResponse, UnidadesResponse, BarriosResponse } from '@loteomanager/shared-types';
+import { InteresadosService, AuthService, DefinicionesCacheService } from '@loteomanager/shared-pb-client';
+import { InteresadosRecord, InteresadosResponse, ExtraPersistido, sanitizeExtrasPayload } from '@loteomanager/shared-types';
+import { EstadoBadgeComponent, ExtrasEditorComponent } from '@loteomanager/shared-ui';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -16,14 +17,16 @@ import { MessageService } from 'primeng/api';
   selector: 'app-interesados',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    TableModule, 
-    ButtonModule, 
-    DialogModule, 
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    DialogModule,
     InputTextModule,
     SelectModule,
-    ToastModule
+    ToastModule,
+    EstadoBadgeComponent,
+    ExtrasEditorComponent
   ],
   providers: [MessageService],
   templateUrl: './interesados.component.html',
@@ -33,22 +36,33 @@ export class InteresadosComponent implements OnInit {
   private interesadosService = inject(InteresadosService);
   private authService = inject(AuthService);
   private messageService = inject(MessageService);
+  private definicionesCache = inject(DefinicionesCacheService);
 
   interesados = this.interesadosService.list();
-  
+
   displayDialog = signal(false);
   isEdit = signal(false);
   currentInteresado: Partial<InteresadosRecord> = {};
   currentId = '';
 
-  estados: { label: string, value: string }[] = [
-    { label: 'Nuevo', value: 'nuevo' },
-    { label: 'Contactado', value: 'contactado' },
-    { label: 'Cerrado/Perdido', value: 'cerrado_perdido' },
-    { label: 'Cerrado/Ganado', value: 'cerrado_ganado' }
-  ];
+  extrasModel = model<ExtraPersistido[]>([]);
 
-  ngOnInit() {
+  interesadoEstadoOpts = computed(() =>
+    this.definicionesCache.estadosActivosPara('interesados').map((s) => ({
+      label: s.nombre,
+      value: s.code
+    }))
+  );
+
+  ngOnInit() {}
+
+  private parseExtras(raw: unknown): ExtraPersistido[] {
+    if (!Array.isArray(raw) || raw.length === 0) return [];
+    const first = raw[0] as { extra_id?: string };
+    if (first && typeof first.extra_id === 'string') {
+      return raw as ExtraPersistido[];
+    }
+    return [];
   }
 
   openNew() {
@@ -57,6 +71,7 @@ export class InteresadosComponent implements OnInit {
       origen: 'manual',
       responsable_id: this.authService.currentUser()?.['id'] as string
     };
+    this.extrasModel.set([]);
     this.isEdit.set(false);
     this.displayDialog.set(true);
   }
@@ -64,23 +79,26 @@ export class InteresadosComponent implements OnInit {
   editInteresado(interesado: InteresadosResponse) {
     this.currentInteresado = { ...interesado };
     this.currentId = interesado.id;
+    this.extrasModel.set(this.parseExtras((interesado as { extras?: unknown }).extras));
     this.isEdit.set(true);
     this.displayDialog.set(true);
   }
 
   async saveInteresado() {
     try {
+      const payload = { ...this.currentInteresado, extras: sanitizeExtrasPayload(this.extrasModel()) } as Partial<InteresadosResponse>;
       if (this.isEdit()) {
-        await this.interesadosService.update(this.currentId, this.currentInteresado);
+        await this.interesadosService.update(this.currentId, payload);
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Interesado actualizado' });
       } else {
-        await this.interesadosService.create(this.currentInteresado);
+        await this.interesadosService.create(payload);
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Interesado creado' });
       }
       this.displayDialog.set(false);
       this.interesados = this.interesadosService.list();
-    } catch (err: any) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: err.message || 'Error al guardar' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
     }
   }
 
@@ -90,21 +108,28 @@ export class InteresadosComponent implements OnInit {
         await this.interesadosService.delete(interesado.id);
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Lead eliminado' });
         this.interesados = this.interesadosService.list();
-      } catch (err: any) {
+      } catch {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar' });
       }
     }
   }
 
   async markAsWon(interesado: InteresadosResponse) {
-    const unidadId = prompt('Para cerrar como ganado, ingresá el ID de la unidad (en la Fase 4 esto será un modal con buscador):');
+    const unidadId = prompt(
+      'Para cerrar como ganado, ingresá el ID de la unidad (en la Fase 4 esto será un modal con buscador):'
+    );
     if (unidadId) {
       try {
         await this.interesadosService.cerrarComoGanado(interesado.id, unidadId);
-        this.messageService.add({ severity: 'success', summary: 'Cerrado Ganado', detail: 'Venta registrada exitosamente' });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Cerrado ganado',
+          detail: 'Venta registrada exitosamente'
+        });
         this.interesados = this.interesadosService.list();
-      } catch (err: any) {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.message || 'Error al cerrar venta' });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error al cerrar venta';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
       }
     }
   }

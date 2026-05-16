@@ -3,7 +3,11 @@
   "version": "0.0.1",
   "peerDependencies": {
     "@angular/common": "^21.2.0",
-    "@angular/core": "^21.2.0"
+    "@angular/core": "^21.2.0",
+    "@angular/forms": "^21.2.0",
+    "@loteomanager/shared-pb-client": "0.0.0",
+    "@loteomanager/shared-types": "0.0.0",
+    "primeng": "^21.1.0"
   },
   "sideEffects": false
 }

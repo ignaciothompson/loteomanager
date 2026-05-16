@@ -8,7 +8,7 @@
     "build:all": "nx run-many -t build --projects=admin,landing",
     "lint:all": "nx run-many -t lint",
     "test:all": "nx run-many -t test",
-    "pb:types": "bash tools/pb-typegen.sh"
+    "pb:types": "node tools/pb-typegen.mjs"
   },
   "private": true,
   "devDependencies": {

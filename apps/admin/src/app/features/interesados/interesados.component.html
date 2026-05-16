@@ -22,15 +22,7 @@
                 <td>{{ interesado.email || '-' }}</td>
                 <td>{{ interesado.telefono || '-' }}</td>
                 <td>
-                    <span class="px-2 py-1 border-round text-sm" 
-                        [ngClass]="{
-                            'bg-blue-100 text-blue-800': interesado.estado === 'nuevo',
-                            'bg-yellow-100 text-yellow-800': interesado.estado === 'contactado',
-                            'bg-green-100 text-green-800': interesado.estado === 'cerrado_ganado',
-                            'bg-red-100 text-red-800': interesado.estado === 'cerrado_perdido'
-                        }">
-                        {{ interesado.estado | uppercase }}
-                    </span>
+                    <lib-estado-badge [code]="interesado.estado" [entidad]="'interesados'" />
                 </td>
                 <td>{{ interesado.presupuesto_maximo ? (interesado.presupuesto_maximo | currency:'USD') : '-' }}</td>
                 <td>
@@ -47,7 +39,7 @@
         </ng-template>
     </p-table>
 
-    <p-dialog [(visible)]="displayDialog" [style]="{width: '500px'}" [header]="isEdit() ? 'Editar Lead' : 'Nuevo Lead'" [modal]="true">
+    <p-dialog [(visible)]="displayDialog" [style]="{width: '620px'}" [header]="isEdit() ? 'Editar Lead' : 'Nuevo Lead'" [modal]="true" appendTo="body" [contentStyle]="{ overflow: 'visible' }">
         <ng-template pTemplate="content">
             <div class="flex flex-col gap-4 mt-4">
                 <div class="flex flex-col gap-2">
@@ -68,7 +60,12 @@
                 
                 <div class="flex flex-col gap-2">
                     <label for="estado" class="font-semibold">Estado</label>
-                    <p-select id="estado" [options]="estados" [(ngModel)]="currentInteresado.estado" styleClass="w-full"></p-select>
+                    <p-select id="estado" [options]="interesadoEstadoOpts()" [(ngModel)]="currentInteresado.estado" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body"></p-select>
+                </div>
+
+                <div class="flex flex-col gap-2 border-t border-surface-200 dark:border-surface-700 pt-3">
+                    <label class="font-semibold">Extras</label>
+                    <lib-extras-editor [(extras)]="extrasModel" [entidad]="'interesados'" />
                 </div>
 
                 <div class="flex flex-col gap-2">

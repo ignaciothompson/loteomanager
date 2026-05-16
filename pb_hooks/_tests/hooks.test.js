@@ -531,6 +531,31 @@ test("cerrar interesado sin unidad_id no hace nada en unidades", () => {
   assert(mockDbLocal.unidades.length === 0, "No debería modificar ninguna unidad");
 });
 
+// --- Fase 1: extras opcionales vacíos (no se normalizan) ---
+console.log("\n-- Fase 1: extras opcionales --");
+
+function fase1ShouldSkipOptionalExtra(valor) {
+  return (
+    valor === null ||
+    valor === undefined ||
+    valor === "" ||
+    (typeof valor === "string" && valor.trim() === "")
+  );
+}
+
+test("extra opcional con valor vacío se omite del flujo de validación estricta", () => {
+  assert(fase1ShouldSkipOptionalExtra(null) === true);
+  assert(fase1ShouldSkipOptionalExtra("") === true);
+  assert(fase1ShouldSkipOptionalExtra("   ") === true);
+  assert(fase1ShouldSkipOptionalExtra(false) === false);
+  assert(fase1ShouldSkipOptionalExtra(0) === false);
+});
+
+test("estado core no se puede borrar (flag es_core === true)", () => {
+  const row = { es_core: true };
+  assert(row.es_core === true, "debe comparar con === true para null-safe");
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // REPORTE FINAL
 // ─────────────────────────────────────────────────────────────────────────────

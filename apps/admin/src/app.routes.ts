@@ -40,6 +40,16 @@ export const appRoutes: Routes = [
                 loadComponent: () => import('./app/features/comparativas/comparativas.component').then(m => m.ComparativasComponent),
                 data: { title: 'Enlaces Compartibles' }
             },
+            {
+                path: 'config/extras',
+                loadComponent: () => import('./app/features/admin/extras/extras-admin.component').then(m => m.ExtrasAdminComponent),
+                data: { title: 'Extras' }
+            },
+            {
+                path: 'config/estados',
+                loadComponent: () => import('./app/features/admin/estados/estados-admin.component').then(m => m.EstadosAdminComponent),
+                data: { title: 'Estados' }
+            },
             // --- Directorio ---
             // {
             //     path: 'arquitectos',

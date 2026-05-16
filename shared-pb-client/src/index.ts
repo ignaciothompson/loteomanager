@@ -13,3 +13,6 @@ export * from './lib/services/interesados.service';
 export * from './lib/services/unidades.service';
 export * from './lib/services/users.service';
 export * from './lib/services/vendedor-barrios.service';
+export * from './lib/services/extras-definiciones.service';
+export * from './lib/services/estados-definiciones.service';
+export * from './lib/services/definiciones-cache.service';
