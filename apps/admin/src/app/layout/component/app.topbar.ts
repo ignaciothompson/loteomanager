@@ -4,7 +4,7 @@
  */
 import { Component, inject } from '@angular/core';
 import { MenuItem } from 'primeng/api';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
 import { LayoutService } from '@/app/layout/service/layout.service';
@@ -37,7 +37,7 @@ import { LayoutService } from '@/app/layout/service/layout.service';
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <button type="button" class="layout-topbar-action">
+                    <button type="button" class="layout-topbar-action" (click)="router.navigate(['/mi-perfil'])">
                         <i class="pi pi-user"></i>
                         <span>Perfil</span>
                     </button>
@@ -50,6 +50,7 @@ export class AppTopbar {
     items!: MenuItem[];
 
     layoutService = inject(LayoutService);
+    readonly router = inject(Router);
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({

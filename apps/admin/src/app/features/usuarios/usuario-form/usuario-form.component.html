@@ -1,0 +1,122 @@
+<p-toast />
+<p-dialog
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [header]="user ? 'Editar Usuario' : 'Nuevo Usuario'"
+  [modal]="true"
+  [style]="{ width: '540px' }"
+  appendTo="body"
+  [contentStyle]="{ overflow: 'visible' }"
+>
+  <ng-template pTemplate="content">
+    <div class="flex flex-col gap-4 mt-2">
+      <div class="flex flex-col gap-2">
+        <label for="uf-name" class="font-semibold">Nombre *</label>
+        <input
+          pInputText
+          id="uf-name"
+          [(ngModel)]="form.name"
+          placeholder="Nombre completo"
+          class="w-full"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="uf-email" class="font-semibold">Email *</label>
+        <input
+          pInputText
+          id="uf-email"
+          type="email"
+          [(ngModel)]="form.email"
+          [disabled]="!!user"
+          placeholder="correo@ejemplo.com"
+          class="w-full"
+        />
+        @if (user) {
+          <small class="text-500">El email no se puede cambiar desde aquí.</small>
+        }
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="uf-role" class="font-semibold">Rol *</label>
+        <p-select
+          id="uf-role"
+          [(ngModel)]="form.role"
+          [options]="roleOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccioná un rol"
+          class="w-full"
+        />
+      </div>
+
+      @if (form.role === 'vendedor') {
+        <div class="flex flex-col gap-2">
+          <label for="uf-leads" class="font-semibold">Visibilidad de leads</label>
+          <p-select
+            id="uf-leads"
+            [(ngModel)]="form.leads_visibility"
+            [options]="leadsVisibilityOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccioná visibilidad"
+            class="w-full"
+          />
+        </div>
+      }
+
+      <div class="flex flex-col gap-2">
+        <label for="uf-telefono" class="font-semibold">Teléfono</label>
+        <input
+          pInputText
+          id="uf-telefono"
+          [(ngModel)]="form.telefono"
+          placeholder="Ej: +54 9 11 1234-5678"
+          class="w-full"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="uf-whatsapp" class="font-semibold">WhatsApp</label>
+        <input
+          pInputText
+          id="uf-whatsapp"
+          [(ngModel)]="form.whatsapp"
+          placeholder="Ej: 5491112345678"
+          class="w-full"
+        />
+      </div>
+
+      <div class="flex align-items-center gap-3">
+        <label for="uf-activo" class="font-semibold">Activo</label>
+        <p-toggleswitch id="uf-activo" [(ngModel)]="form.activo" />
+      </div>
+
+      @if (!user) {
+        <div class="p-3 border-round" style="background: var(--blue-50); border: 1px solid var(--blue-200)">
+          <small class="text-blue-700">
+            <i class="pi pi-info-circle mr-1"></i>
+            Se enviará un email para que el usuario establezca su contraseña.
+          </small>
+        </div>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancelar"
+      icon="pi pi-times"
+      severity="secondary"
+      [text]="true"
+      (click)="visibleChange.emit(false)"
+    />
+    <p-button
+      [label]="user ? 'Guardar cambios' : 'Crear usuario'"
+      icon="pi pi-check"
+      [loading]="saving()"
+      [disabled]="!form.name || !form.email || !form.role"
+      (click)="save()"
+    />
+  </ng-template>
+</p-dialog>

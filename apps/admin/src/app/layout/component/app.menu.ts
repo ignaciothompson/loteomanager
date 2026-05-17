@@ -42,6 +42,12 @@ export class AppMenu {
                 ]
             },
             {
+                label: 'Mi Cuenta',
+                items: [
+                    { label: 'Mi Perfil', icon: 'pi pi-fw pi-user', routerLink: ['/mi-perfil'] }
+                ]
+            },
+            {
                 label: 'Inventario',
                 icon: 'pi pi-fw pi-box',
                 items: [

@@ -7,6 +7,7 @@
 import { Routes } from '@angular/router';
 import { AppLayout } from './app/layout/component/app.layout';
 import { authGuard } from './app/core/guards/auth.guard';
+import { permisoGuard } from './app/core/guards/permiso.guard';
 
 export const appRoutes: Routes = [
     {
@@ -42,25 +43,37 @@ export const appRoutes: Routes = [
             },
             {
                 path: 'config/extras',
+                canActivate: [authGuard, permisoGuard('config.update')],
                 loadComponent: () => import('./app/features/admin/extras/extras-admin.component').then(m => m.ExtrasAdminComponent),
                 data: { title: 'Extras' }
             },
             {
                 path: 'config/estados',
+                canActivate: [authGuard, permisoGuard('config.update')],
                 loadComponent: () => import('./app/features/admin/estados/estados-admin.component').then(m => m.EstadosAdminComponent),
                 data: { title: 'Estados' }
             },
             // --- Directorio ---
-            // {
-            //     path: 'arquitectos',
-            //     loadComponent: () => import('./app/features/arquitectos/arquitectos.component').then(m => m.ArquitectosComponent),
-            //     data: { title: 'Arquitectos' }
-            // },
-            // {
-            //     path: 'usuarios',
-            //     loadComponent: () => import('./app/features/usuarios/usuarios.component').then(m => m.UsuariosComponent),
-            //     data: { title: 'Usuarios' }
-            // }
+            {
+                path: 'arquitectos',
+                loadComponent: () => import('./app/features/arquitectos/arquitectos.component').then(m => m.ArquitectosComponent),
+                data: { title: 'Arquitectos' }
+            },
+            {
+                path: 'usuarios',
+                canActivate: [authGuard, permisoGuard('users.crud')],
+                loadComponent: () => import('./app/features/usuarios/usuarios-list/usuarios-list.component').then(m => m.UsuariosListComponent),
+                data: { title: 'Usuarios' }
+            },
+            {
+                path: 'mi-perfil',
+                loadComponent: () => import('./app/features/usuarios/mi-perfil/mi-perfil.component').then(m => m.MiPerfilComponent),
+                data: { title: 'Mi Perfil' }
+            },
+            {
+                path: 'forbidden',
+                loadComponent: () => import('./app/features/auth/forbidden/forbidden.component').then(m => m.ForbiddenComponent)
+            },
         ]
     },
     {
@@ -70,6 +83,14 @@ export const appRoutes: Routes = [
     {
         path: 'login',
         loadComponent: () => import('./app/features/auth/login').then(m => m.Login)
+    },
+    {
+        path: 'auth/recuperar',
+        loadComponent: () => import('./app/features/auth/recuperar-password/recuperar-password.component').then(m => m.RecuperarPasswordComponent)
+    },
+    {
+        path: 'auth/reset',
+        loadComponent: () => import('./app/features/auth/resetear-password/resetear-password.component').then(m => m.ResetearPasswordComponent)
     },
     { path: '**', redirectTo: '/notfound' }
 ];

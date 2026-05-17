@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '@loteomanager/shared-pb-client';
 
+/** @deprecated Use `permisoGuard` from `./permiso.guard` instead. */
 export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
   return (route, state) => {
     const authService = inject(AuthService);

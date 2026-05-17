@@ -1,0 +1,172 @@
+<p-toast />
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
+
+  <!-- Datos personales -->
+  <p-card header="Datos personales" styleClass="h-full">
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="mp-name" class="font-semibold">Nombre completo</label>
+        <input
+          pInputText
+          id="mp-name"
+          [(ngModel)]="editName"
+          placeholder="Tu nombre"
+          class="w-full"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="mp-tel" class="font-semibold">Teléfono</label>
+        <input
+          pInputText
+          id="mp-tel"
+          [(ngModel)]="editTelefono"
+          placeholder="+54 9 11 1234-5678"
+          class="w-full"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="mp-wa" class="font-semibold">WhatsApp</label>
+        <input
+          pInputText
+          id="mp-wa"
+          [(ngModel)]="editWhatsapp"
+          placeholder="5491112345678"
+          class="w-full"
+        />
+      </div>
+      <div class="flex justify-end">
+        <p-button
+          label="Guardar datos"
+          icon="pi pi-save"
+          [loading]="savingDatos()"
+          (click)="saveDatos()"
+        />
+      </div>
+    </div>
+  </p-card>
+
+  <!-- Info no editable -->
+  <p-card header="Información de cuenta" styleClass="h-full">
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-2">
+        <label class="font-semibold text-500">Email</label>
+        <span class="text-lg">{{ user()?.['email'] || '—' }}</span>
+        <small class="text-500">El email no puede modificarse desde aquí.</small>
+      </div>
+      <p-divider />
+      <div class="flex flex-col gap-2">
+        <label class="font-semibold text-500">Rol</label>
+        <div>
+          <p-tag
+            [value]="user()?.['role'] === 'admin' ? 'Admin' : 'Vendedor'"
+            [severity]="user()?.['role'] === 'admin' ? 'info' : 'success'"
+          />
+        </div>
+      </div>
+      <p-divider />
+      <div class="flex flex-col gap-2">
+        <label class="font-semibold text-500">Estado</label>
+        <div>
+          @if (user()?.['activo']) {
+            <p-tag value="Activo" severity="success" />
+          } @else {
+            <p-tag value="Inactivo" severity="danger" />
+          }
+        </div>
+      </div>
+    </div>
+  </p-card>
+
+  <!-- Cambio de contraseña -->
+  <p-card header="Cambiar contraseña" styleClass="h-full">
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="mp-old" class="font-semibold">Contraseña actual</label>
+        <p-password
+          inputId="mp-old"
+          [(ngModel)]="passForm.oldPassword"
+          [feedback]="false"
+          [toggleMask]="true"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="mp-new" class="font-semibold">Nueva contraseña</label>
+        <p-password
+          inputId="mp-new"
+          [(ngModel)]="passForm.password"
+          [feedback]="true"
+          [toggleMask]="true"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="mp-confirm" class="font-semibold">Confirmar nueva contraseña</label>
+        <p-password
+          inputId="mp-confirm"
+          [(ngModel)]="passForm.passwordConfirm"
+          [feedback]="false"
+          [toggleMask]="true"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+        />
+      </div>
+      @if (passError()) {
+        <small class="text-red-500">{{ passError() }}</small>
+      }
+      <div class="flex justify-end">
+        <p-button
+          label="Cambiar contraseña"
+          icon="pi pi-lock"
+          [loading]="savingPass()"
+          [disabled]="!passForm.oldPassword || !passForm.password || !passForm.passwordConfirm"
+          (click)="changePassword()"
+        />
+      </div>
+    </div>
+  </p-card>
+
+  <!-- Mis asignaciones (solo vendedor) -->
+  @if (user()?.['role'] === 'vendedor') {
+    <p-card header="Mis asignaciones" styleClass="h-full">
+      @if (loadingAsignaciones()) {
+        <p class="text-500">Cargando...</p>
+      } @else {
+        <div class="flex flex-col gap-4">
+          <div>
+            <p class="font-semibold mb-2">Barrios con acceso directo</p>
+            @if (barriosAsignados().length === 0) {
+              <p class="text-500 text-sm">Ningún barrio asignado directamente.</p>
+            } @else {
+              <ul class="list-none m-0 p-0 flex flex-col gap-1">
+                @for (b of barriosAsignados(); track b.id) {
+                  <li class="flex align-items-center gap-2">
+                    <i class="pi pi-map-marker text-500 text-sm"></i>
+                    <span>{{ b.nombre }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+          <p-divider />
+          <div>
+            <p class="font-semibold mb-2">Zonas asignadas</p>
+            @if (zonasAsignadas().length === 0) {
+              <p class="text-500 text-sm">Sin zonas asignadas.</p>
+            } @else {
+              <div class="flex flex-wrap gap-2">
+                @for (z of zonasAsignadas(); track z) {
+                  <p-tag [value]="z" severity="secondary" />
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </p-card>
+  }
+
+</div>
