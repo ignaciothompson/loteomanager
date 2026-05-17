@@ -1,0 +1,142 @@
+<div>
+  <!-- Filters + toggle aplicadas -->
+  <div class="flex flex-wrap align-items-center gap-2 mb-3">
+    @for (op of filtroOpciones; track op.value) {
+      <p-button
+        [label]="op.label"
+        [severity]="filtroEstado() === op.value ? 'primary' : 'secondary'"
+        [outlined]="filtroEstado() !== op.value"
+        size="small"
+        (click)="filtroEstado.set(op.value)"
+      />
+    }
+    <span class="ml-auto flex align-items-center gap-2 text-sm text-500">
+      <p-button
+        [label]="mostrarAplicadas() ? 'Ocultar aplicadas' : 'Mostrar aplicadas'"
+        [icon]="mostrarAplicadas() ? 'pi pi-eye-slash' : 'pi pi-eye'"
+        severity="secondary"
+        [text]="true"
+        size="small"
+        (click)="mostrarAplicadas.set(!mostrarAplicadas())"
+      />
+      <span>{{ filasFiltradas().length }} filas</span>
+    </span>
+  </div>
+
+  <!-- Bulk actions -->
+  <div class="flex gap-2 mb-4">
+    <p-button
+      label="Omitir todos los duplicados"
+      icon="pi pi-ban"
+      severity="warn"
+      [text]="true"
+      size="small"
+      (click)="accionMasiva('omitir_duplicados')"
+    />
+    <p-button
+      label="Aceptar todos los OK"
+      icon="pi pi-check-circle"
+      severity="success"
+      [text]="true"
+      size="small"
+      (click)="accionMasiva('aceptar_ok')"
+    />
+  </div>
+
+  <p-table
+    [value]="filasFiltradas()"
+    [paginator]="true"
+    [rows]="20"
+    [rowHover]="true"
+    [scrollable]="true"
+    scrollDirection="horizontal"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pFrozenColumn style="min-width: 60px; width: 60px;">#</th>
+        <th pFrozenColumn style="min-width: 75px; width: 75px;">Tipo</th>
+        <th pFrozenColumn style="min-width: 150px; width: 150px;">Nombre</th>
+        <th pFrozenColumn style="min-width: 120px; width: 120px;">Código</th>
+        <th style="min-width: 110px; width: 110px;">Estado</th>
+        <th style="min-width: 260px;">Mensajes</th>
+        @for (col of columnasExtra(); track col) {
+          <th style="min-width: 130px;">{{ col }}</th>
+        }
+        <th pFrozenColumn alignFrozen="right" style="min-width: 160px; width: 160px;">Decisión</th>
+        <th pFrozenColumn alignFrozen="right" style="min-width: 80px; width: 80px;">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-fila>
+      <tr [class.opacity-50]="fila.aplicada">
+        <td pFrozenColumn class="font-mono text-sm">{{ fila.numero_fila }}</td>
+        <td pFrozenColumn>
+          <span class="text-sm text-500">{{ fila.tipo_fila ?? '—' }}</span>
+        </td>
+        <td pFrozenColumn class="text-sm">{{ getNombre(fila) }}</td>
+        <td pFrozenColumn class="font-mono text-sm">
+          {{ $any(fila.datos_normalizados)?.codigo_interno ?? $any(fila.datos_normalizados)?.slug ?? '—' }}
+        </td>
+        <td>
+          <div class="flex align-items-center gap-1 flex-wrap">
+            <p-tag [value]="fila.estado_fila" [severity]="getEstadoSeverity(fila.estado_fila)" />
+            @if (fila.aplicada) {
+              <p-tag value="✓" severity="success" [rounded]="true" />
+            }
+          </div>
+        </td>
+        <td>
+          @if (getMensajePrincipal(fila)) {
+            <span class="text-sm">{{ getMensajePrincipal(fila) }}</span>
+            @if (getMensajesExtra(fila) > 0) {
+              <span
+                class="ml-2 inline-flex align-items-center justify-content-center border-circle bg-primary text-white text-xs"
+                style="width: 1.25rem; height: 1.25rem;"
+                [title]="$any(fila).mensajes?.slice(1)?.join(' | ')"
+              >+{{ getMensajesExtra(fila) }}</span>
+            }
+          } @else {
+            <span class="text-500 text-sm">—</span>
+          }
+        </td>
+        @for (col of columnasExtra(); track col) {
+          <td class="text-sm text-500">{{ getCellValue(fila, col) }}</td>
+        }
+        <td pFrozenColumn alignFrozen="right">
+          @if (!fila.aplicada) {
+            <p-select
+              [options]="decisionOpciones"
+              [ngModel]="fila.decision_usuario ?? 'pendiente'"
+              (ngModelChange)="cambiarDecision(fila, $event)"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              appendTo="body"
+            />
+          } @else {
+            <span class="text-sm text-500">—</span>
+          }
+        </td>
+        <td pFrozenColumn alignFrozen="right">
+          <p-button
+            icon="pi pi-info-circle"
+            [rounded]="true"
+            [text]="true"
+            severity="info"
+            pTooltip="Ver detalle"
+            (click)="filaClick.emit(fila)"
+          />
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="8" class="text-center text-500 py-6">
+          No hay filas para mostrar con el filtro seleccionado.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

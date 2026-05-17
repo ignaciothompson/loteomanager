@@ -19,6 +19,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 
 import { UsuarioFormComponent } from '../usuario-form/usuario-form.component';
 import { UsuarioAsignacionesComponent } from '../usuario-asignaciones/usuario-asignaciones.component';
+import { PasswordTemporalDialogComponent, PasswordTemporalInfo } from '../components/password-temporal-dialog.component';
 
 @Component({
   selector: 'app-usuarios-list',
@@ -39,6 +40,7 @@ import { UsuarioAsignacionesComponent } from '../usuario-asignaciones/usuario-as
     TooltipModule,
     UsuarioFormComponent,
     UsuarioAsignacionesComponent,
+    PasswordTemporalDialogComponent,
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './usuarios-list.component.html',
@@ -56,8 +58,10 @@ export class UsuariosListComponent implements OnInit {
   loading = signal(false);
   showFormDialog = signal(false);
   showAsignacionesDialog = signal(false);
+  showPasswordDialog = signal(false);
   editingUser = signal<UsersResponse | null>(null);
   asignandoUser = signal<UsersResponse | null>(null);
+  passwordDialogInfo = signal<PasswordTemporalInfo | null>(null);
 
   ngOnInit(): void {
     void this.loadUsuarios();
@@ -84,6 +88,17 @@ export class UsuariosListComponent implements OnInit {
   editUser(u: UsersResponse): void {
     this.editingUser.set(u);
     this.showFormDialog.set(true);
+  }
+
+  onUserCreated(info: PasswordTemporalInfo): void {
+    this.passwordDialogInfo.set(info);
+    this.showPasswordDialog.set(true);
+  }
+
+  onPasswordConfirmed(): void {
+    this.showPasswordDialog.set(false);
+    this.passwordDialogInfo.set(null);
+    void this.loadUsuarios();
   }
 
   asignarUser(u: UsersResponse): void {

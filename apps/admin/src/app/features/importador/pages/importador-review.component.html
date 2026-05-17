@@ -1,0 +1,139 @@
+<p-toast />
+<p-confirmDialog />
+
+<div class="card">
+  <!-- Header -->
+  <div class="flex align-items-center gap-3 mb-4">
+    <p-button
+      icon="pi pi-arrow-left"
+      [text]="true"
+      severity="secondary"
+      (click)="irAtras()"
+      pTooltip="Volver a importaciones"
+    />
+    <div class="flex-1">
+      <h5 class="m-0">Revisión: {{ getNombreArchivo() }}</h5>
+      @if (importacion()) {
+        <div class="flex align-items-center gap-2 mt-1">
+          <p-tag
+            [value]="importacion()!.estado"
+            [severity]="getEstadoSeverity(importacion()!.estado)"
+          />
+          <span class="text-400 text-sm">{{ $any(importacion()).created | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Alert banners -->
+  @if (tieneMapeoPendiente()) {
+    <div
+      class="flex align-items-center gap-3 p-3 border-round mb-3"
+      style="background: #fefce8; border: 1px solid #fde047;"
+    >
+      <i class="pi pi-exclamation-triangle text-yellow-600 text-lg"></i>
+      <span class="flex-1 text-yellow-800 text-sm font-semibold">
+        Hay columnas del archivo que no fueron reconocidas. Mapeálas para un análisis correcto.
+      </span>
+      <p-button
+        label="Mapear columnas"
+        icon="pi pi-sitemap"
+        severity="warn"
+        size="small"
+        (click)="showMapeoColumnas.set(true)"
+      />
+    </div>
+  }
+
+  @if (tieneExtrasPendientes()) {
+    <div
+      class="flex align-items-center gap-3 p-3 border-round mb-3"
+      style="background: #fff7ed; border: 1px solid #fed7aa;"
+    >
+      <i class="pi pi-info-circle text-orange-600 text-lg"></i>
+      <span class="flex-1 text-orange-800 text-sm font-semibold">
+        Hay columnas de extras sin asociar a un extra del sistema.
+      </span>
+      <p-button
+        label="Mapear extras"
+        icon="pi pi-list"
+        severity="warn"
+        [outlined]="true"
+        size="small"
+        (click)="showMapeoExtras.set(true)"
+      />
+    </div>
+  }
+
+  <!-- Tab view -->
+  <p-tabs [value]="activeTabIndex()" (valueChange)="activeTabIndex.set($any($event))">
+    <p-tablist>
+      <p-tab [value]="0">Resumen</p-tab>
+      <p-tab [value]="1">Filas</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <p-tabpanel [value]="0">
+        <app-importador-resumen-tab
+          [importacion]="importacion()"
+          [filas]="$any(filas())"
+        />
+      </p-tabpanel>
+      <p-tabpanel [value]="1">
+        <app-importador-filas-tab
+          [filas]="$any(filas())"
+          [importacionId]="importacionId()"
+          (filaClick)="verDetalleFila($event)"
+          (filasChanged)="recargarDatos()"
+        />
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+
+  <!-- Action footer -->
+  <div class="flex justify-between align-items-center mt-4 pt-3 border-top-1 surface-border">
+    <p-button
+      label="Descartar importación"
+      icon="pi pi-trash"
+      severity="danger"
+      [outlined]="true"
+      [disabled]="loadingCommit()"
+      (click)="descartarImportacion()"
+    />
+    <div class="flex gap-2 align-items-center">
+      @if (loadingCommit()) {
+        <i class="pi pi-spin pi-spinner text-primary"></i>
+        <span class="text-500 text-sm">Procesando…</span>
+      }
+      <p-button
+        label="Confirmar importación"
+        icon="pi pi-check"
+        severity="success"
+        [disabled]="!puedeConfirmar() || loadingCommit()"
+        [loading]="loadingCommit()"
+        (click)="confirmarImportacion()"
+      />
+    </div>
+  </div>
+</div>
+
+<!-- Sub-components -->
+<app-mapeo-columnas-dialog
+  [visible]="showMapeoColumnas()"
+  (visibleChange)="showMapeoColumnas.set($event)"
+  [importacion]="importacion()"
+  (guardado)="onMapeoColumnasGuardado($event)"
+/>
+
+<app-mapeo-extras-dialog
+  [visible]="showMapeoExtras()"
+  (visibleChange)="showMapeoExtras.set($event)"
+  [importacion]="importacion()"
+  (guardado)="onMapeoExtrasGuardado($event)"
+/>
+
+<app-importador-fila-detail
+  [visible]="showFilaDetail()"
+  (visibleChange)="showFilaDetail.set($event)"
+  [fila]="selectedFila()"
+  (saved)="recargarDatos()"
+/>

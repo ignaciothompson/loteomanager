@@ -11,6 +11,7 @@ import { SelectModule } from 'primeng/select';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { PasswordTemporalInfo } from '../components/password-temporal-dialog.component';
 
 interface UserFormModel {
   name: string;
@@ -44,6 +45,7 @@ export class UsuarioFormComponent implements OnChanges {
   @Output() visibleChange = new EventEmitter<boolean>();
   @Input() user: UsersResponse | null = null;
   @Output() saved = new EventEmitter<void>();
+  @Output() userCreatedWithPassword = new EventEmitter<PasswordTemporalInfo>();
 
   private pb = inject(POCKETBASE);
   private messageService = inject(MessageService);
@@ -94,8 +96,20 @@ export class UsuarioFormComponent implements OnChanges {
     };
   }
 
-  private generateTempPassword(): string {
-    return Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+  private generarPasswordTemporal(nombre: string): string | null {
+    const primerNombre = nombre
+      .trim()
+      .split(' ')[0]
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+    if (primerNombre.length < 4) {
+      return null;
+    }
+
+    return `${primerNombre}1234`;
   }
 
   async save(): Promise<void> {
@@ -115,8 +129,20 @@ export class UsuarioFormComponent implements OnChanges {
         }
         await this.pb.collection('users').update(this.user.id, payload);
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado correctamente.' });
+        this.visibleChange.emit(false);
+        this.saved.emit();
       } else {
-        const tempPass = this.generateTempPassword();
+        const passwordTemporal = this.generarPasswordTemporal(this.form.name);
+
+        if (!passwordTemporal) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Nombre inválido',
+            detail: 'El primer nombre debe tener al menos 4 caracteres alfanuméricos para generar la contraseña automática.',
+          });
+          return;
+        }
+
         const payload: Record<string, unknown> = {
           name: this.form.name,
           email: this.form.email,
@@ -124,25 +150,29 @@ export class UsuarioFormComponent implements OnChanges {
           telefono: this.form.telefono,
           whatsapp: this.form.whatsapp,
           activo: this.form.activo,
-          password: tempPass,
-          passwordConfirm: tempPass,
+          password: passwordTemporal,
+          passwordConfirm: passwordTemporal,
           emailVisibility: true,
+          verified: true,
+        //   verifiedConfirm: true,
+          must_change_password: true,
         };
         if (this.form.role === 'vendedor') {
           payload['leads_visibility'] = this.form.leads_visibility || 'solo_mios';
         }
-        await this.pb.collection('users').create(payload);
-        await this.pb.collection('users').requestPasswordReset(this.form.email);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Usuario creado',
-          detail: 'Se envió un email para que el usuario establezca su contraseña.',
-          life: 6000,
+        console.log('[usuario-form] CREATE payload:', JSON.stringify({ ...payload, password: '***', passwordConfirm: '***' }, null, 2));
+        const userCreado = await this.pb.collection('users').create(payload) as UsersResponse;
+        console.log('[usuario-form] CREATE response:', JSON.stringify(userCreado, null, 2));
+
+        this.visibleChange.emit(false);
+        this.userCreatedWithPassword.emit({
+          name: userCreado.name ?? this.form.name,
+          email: userCreado.email,
+          password: passwordTemporal,
         });
       }
-      this.visibleChange.emit(false);
-      this.saved.emit();
     } catch (err: unknown) {
+      console.error('[usuario-form] ERROR:', err);
       const msg = err instanceof Error ? err.message : 'Error al guardar el usuario.';
       this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
     } finally {

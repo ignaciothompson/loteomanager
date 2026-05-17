@@ -360,6 +360,7 @@ export type UsersRecord = {
 	emailVisibility?: boolean
 	id: string
 	leads_visibility?: UsersLeadsVisibilityOptions
+	must_change_password?: boolean
 	name?: string
 	password: string
 	role: UsersRoleOptions
