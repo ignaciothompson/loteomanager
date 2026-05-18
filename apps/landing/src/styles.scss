@@ -1,1 +1,51 @@
-/* You can add global styles to this file, and also import other style files */
+@use 'tailwindcss';
+@use 'primeicons/primeicons.css';
+
+@plugin 'tailwindcss-primeui';
+
+/* Landing dark mode uses .dark class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── CSS Variables ─────────────────────────────────────────────────────────── */
+:root {
+  --landing-primary: var(--p-primary-color, #6366f1);
+  --landing-primary-contrast: var(--p-primary-contrast-color, #ffffff);
+  --landing-surface-0: var(--p-surface-0, #ffffff);
+  --landing-surface-50: var(--p-surface-50, #f8fafc);
+  --landing-surface-100: var(--p-surface-100, #f1f5f9);
+  --landing-surface-200: var(--p-surface-200, #e2e8f0);
+  --landing-surface-300: var(--p-surface-300, #cbd5e1);
+  --landing-surface-500: var(--p-surface-500, #64748b);
+  --landing-surface-600: var(--p-surface-600, #475569);
+  --landing-surface-700: var(--p-surface-700, #334155);
+  --landing-surface-900: var(--p-surface-900, #0f172a);
+  --landing-text: var(--p-text-color, #0f172a);
+  --landing-text-muted: var(--p-text-muted-color, #64748b);
+  --landing-border: var(--p-content-border-color, #e2e8f0);
+}
+
+/* ── Dato card ──────────────────────────────────────────────────────────────── */
+.dato-card {
+  @apply flex flex-col items-start p-4 bg-surface-50 rounded-xl border border-surface-200 transition-colors;
+  &:hover {
+    @apply border-primary/30;
+  }
+}
+
+/* ── PDF print mode ─────────────────────────────────────────────────────────── */
+.pdf-mode {
+  .contactar-fab,
+  .descargar-pdf-fab,
+  .theme-toggle {
+    display: none !important;
+  }
+
+  .border-surface-200 {
+    border-color: #cbd5e1 !important;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 15mm;
+}
