@@ -25,7 +25,12 @@
         "ssr": {
           "entry": "apps/landing/src/server.ts"
         },
-        "outputMode": "server"
+        "outputMode": "server",
+        "externalDependencies": [
+          "playwright",
+          "playwright-core",
+          "chromium-bidi"
+        ]
       },
       "configurations": {
         "production": {

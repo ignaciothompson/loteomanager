@@ -42,6 +42,12 @@ services:
     environment:
       - PORT=4000
       - POCKETBASE_URL=http://pocketbase:8080
+      - PB_INTERNAL_URL=http://pocketbase:8080
+      - PB_SERVICE_TOKEN=${PB_SERVICE_TOKEN}
+      - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
+      - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+      - INMOBILIARIA_NOMBRE=${INMOBILIARIA_NOMBRE:-LoteoManager}
 
   # Cloudflare Tunnel: Expone los servicios de forma segura sin abrir puertos en el host
   cloudflared:
