@@ -1,78 +1,78 @@
-        <div class="grid grid-cols-12 gap-8">
-            <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-                <div class="card mb-0">
-                    <div class="flex justify-between mb-4">
-                        <div>
-                            <span class="block text-muted-color font-medium mb-4">Unidades Disponibles</span>
-                            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ disponibles().length }}</div>
-                        </div>
-                        <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                            <i class="pi pi-check-circle text-blue-500 !text-xl"></i>
-                        </div>
-                    </div>
+<div class="grid grid-cols-12 gap-8">
+    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+        <div class="card mb-0">
+            <div class="flex justify-between mb-4">
+                <div>
+                    <span class="block text-muted-color font-medium mb-4">Unidades Disponibles</span>
+                    <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ disponibles().length }}</div>
                 </div>
-            </div>
-            <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-                <div class="card mb-0">
-                    <div class="flex justify-between mb-4">
-                        <div>
-                            <span class="block text-muted-color font-medium mb-4">Reservadas / Señadas</span>
-                            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ reservadas().length }}</div>
-                        </div>
-                        <div class="flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                            <i class="pi pi-clock text-orange-500 !text-xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-                <div class="card mb-0">
-                    <div class="flex justify-between mb-4">
-                        <div>
-                            <span class="block text-muted-color font-medium mb-4">Leads Nuevos</span>
-                            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ leadsNuevos().length }}</div>
-                        </div>
-                        <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                            <i class="pi pi-users text-green-500 !text-xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-                <div class="card mb-0">
-                    <div class="flex justify-between mb-4">
-                        <div>
-                            <span class="block text-muted-color font-medium mb-4">Ventas Cerradas</span>
-                            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ ventas().length }}</div>
-                        </div>
-                        <div class="flex items-center justify-center bg-purple-100 dark:bg-purple-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                            <i class="pi pi-star text-purple-500 !text-xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-span-12 lg:col-span-6">
-                <div class="card">
-                    <h5>Estado de Unidades</h5>
-                    <p-chart type="doughnut" [data]="chartData()" [options]="chartOptions"></p-chart>
-                </div>
-            </div>
-            
-            <div class="col-span-12 lg:col-span-6">
-                <div class="card">
-                    <h5>Leads Recientes</h5>
-                    <ul class="p-0 mx-0 mt-0 mb-6 list-none">
-                        <li class="flex items-center py-4 border-b border-surface" *ngFor="let lead of leadsNuevos().slice(0, 5)">
-                            <div class="w-12 h-12 flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-full mr-4 shrink-0">
-                                <i class="pi pi-user !text-xl text-green-500"></i>
-                            </div>
-                            <span class="text-surface-900 dark:text-surface-0 leading-normal">
-                                {{ lead.nombre }} <span class="text-muted-color ml-2">{{ lead.email }}</span>
-                            </span>
-                        </li>
-                        <li *ngIf="leadsNuevos().length === 0" class="text-muted-color py-4">No hay leads nuevos pendientes.</li>
-                    </ul>
+                <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
+                    <i class="pi pi-check-circle text-blue-500 !text-xl"></i>
                 </div>
             </div>
         </div>
+    </div>
+    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+        <div class="card mb-0">
+            <div class="flex justify-between mb-4">
+                <div>
+                    <span class="block text-muted-color font-medium mb-4">Reservadas / Señadas</span>
+                    <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ reservadas().length }}</div>
+                </div>
+                <div class="flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
+                    <i class="pi pi-clock text-orange-500 !text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+        <div class="card mb-0">
+            <div class="flex justify-between mb-4">
+                <div>
+                    <span class="block text-muted-color font-medium mb-4">Leads Nuevos</span>
+                    <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ leadsNuevos().length }}</div>
+                </div>
+                <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
+                    <i class="pi pi-users text-green-500 !text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+        <div class="card mb-0">
+            <div class="flex justify-between mb-4">
+                <div>
+                    <span class="block text-muted-color font-medium mb-4">Ventas Cerradas</span>
+                    <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ ventas().length }}</div>
+                </div>
+                <div class="flex items-center justify-center bg-purple-100 dark:bg-purple-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
+                    <i class="pi pi-star text-purple-500 !text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-span-12 lg:col-span-6">
+        <div class="card">
+            <h5>Estado de Unidades</h5>
+            <p-chart type="doughnut" [data]="chartData()" [options]="chartOptions"></p-chart>
+        </div>
+    </div>
+    
+    <div class="col-span-12 lg:col-span-6">
+        <div class="card">
+            <h5>Leads Recientes</h5>
+            <ul class="p-0 mx-0 mt-0 mb-6 list-none">
+                <li class="flex items-center py-4 border-b border-surface" *ngFor="let lead of leadsNuevos().slice(0, 5)">
+                    <div class="w-12 h-12 flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-full mr-4 shrink-0">
+                        <i class="pi pi-user !text-xl text-green-500"></i>
+                    </div>
+                    <span class="text-surface-900 dark:text-surface-0 leading-normal">
+                        {{ lead.nombre }} <span class="text-muted-color ml-2">{{ lead.email }}</span>
+                    </span>
+                </li>
+                <li *ngIf="leadsNuevos().length === 0" class="text-muted-color py-4">No hay leads nuevos pendientes.</li>
+            </ul>
+        </div>
+    </div>
+</div>

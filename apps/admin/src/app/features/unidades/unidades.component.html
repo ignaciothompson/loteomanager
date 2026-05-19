@@ -1,117 +1,168 @@
-<div class="card">
-    <p-toast></p-toast>
-    <div class="flex justify-between items-center mb-4">
-        <h5 class="m-0">Gestión de Unidades / Lotes</h5>
-        <button pButton icon="pi pi-plus" label="Nueva Unidad" class="p-button-success" (click)="openNew()"></button>
+<div class="default-height">
+    <div class="card">
+        <div class="unidades-filters">
+            <p-autocomplete
+                [ngModel]="filterBarrio()"
+                (ngModelChange)="filterBarrio.set($event)"
+                [suggestions]="barrioSuggestions()"
+                (completeMethod)="searchBarrios($event)"
+                optionLabel="nombre"
+                placeholder="Barrio"
+                [dropdown]="true"
+                [showClear]="true"
+                [completeOnFocus]="true"
+                [forceSelection]="true"
+                styleClass="w-full"
+                appendTo="body"
+            />
+            <p-select
+                [options]="tipos"
+                [ngModel]="filterTipo()"
+                (ngModelChange)="filterTipo.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Tipo"
+                [showClear]="true"
+                styleClass="w-full"
+                appendTo="body"
+            />
+            <p-select
+                [options]="unidadEstadoOpts()"
+                [ngModel]="filterEstado()"
+                (ngModelChange)="filterEstado.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Estado"
+                [showClear]="true"
+                styleClass="w-full"
+                appendTo="body"
+            />
+            <div class="unidades-filters__actions">
+                @if (hasActiveFilters()) {
+                    <button
+                        pButton
+                        type="button"
+                        label="Limpiar"
+                        icon="pi pi-filter-slash"
+                        class="p-button-text"
+                        (click)="clearFilters()"
+                    ></button>
+                }
+            </div>
+        </div>
     </div>
 
-    <p-table [value]="unidades()" responsiveLayout="scroll" [rows]="10" [paginator]="true">
-        <ng-template pTemplate="header">
-            <tr>
-                <th>Código Interno</th>
-                <th>Barrio</th>
-                <th>Tipo</th>
-                <th>Precio</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-unidad>
-            <tr>
-                <td>{{ unidad.codigo_interno }}</td>
-                <td>{{ getBarrioName(unidad.barrio_id) }}</td>
-                <td class="capitalize">{{ unidad.tipo_unidad }}</td>
-                <td>{{ unidad.precio | currency: unidad.moneda }}</td>
-                <td>
-                    <div class="flex align-items-center gap-2 flex-wrap">
-                        <lib-estado-badge [code]="unidad.estado" [entidad]="'unidades'" />
-                        <p-select
-                            [options]="unidadEstadoOpts()"
-                            [ngModel]="unidad.estado"
-                            (ngModelChange)="quickCambiarEstado(unidad, $event)"
-                            optionLabel="label"
-                            optionValue="value"
-                            appendTo="body"
-                            styleClass="w-14rem"
-                        />
-                    </div>
-                </td>
-                <td>
-                    <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" (click)="editUnidad(unidad)"></button>
-                    <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger" (click)="deleteUnidad(unidad)"></button>
-                </td>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-            <tr>
-                <td colspan="6">No hay unidades cargadas.</td>
-            </tr>
-        </ng-template>
-    </p-table>
+    <div class="card">
+        <p-toast />
 
-    <p-dialog [(visible)]="displayDialog" [style]="{width: '640px'}" [header]="isEdit() ? 'Editar Unidad' : 'Nueva Unidad'" [modal]="true" appendTo="body" [contentStyle]="{ overflow: 'visible' }">
-        <ng-template pTemplate="content">
-            <div class="grid grid-cols-2 gap-4 mt-4">
-                <div class="flex flex-col gap-2">
-                    <label for="codigo_interno" class="font-semibold">Código Interno</label>
-                    <input type="text" pInputText id="codigo_interno" [(ngModel)]="currentUnidad.codigo_interno" required autofocus class="w-full" />
-                </div>
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between items-center">
-                        <label for="barrio" class="font-semibold">Barrio</label>
-                        <button pButton icon="pi pi-plus" class="p-button-text p-button-sm p-0 h-auto" pTooltip="Nuevo Barrio" (click)="openNewBarrio()" tabindex="-1"></button>
-                    </div>
-                    <p-select id="barrio" [options]="barrios()" [(ngModel)]="currentUnidad.barrio_id" optionLabel="nombre" optionValue="id" placeholder="Seleccionar Barrio" styleClass="w-full"></p-select>
-                </div>
-            
-                <div class="flex flex-col gap-2">
-                    <label for="tipo" class="font-semibold">Tipo</label>
-                    <p-select id="tipo" [options]="tipos" [(ngModel)]="currentUnidad.tipo_unidad" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body"></p-select>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label for="metros" class="font-semibold">Metros Cuadrados</label>
-                    <p-inputNumber id="metros" [(ngModel)]="currentUnidad.metros_cuadrados" required styleClass="w-full" [inputStyle]="{'width': '100%'}"></p-inputNumber>
-                </div>
+        <div class="default-height__header flex justify-between items-center mb-4">
+            <h5 class="m-0">Gestión de Unidades / Lotes</h5>
+            <button pButton type="button" icon="pi pi-plus" label="Nueva Unidad" class="p-button-success" (click)="openNew()"></button>
+        </div>
 
-                <div class="flex flex-col gap-2">
-                    <label for="moneda" class="font-semibold">Moneda</label>
-                    <p-select id="moneda" [options]="monedas" [(ngModel)]="currentUnidad.moneda" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body"></p-select>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label for="precio" class="font-semibold">Precio</label>
-                    <p-inputNumber id="precio" [(ngModel)]="currentUnidad.precio" mode="currency" [currency]="currentUnidad.moneda || 'USD'" locale="en-US" required styleClass="w-full" [inputStyle]="{'width': '100%'}"></p-inputNumber>
-                </div>
-
-                <div class="flex flex-col gap-2 col-span-2">
-                    <label for="estado" class="font-semibold">Estado</label>
-                    <p-select id="estado" [options]="unidadEstadoOpts()" [(ngModel)]="currentUnidad.estado" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body"></p-select>
-                </div>
-
-                <div class="flex flex-col gap-2 col-span-2 border-t border-surface-200 dark:border-surface-700 pt-3">
-                    <label class="font-semibold">Extras</label>
-                    <lib-extras-editor [(extras)]="extrasModel" [entidad]="'unidades'" />
-                </div>
-            </div>
-        </ng-template>
-
-        <ng-template pTemplate="footer">
-            <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text text-surface-600" (click)="displayDialog.set(false)"></button>
-            <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-primary" (click)="saveUnidad()" [disabled]="!currentUnidad.codigo_interno || !currentUnidad.precio"></button>
-        </ng-template>
-    </p-dialog>
-
-    <!-- Mini Dialog para crear Barrio rápido -->
-    <p-dialog [(visible)]="displayBarrioDialog" [style]="{width: '400px'}" header="Nuevo Barrio Rápido" [modal]="true" appendTo="body">
-        <ng-template pTemplate="content">
-            <div class="flex flex-col gap-2 mt-4">
-                <label for="nuevo_barrio" class="font-semibold">Nombre del Barrio</label>
-                <input type="text" pInputText id="nuevo_barrio" [ngModel]="newBarrioName()" (ngModelChange)="newBarrioName.set($event)" placeholder="Ej: Las Tipas" class="w-full" autofocus />
-                <small class="text-muted-color">El slug se generará automáticamente.</small>
-            </div>
-        </ng-template>
-        <ng-template pTemplate="footer">
-            <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text text-surface-600" (click)="displayBarrioDialog.set(false)"></button>
-            <button pButton pRipple label="Crear" icon="pi pi-check" class="p-button-primary" (click)="saveNewBarrio()" [disabled]="!newBarrioName()"></button>
-        </ng-template>
-    </p-dialog>
+        <div class="default-height__scroll">
+            <p-table
+                [value]="unidadesFiltradas()"
+                [scrollable]="true"
+                scrollHeight="flex"
+                [rows]="10"
+                [paginator]="true"
+            >
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Código Interno</th>
+                        <th>Barrio</th>
+                        <th>Tipo</th>
+                        <th class="!text-right">Precio</th>
+                        <th>Estado</th>
+                        <th class="buttons-col"></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-unidad>
+                    <tr>
+                        <td>{{ unidad.codigo_interno }}</td>
+                        <td>{{ getBarrioName(unidad) }}</td>
+                        <td class="capitalize">{{ unidad.tipo_unidad }}</td>
+                        <td class="!text-right">{{ unidad.precio | currency: unidad.moneda }}</td>
+                        <td>
+                            @if (!isEditingEstado(unidad.id)) {
+                                <div class="inline-flex cursor-pointer" role="button" tabindex="0" (click)="startEstadoInlineEdit(unidad.id)" (keydown.enter)="startEstadoInlineEdit(unidad.id)">
+                                    <lib-estado-badge [code]="unidad.estado" [entidad]="'unidades'" />
+                                </div>
+                            } @else {
+                                <div class="flex align-items-center gap-2 flex-wrap">
+                                    <p-select
+                                        [options]="unidadEstadoOpts()"
+                                        [ngModel]="unidad.estado"
+                                        (ngModelChange)="quickCambiarEstado(unidad, $event)"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        appendTo="body"
+                                        styleClass="w-14rem"
+                                    />
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-times"
+                                        class="p-button-text p-button-secondary p-button-rounded"
+                                        [attr.aria-label]="'Cancelar edición de estado'"
+                                        (click)="cancelEstadoInlineEdit()"
+                                    ></button>
+                                </div>
+                            }
+                        </td>
+                        <td class="buttons-col">
+                            <button
+                                pButton
+                                type="button"
+                                icon="pi pi-pencil"
+                                class="p-button-secondary p-button-text mr-2"
+                                [attr.aria-label]="'Editar'"
+                                (click)="editUnidad(unidad)"
+                            ></button>
+                            <button
+                                pButton
+                                type="button"
+                                icon="pi pi-trash"
+                                class="p-button-danger p-button-text"
+                                [attr.aria-label]="'Eliminar'"
+                                (click)="deleteUnidad(unidad)"
+                            ></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="6">
+                            @if (hasActiveFilters()) {
+                                No hay unidades que coincidan con los filtros.
+                            } @else {
+                                No hay unidades cargadas.
+                            }
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
 </div>
+<app-unidad-form-dialog
+    [visible]="displayDialog()"
+    (visibleChange)="displayDialog.set($event)"
+    [isEdit]="isEdit()"
+    [currentUnidad]="currentUnidad"
+    [barrios]="barrios()"
+    [(extras)]="extrasModel"
+    (save)="onUnidadFormSave($event)"
+    (cancel)="displayDialog.set(false)"
+    (newBarrio)="openNewBarrio()"
+/>
+
+<app-barrio-rapido-dialog
+    [visible]="displayBarrioDialog()"
+    (visibleChange)="displayBarrioDialog.set($event)"
+    [nombre]="newBarrioName()"
+    (nombreChange)="newBarrioName.set($event)"
+    (save)="saveNewBarrio()"
+    (cancel)="displayBarrioDialog.set(false)"
+/>

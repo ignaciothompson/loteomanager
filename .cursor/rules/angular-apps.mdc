@@ -15,3 +15,4 @@ alwaysApply: false
 - **Copy**: textos de interfaz y mensajes al usuario en **español** (voseo/tuteo según lo ya usado en la pantalla).
 - **Estilos**: admin combina SCSS global (`assets/styles.scss`) y Tailwind (`assets/tailwind.css`); landing usa `styles.scss` — respetar el stack de cada app.
 - **Estructura de archivos**: cada componente **siempre** en 3 archivos separados: `*.component.ts`, `*.component.html`, `*.component.css`. Nunca usar `template` o `styles` inline en el decorador `@Component`. Usar siempre `templateUrl` y `styleUrls`. El `.css` puede quedar vacío si no hay estilos propios.
+- **Refactor de features admin**: seguir skill `.cursor/skills/admin-feature-refactor/` (referencia: `features/unidades/`).

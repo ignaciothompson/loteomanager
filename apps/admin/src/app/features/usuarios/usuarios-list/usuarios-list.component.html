@@ -1,145 +1,173 @@
 <p-toast />
 <p-confirmDialog />
 
-<div class="card">
-  <div class="flex justify-between items-center mb-4">
-    <h5 class="m-0">Gestión de Usuarios</h5>
-    @if (permisosService.can('users.crud')) {
-      <p-button
-        label="Nuevo Usuario"
-        icon="pi pi-plus"
-        severity="success"
-        (click)="openNew()"
-      />
-    }
-  </div>
-
-  @if (loading()) {
-    <div class="flex justify-center py-8">
-      <p-progressSpinner strokeWidth="4" />
-    </div>
-  } @else {
-    <p-table
-      [value]="usuarios()"
-      [paginator]="true"
-      [rows]="15"
-      [globalFilterFields]="['name', 'email']"
-      #dt
-      responsiveLayout="scroll"
-      [rowHover]="true"
-    >
-      <ng-template pTemplate="caption">
-        <div class="flex justify-end">
-          <p-iconfield>
-            <p-inputicon styleClass="pi pi-search" />
-            <input
-              pInputText
-              type="text"
-              placeholder="Buscar por nombre o email..."
-              (input)="dt.filterGlobal($any($event.target).value, 'contains')"
-            />
-          </p-iconfield>
-        </div>
-      </ng-template>
-
-      <ng-template pTemplate="header">
-        <tr>
-          <th pSortableColumn="name">Nombre / Email <p-sortIcon field="name" /></th>
-          <th>Rol</th>
-          <th>Activo</th>
-          <th>Último acceso</th>
-          <th>Acciones</th>
-        </tr>
-      </ng-template>
-
-      <ng-template pTemplate="body" let-u>
-        <tr>
-          <td>
-            <div class="font-semibold">{{ u.name || '—' }}</div>
-            <div class="text-500 text-sm">{{ u.email }}</div>
-          </td>
-          <td>
-            <p-tag
-              [value]="u.role === 'admin' ? 'Admin' : 'Vendedor'"
-              [severity]="u.role === 'admin' ? 'info' : 'success'"
-            />
-          </td>
-          <td>
-            @if (u.activo) {
-              <i class="pi pi-check-circle text-green-500 text-lg"></i>
-            } @else {
-              <i class="pi pi-times-circle text-red-400 text-lg"></i>
-            }
-          </td>
-          <td>
-            @if (getUltimoAcceso(u)) {
-              {{ getUltimoAcceso(u) | date: 'dd/MM/yyyy HH:mm' }}
-            } @else {
-              <span class="text-500">—</span>
-            }
-          </td>
-          <td>
-            <div class="flex gap-2 flex-wrap">
-              @if (permisosService.can('users.crud')) {
-                <p-button
-                  icon="pi pi-pencil"
-                  [rounded]="true"
-                  severity="success"
-                  [text]="true"
-                  pTooltip="Editar"
-                  (click)="editUser(u)"
+<div class="default-height">
+    <div class="card">
+        <div class="usuarios-list-filters">
+            <div class="usuarios-list-filters__field">
+                <input
+                    pInputText
+                    type="text"
+                    placeholder="Buscar por nombre…"
+                    class="w-full"
+                    [ngModel]="filterNombre()"
+                    (ngModelChange)="filterNombre.set($event)"
                 />
-                <p-button
-                  icon="pi pi-map-marker"
-                  [rounded]="true"
-                  severity="info"
-                  [text]="true"
-                  pTooltip="Asignar barrios/zonas"
-                  (click)="asignarUser(u)"
-                />
-                <p-button
-                  [icon]="u.activo ? 'pi pi-ban' : 'pi pi-check'"
-                  [rounded]="true"
-                  [severity]="u.activo ? 'warn' : 'success'"
-                  [text]="true"
-                  [pTooltip]="u.activo ? 'Desactivar' : 'Activar'"
-                  (click)="toggleActivo(u)"
-                />
-                <p-button
-                  icon="pi pi-lock-open"
-                  [rounded]="true"
-                  severity="secondary"
-                  [text]="true"
-                  pTooltip="Resetear contraseña"
-                  (click)="resetPassword(u)"
-                />
-              }
             </div>
-          </td>
-        </tr>
-      </ng-template>
+            <div class="usuarios-list-filters__field">
+                <input
+                    pInputText
+                    type="text"
+                    placeholder="Buscar por email…"
+                    class="w-full"
+                    [ngModel]="filterEmail()"
+                    (ngModelChange)="filterEmail.set($event)"
+                />
+            </div>
+            <div class="usuarios-list-filters__actions">
+                @if (hasActiveFilters()) {
+                    <button
+                        pButton
+                        type="button"
+                        label="Limpiar"
+                        icon="pi pi-filter-slash"
+                        class="p-button-text"
+                        (click)="clearFilters()"
+                    ></button>
+                }
+            </div>
+        </div>
+    </div>
 
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="5" class="text-center text-500 py-6">No hay usuarios cargados.</td>
-        </tr>
-      </ng-template>
-    </p-table>
-  }
+    <div class="card">
+        <div class="default-height__header flex justify-between items-center mb-4">
+            <h5 class="m-0">Gestión de Usuarios</h5>
+            @if (permisosService.can('users.crud')) {
+                <button
+                    pButton
+                    type="button"
+                    label="Nuevo Usuario"
+                    icon="pi pi-plus"
+                    class="p-button-success"
+                    (click)="openNew()"
+                ></button>
+            }
+        </div>
+
+        <div class="default-height__scroll">
+            <p-table
+                [value]="usuariosFiltrados()"
+                [scrollable]="true"
+                scrollHeight="flex"
+                [paginator]="true"
+                [rows]="15"
+                [rowHover]="true"
+            >
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Nombre / Email</th>
+                        <th>Rol</th>
+                        <th>Activo</th>
+                        <th>Último acceso</th>
+                        <th class="!text-right"></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-u>
+                    <tr>
+                        <td>
+                            <div class="font-semibold">{{ u.name || '—' }}</div>
+                            <div class="text-sm text-muted-color">{{ u.email }}</div>
+                        </td>
+                        <td>
+                            <p-tag
+                                [value]="u.role === 'admin' ? 'Admin' : 'Vendedor'"
+                                [severity]="u.role === 'admin' ? 'info' : 'success'"
+                            />
+                        </td>
+                        <td>
+                            @if (u.activo) {
+                                <i class="pi pi-check-circle text-green-500 text-lg" aria-hidden="true"></i>
+                            } @else {
+                                <i class="pi pi-times-circle text-red-400 text-lg" aria-hidden="true"></i>
+                            }
+                        </td>
+                        <td>
+                            @if (getUltimoAcceso(u)) {
+                                {{ getUltimoAcceso(u) | date: 'dd/MM/yyyy HH:mm' }}
+                            } @else {
+                                <span class="text-muted-color">—</span>
+                            }
+                        </td>
+                        <td class="!text-right">
+                            @if (permisosService.can('users.crud')) {
+                                <button
+                                    pButton
+                                    type="button"
+                                    icon="pi pi-pencil"
+                                    class="p-button-secondary p-button-text mr-2"
+                                    pTooltip="Editar"
+                                    [attr.aria-label]="'Editar'"
+                                    (click)="editUser(u)"
+                                ></button>
+                                <button
+                                    pButton
+                                    type="button"
+                                    icon="pi pi-map-marker"
+                                    class="p-button-info p-button-text mr-2"
+                                    pTooltip="Asignar barrios/zonas"
+                                    [attr.aria-label]="'Asignar barrios'"
+                                    (click)="asignarUser(u)"
+                                ></button>
+                                <button
+                                    pButton
+                                    type="button"
+                                    [icon]="u.activo ? 'pi pi-ban' : 'pi pi-check'"
+                                    class="p-button-text mr-2"
+                                    [class.p-button-warn]="u.activo"
+                                    [class.p-button-success]="!u.activo"
+                                    [pTooltip]="u.activo ? 'Desactivar' : 'Activar'"
+                                    [attr.aria-label]="u.activo ? 'Desactivar' : 'Activar'"
+                                    (click)="toggleActivo(u)"
+                                ></button>
+                                <button
+                                    pButton
+                                    type="button"
+                                    icon="pi pi-lock-open"
+                                    class="p-button-secondary p-button-text"
+                                    pTooltip="Resetear contraseña"
+                                    [attr.aria-label]="'Resetear contraseña'"
+                                    (click)="resetPassword(u)"
+                                ></button>
+                            }
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="5">
+                            @if (hasActiveFilters()) {
+                                No hay usuarios que coincidan con los filtros.
+                            } @else {
+                                No hay usuarios cargados.
+                            }
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
 </div>
 
-<!-- Form dialog -->
 <app-usuario-form
-  [visible]="showFormDialog()"
-  (visibleChange)="showFormDialog.set($event)"
-  [user]="editingUser()"
-  (saved)="loadUsuarios()"
+    [visible]="showFormDialog()"
+    (visibleChange)="showFormDialog.set($event)"
+    [user]="editingUser()"
+    (saved)="onUsuariosSaved()"
 />
 
-<!-- Asignaciones dialog -->
 <app-usuario-asignaciones
-  [visible]="showAsignacionesDialog()"
-  (visibleChange)="showAsignacionesDialog.set($event)"
-  [user]="asignandoUser()"
-  (saved)="loadUsuarios()"
+    [visible]="showAsignacionesDialog()"
+    (visibleChange)="showAsignacionesDialog.set($event)"
+    [user]="asignandoUser()"
+    (saved)="onUsuariosSaved()"
 />

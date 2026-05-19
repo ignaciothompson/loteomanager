@@ -1,83 +1,129 @@
-<div class="card">
-    <p-toast></p-toast>
-    <div class="flex justify-between items-center mb-4">
-        <h5 class="m-0">Gestión de Interesados (Leads)</h5>
-        <button pButton icon="pi pi-plus" label="Nuevo Lead" class="p-button-success" (click)="openNew()"></button>
+<div class="default-height">
+    <div class="card">
+        <div class="interesados-filters">
+            <input
+                pInputText
+                placeholder="Buscar por nombre..."
+                [ngModel]="filterNombre()"
+                (ngModelChange)="filterNombre.set($event)"
+            />
+            <p-select
+                [options]="estadoOpts()"
+                [ngModel]="filterEstado()"
+                (ngModelChange)="filterEstado.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Estado"
+                [showClear]="true"
+                appendTo="body"
+            />
+            <div class="interesados-filters__actions">
+                @if (hasActiveFilters()) {
+                    <button
+                        pButton
+                        type="button"
+                        label="Limpiar"
+                        icon="pi pi-filter-slash"
+                        class="p-button-text"
+                        (click)="clearFilters()"
+                    ></button>
+                }
+            </div>
+        </div>
     </div>
 
-    <p-table [value]="interesados()" responsiveLayout="scroll" [rows]="10" [paginator]="true">
-        <ng-template pTemplate="header">
-            <tr>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Teléfono</th>
-                <th>Estado</th>
-                <th>Presupuesto Máx</th>
-                <th>Acciones</th>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-interesado>
-            <tr>
-                <td>{{ interesado.nombre }}</td>
-                <td>{{ interesado.email || '-' }}</td>
-                <td>{{ interesado.telefono || '-' }}</td>
-                <td>
-                    <lib-estado-badge [code]="interesado.estado" [entidad]="'interesados'" />
-                </td>
-                <td>{{ interesado.presupuesto_maximo ? (interesado.presupuesto_maximo | currency:'USD') : '-' }}</td>
-                <td>
-                    <button *ngIf="interesado.estado !== 'cerrado_ganado'" pButton icon="pi pi-star" class="p-button-rounded p-button-warning mr-2" pTooltip="Cerrar Venta" (click)="markAsWon(interesado)"></button>
-                    <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" (click)="editInteresado(interesado)"></button>
-                    <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger" (click)="deleteInteresado(interesado)"></button>
-                </td>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-            <tr>
-                <td colspan="6">No hay leads cargados.</td>
-            </tr>
-        </ng-template>
-    </p-table>
+    <div class="card">
+        <p-toast />
 
-    <p-dialog [(visible)]="displayDialog" [style]="{width: '620px'}" [header]="isEdit() ? 'Editar Lead' : 'Nuevo Lead'" [modal]="true" appendTo="body" [contentStyle]="{ overflow: 'visible' }">
-        <ng-template pTemplate="content">
-            <div class="flex flex-col gap-4 mt-4">
-                <div class="flex flex-col gap-2">
-                    <label for="nombre" class="font-semibold">Nombre Completo</label>
-                    <input type="text" pInputText id="nombre" [(ngModel)]="currentInteresado.nombre" required autofocus class="w-full" />
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="flex flex-col gap-2">
-                        <label for="email" class="font-semibold">Email</label>
-                        <input type="email" pInputText id="email" [(ngModel)]="currentInteresado.email" class="w-full" />
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label for="telefono" class="font-semibold">Teléfono</label>
-                        <input type="text" pInputText id="telefono" [(ngModel)]="currentInteresado.telefono" class="w-full" />
-                    </div>
-                </div>
-                
-                <div class="flex flex-col gap-2">
-                    <label for="estado" class="font-semibold">Estado</label>
-                    <p-select id="estado" [options]="interesadoEstadoOpts()" [(ngModel)]="currentInteresado.estado" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body"></p-select>
-                </div>
+        <div class="default-height__header flex justify-between items-center mb-4">
+            <h5 class="m-0">Gestión de Interesados (Leads)</h5>
+            <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Nuevo Lead"
+                class="p-button-success"
+                (click)="openNew()"
+            ></button>
+        </div>
 
-                <div class="flex flex-col gap-2 border-t border-surface-200 dark:border-surface-700 pt-3">
-                    <label class="font-semibold">Extras</label>
-                    <lib-extras-editor [(extras)]="extrasModel" [entidad]="'interesados'" />
-                </div>
-
-                <div class="flex flex-col gap-2">
-                    <label for="notas" class="font-semibold">Notas Internas</label>
-                    <input type="text" pInputText id="notas" [(ngModel)]="currentInteresado.notas_internas" class="w-full" />
-                </div>
-            </div>
-        </ng-template>
-
-        <ng-template pTemplate="footer">
-            <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text text-surface-600" (click)="displayDialog.set(false)"></button>
-            <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-primary" (click)="saveInteresado()" [disabled]="!currentInteresado.nombre"></button>
-        </ng-template>
-    </p-dialog>
+        <div class="default-height__scroll">
+            <p-table
+                [value]="interesadosFiltrados()"
+                [scrollable]="true"
+                scrollHeight="flex"
+                [rows]="10"
+                [paginator]="true"
+            >
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                        <th class="!text-right"></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-interesado>
+                    <tr>
+                        <td>{{ interesado.nombre }}</td>
+                        <td>{{ interesado.email || '-' }}</td>
+                        <td>{{ interesado.telefono || '-' }}</td>
+                        <td>
+                            <lib-estado-badge [code]="interesado.estado" [entidad]="'interesados'" />
+                        </td>
+                        <td class="!text-right">
+                            @if (interesado.estado !== 'cerrado_ganado') {
+                                <button
+                                    pButton
+                                    type="button"
+                                    icon="pi pi-star"
+                                    class="p-button-warning p-button-text mr-2"
+                                    pTooltip="Cerrar Venta"
+                                    [attr.aria-label]="'Cerrar venta'"
+                                    (click)="markAsWon(interesado)"
+                                ></button>
+                            }
+                            <button
+                                pButton
+                                type="button"
+                                icon="pi pi-pencil"
+                                class="p-button-secondary p-button-text mr-2"
+                                [attr.aria-label]="'Editar'"
+                                (click)="editInteresado(interesado)"
+                            ></button>
+                            <button
+                                pButton
+                                type="button"
+                                icon="pi pi-trash"
+                                class="p-button-danger p-button-text"
+                                [attr.aria-label]="'Eliminar'"
+                                (click)="deleteInteresado(interesado)"
+                            ></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="5">
+                            @if (hasActiveFilters()) {
+                                No hay leads que coincidan con los filtros.
+                            } @else {
+                                No hay leads cargados.
+                            }
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
 </div>
+
+<app-interesado-form-dialog
+    [visible]="displayDialog()"
+    (visibleChange)="displayDialog.set($event)"
+    [isEdit]="isEdit()"
+    [currentInteresado]="currentInteresado()"
+    [extrasData]="currentExtras()"
+    (save)="onSave($event)"
+/>

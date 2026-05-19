@@ -1,0 +1,162 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [header]="isEdit() ? 'Editar Lead' : 'Nuevo Lead'"
+  [style]="{ width: '90vw', maxWidth: '720px' }"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="false"
+  [closable]="!saving()"
+  [closeOnEscape]="!saving()"
+  appendTo="body"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="form" class="lm-dialog-body" (ngSubmit)="onSubmit()">
+
+      <section class="lm-section">
+        <header class="lm-section-header">
+          <span class="lm-section-header-title">
+            <i class="pi pi-user" aria-hidden="true"></i>
+            DATOS DEL LEAD
+          </span>
+        </header>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lm-field">
+            <label for="nombre" class="lm-field-label">
+              Nombre completo <span class="lm-required">*</span>
+            </label>
+            <input
+              pInputText
+              id="nombre"
+              formControlName="nombre"
+              class="w-full"
+              autofocus
+            />
+            @if (showError(form.get('nombre'))) {
+              <span class="lm-error">El nombre es requerido.</span>
+            }
+          </div>
+          <div class="lm-field">
+            <label for="email" class="lm-field-label">Email<span class="lm-required">*</span></label>
+            <input pInputText id="email" formControlName="email" class="w-full" type="email" />
+            @if (showError(form.get('email'))) {
+              <span class="lm-error">El email es requerido.</span>
+            }
+          </div>
+          <div class="lm-field">
+            <label for="telefono" class="lm-field-label">Teléfono<span class="lm-required">*</span></label>
+            <input pInputText id="telefono" formControlName="telefono" class="w-full" />
+            @if (showError(form.get('telefono'))) {
+              <span class="lm-error">El teléfono es requerido.</span>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="lm-section">
+        <header class="lm-section-header">
+          <span class="lm-section-header-title">
+            <i class="pi pi-tag" aria-hidden="true"></i>
+            CLASIFICACIÓN
+          </span>
+        </header>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="lm-field">
+            <label for="estado" class="lm-field-label">Estado</label>
+            <p-select
+              inputId="estado"
+              formControlName="estado"
+              [options]="estadoOpts()"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              appendTo="body"
+            />
+          </div>
+          <div class="lm-field">
+            <label for="origen" class="lm-field-label">Origen</label>
+            <p-select
+              inputId="origen"
+              formControlName="origen"
+              [options]="origenOpts"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              appendTo="body"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="lm-section">
+        <header class="lm-section-header">
+          <span class="lm-section-header-title">
+            <i class="pi pi-align-left" aria-hidden="true"></i>
+            INFORMACIÓN ADICIONAL
+          </span>
+        </header>
+        <div class="grid grid-cols-1 gap-4">
+          <div class="lm-field">
+            <label for="mensaje" class="lm-field-label">Mensaje inicial</label>
+            <textarea
+              pTextarea
+              id="mensaje"
+              formControlName="mensaje"
+              rows="2"
+              class="w-full"
+            ></textarea>
+          </div>
+          <div class="lm-field">
+            <label for="notas_internas" class="lm-field-label">Notas internas</label>
+            <textarea
+              pTextarea
+              id="notas_internas"
+              formControlName="notas_internas"
+              rows="3"
+              class="w-full"
+            ></textarea>
+          </div>
+          <div class="lm-field">
+            <label class="lm-field-label">Extras</label>
+            <lib-extras-editor [(extras)]="extras" [entidad]="'interesados'" />
+          </div>
+        </div>
+      </section>
+
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <div class="lm-dialog-footer">
+      @if (form.invalid && form.touched) {
+        <span class="lm-footer-hint">
+          <i class="pi pi-exclamation-triangle mr-1"></i>
+          Revisá los campos marcados.
+        </span>
+      }
+      <div class="lm-footer-actions">
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          class="p-button-text text-surface-600"
+          [disabled]="saving()"
+          (click)="onCancel()"
+        ></button>
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Guardar"
+          icon="pi pi-check"
+          class="p-button-primary"
+          [loading]="saving()"
+          (click)="onSubmit()"
+        ></button>
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
