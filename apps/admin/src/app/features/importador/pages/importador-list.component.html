@@ -1,0 +1,68 @@
+<p-toast />
+
+<div class="card">
+  <div class="flex justify-between items-center mb-4">
+    <h5 class="m-0">Importaciones</h5>
+    <p-button
+      label="Nueva importación"
+      icon="pi pi-plus"
+      severity="success"
+      (click)="nuevaImportacion()"
+    />
+  </div>
+
+  <p-table
+    [value]="importaciones()"
+    [paginator]="true"
+    [rows]="10"
+    [rowHover]="true"
+    responsiveLayout="scroll"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Archivo</th>
+        <th>Tipo</th>
+        <th>Estado</th>
+        <th>Filas</th>
+        <th>Fecha</th>
+        <th>Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-imp>
+      <tr>
+        <td>{{ getNombreArchivo(imp) }}</td>
+        <td>{{ imp.tipo }}</td>
+        <td>
+          <p-tag
+            [value]="imp.estado"
+            [severity]="getEstadoSeverity(imp.estado)"
+          />
+        </td>
+        <td>
+          <span class="text-sm">
+            {{ imp.total_filas ?? 0 }} total /
+            <span class="text-green-600">{{ imp.filas_ok ?? 0 }} ok</span> /
+            <span class="text-red-500">{{ imp.filas_error ?? 0 }} err</span>
+          </span>
+        </td>
+        <td>{{ imp.created | date: 'dd/MM/yyyy HH:mm' }}</td>
+        <td>
+          <p-button
+            label="Ver revisión"
+            icon="pi pi-eye"
+            [text]="true"
+            severity="info"
+            (click)="verRevision(imp)"
+          />
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6" class="text-center text-500 py-6">No hay importaciones registradas.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

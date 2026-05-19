@@ -8,12 +8,13 @@ import { Routes } from '@angular/router';
 import { AppLayout } from './app/layout/component/app.layout';
 import { authGuard } from './app/core/guards/auth.guard';
 import { permisoGuard } from './app/core/guards/permiso.guard';
+import { mustNotChangePasswordGuard } from './app/core/guards/must-change-password.guard';
 
 export const appRoutes: Routes = [
     {
         path: '',
         component: AppLayout,
-        canActivate: [authGuard],
+        canActivate: [authGuard, mustNotChangePasswordGuard],
         children: [
             {
                 path: '',
@@ -66,6 +67,11 @@ export const appRoutes: Routes = [
                 data: { title: 'Usuarios' }
             },
             {
+                path: 'importador',
+                canActivate: [authGuard, mustNotChangePasswordGuard, permisoGuard('importador.use')],
+                loadChildren: () => import('./app/features/importador/importador.routes').then(m => m.importadorRoutes),
+            },
+            {
                 path: 'mi-perfil',
                 loadComponent: () => import('./app/features/usuarios/mi-perfil/mi-perfil.component').then(m => m.MiPerfilComponent),
                 data: { title: 'Mi Perfil' }
@@ -83,6 +89,11 @@ export const appRoutes: Routes = [
     {
         path: 'login',
         loadComponent: () => import('./app/features/auth/login').then(m => m.Login)
+    },
+    {
+        path: 'auth/cambiar-password-inicial',
+        canActivate: [authGuard],
+        loadComponent: () => import('./app/features/auth/cambiar-password-inicial/cambiar-password-inicial.component').then(m => m.CambiarPasswordInicialComponent)
     },
     {
         path: 'auth/recuperar',

@@ -13,6 +13,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { UsuarioFormComponent } from '../usuario-form/usuario-form.component';
 import { UsuarioAsignacionesComponent } from '../usuario-asignaciones/usuario-asignaciones.component';
+import { PasswordTemporalDialogComponent, PasswordTemporalInfo } from '../components/password-temporal-dialog.component';
 
 @Component({
   selector: 'app-usuarios-list',
@@ -28,7 +29,8 @@ import { UsuarioAsignacionesComponent } from '../usuario-asignaciones/usuario-as
     ConfirmDialogModule,
     TooltipModule,
     UsuarioFormComponent,
-    UsuarioAsignacionesComponent
+    UsuarioAsignacionesComponent,
+    PasswordTemporalDialogComponent,
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './usuarios-list.component.html',
@@ -62,8 +64,10 @@ export class UsuariosListComponent {
 
   showFormDialog = signal(false);
   showAsignacionesDialog = signal(false);
+  showPasswordDialog = signal(false);
   editingUser = signal<UsersResponse | null>(null);
   asignandoUser = signal<UsersResponse | null>(null);
+  passwordDialogInfo = signal<PasswordTemporalInfo | null>(null);
 
   clearFilters(): void {
     this.filterNombre.set('');
@@ -78,6 +82,17 @@ export class UsuariosListComponent {
   editUser(u: UsersResponse): void {
     this.editingUser.set(u);
     this.showFormDialog.set(true);
+  }
+
+  onUserCreated(info: PasswordTemporalInfo): void {
+    this.passwordDialogInfo.set(info);
+    this.showPasswordDialog.set(true);
+  }
+
+  onPasswordConfirmed(): void {
+    this.showPasswordDialog.set(false);
+    this.passwordDialogInfo.set(null);
+    void this.loadUsuarios();
   }
 
   asignarUser(u: UsersResponse): void {

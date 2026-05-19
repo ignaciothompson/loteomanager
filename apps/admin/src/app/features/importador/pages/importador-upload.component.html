@@ -1,0 +1,105 @@
+<p-toast />
+
+<div class="card">
+  <div class="flex align-items-center gap-3 mb-4">
+    <p-button
+      icon="pi pi-arrow-left"
+      [text]="true"
+      severity="secondary"
+      (click)="irAtras()"
+      pTooltip="Volver"
+    />
+    <h5 class="m-0">Nueva importación — Paso 1: Subir archivo</h5>
+  </div>
+
+  <!-- Section 1: Download template -->
+  <div class="mb-5 p-3 border-round surface-50 border-1 surface-border">
+    <h6 class="mt-0 mb-2">
+      <i class="pi pi-file-excel mr-2 text-green-600"></i>
+      Descargar plantilla
+    </h6>
+    <p class="text-500 text-sm mt-0 mb-3">
+      Si es la primera vez, descargá la plantilla Excel con el formato correcto.
+    </p>
+    <p-button
+      label="Descargar plantilla Excel"
+      icon="pi pi-download"
+      severity="info"
+      [loading]="loading()"
+      (click)="descargarPlantilla()"
+    />
+  </div>
+
+  <!-- Section 2: Drag & Drop / File picker -->
+  <div class="mb-4">
+    <h6 class="mt-0 mb-2">
+      <i class="pi pi-upload mr-2"></i>
+      Seleccionar archivo
+    </h6>
+
+    @if (!archivoSeleccionado()) {
+      <div
+        class="border-2 border-dashed border-round p-6 text-center cursor-pointer surface-hover transition-colors transition-duration-200"
+        style="border-color: var(--surface-border);"
+        (click)="triggerFileInput()"
+        (drop)="onDrop($event)"
+        (dragover)="onDragOver($event)"
+      >
+        <i class="pi pi-cloud-upload text-5xl text-400 mb-3 block"></i>
+        <p class="text-600 mb-1">Arrastrá tu archivo <strong>.xlsx</strong> aquí</p>
+        <p class="text-400 text-sm mb-3">o hacé click para seleccionar</p>
+        <p class="text-400 text-xs">Máximo 10 MB — solo .xlsx / .xls</p>
+      </div>
+    } @else {
+      <div class="flex align-items-center gap-3 p-3 border-round border-1 surface-border surface-50">
+        <i class="pi pi-file-excel text-2xl text-green-600"></i>
+        <div class="flex-1">
+          <div class="font-semibold">{{ archivoSeleccionado()!.name }}</div>
+          <div class="text-500 text-sm">{{ archivoSize() }}</div>
+        </div>
+        <p-button
+          label="Cambiar archivo"
+          [text]="true"
+          severity="secondary"
+          (click)="limpiarArchivo()"
+        />
+      </div>
+    }
+
+    <input
+      id="file-input"
+      type="file"
+      accept=".xlsx,.xls"
+      class="hidden"
+      (change)="onFileSelected($event)"
+      style="display: none;"
+    />
+  </div>
+
+  <!-- Section 3: Analyze button -->
+  <div class="flex flex-column gap-3">
+    <p-button
+      label="Analizar archivo"
+      icon="pi pi-check"
+      severity="primary"
+      styleClass="w-full"
+      [disabled]="!archivoSeleccionado() || analizando()"
+      [loading]="analizando()"
+      (click)="subirYAnalizar()"
+    />
+    @if (analizando()) {
+      <div class="flex align-items-center gap-2 justify-content-center text-500 text-sm">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>{{ progreso() }}</span>
+      </div>
+    }
+    <p-button
+      label="Cancelar"
+      [text]="true"
+      severity="secondary"
+      styleClass="w-full"
+      [disabled]="analizando()"
+      (click)="irAtras()"
+    />
+  </div>
+</div>

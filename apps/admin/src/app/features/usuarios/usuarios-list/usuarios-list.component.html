@@ -159,10 +159,18 @@
 </div>
 
 <app-usuario-form
-    [visible]="showFormDialog()"
-    (visibleChange)="showFormDialog.set($event)"
-    [user]="editingUser()"
-    (saved)="onUsuariosSaved()"
+  [visible]="showFormDialog()"
+  (visibleChange)="showFormDialog.set($event)"
+  [user]="editingUser()"
+  (saved)="loadUsuarios()"
+  (userCreatedWithPassword)="onUserCreated($event)"
+/>
+
+<!-- Password temporal dialog -->
+<app-password-temporal-dialog
+  [visible]="showPasswordDialog()"
+  [info]="passwordDialogInfo()"
+  (confirmed)="onPasswordConfirmed()"
 />
 
 <app-usuario-asignaciones

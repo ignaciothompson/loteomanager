@@ -47,10 +47,14 @@ export class Login {
     this.errorMsg.set('');
 
     try {
-      await this.authService.login(this.email, this.password);
-      this.router.navigate(['/']);
-    } catch (err: any) {
-      console.error(err);
+      const { mustChangePassword } = await this.authService.login(this.email, this.password);
+      if (mustChangePassword) {
+        this.router.navigate(['/auth/cambiar-password-inicial']);
+      } else {
+        this.router.navigate(['/']);
+      }
+    } catch (err: unknown) {
+      void err;
       this.errorMsg.set('Credenciales inválidas. Verificá tu email y contraseña.');
     } finally {
       this.loading.set(false);

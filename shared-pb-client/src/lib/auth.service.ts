@@ -32,10 +32,11 @@ export class AuthService {
     }
   }
 
-  async login(email: string, pass: string) {
+  async login(email: string, pass: string): Promise<{ mustChangePassword: boolean }> {
     const authData = await this.pb.collection('users').authWithPassword(email, pass);
     await this.definicionesCache.load().catch(() => undefined);
-    return authData;
+    const mustChangePassword = (authData.record as Record<string, unknown>)['must_change_password'] === true;
+    return { mustChangePassword };
   }
 
   logout() {
