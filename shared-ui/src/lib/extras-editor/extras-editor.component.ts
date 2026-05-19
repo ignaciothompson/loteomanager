@@ -44,8 +44,15 @@ export class ExtrasEditorComponent {
 
   entidad = input.required<EntidadExtra>();
   extras = model<ExtraPersistido[]>([]);
+  /** Optional case-insensitive filter on definicion nombre */
+  filterQuery = input('');
 
-  private definiciones = computed(() => this.cache.extrasActivosPara(this.entidad()));
+  private definiciones = computed(() => {
+    const all = this.cache.extrasActivosPara(this.entidad());
+    const q = this.filterQuery().toLowerCase().trim();
+    if (!q) return all;
+    return all.filter((d) => d.nombre.toLowerCase().includes(q));
+  });
 
   gruposOrdenados = computed(() => {
     const defs = this.definiciones();

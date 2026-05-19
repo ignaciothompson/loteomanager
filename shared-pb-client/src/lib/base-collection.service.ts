@@ -1,4 +1,11 @@
-import { inject, signal, Signal } from '@angular/core';
+import { inject, signal, type WritableSignal } from '@angular/core';
+
+export type ReloadableSignal<T> = WritableSignal<T> & { reload: () => void };
+
+export type ListOptions = {
+  expand?: string;
+  sort?: string;
+};
 import { POCKETBASE } from './pocketbase.config';
 import { RecordService } from 'pocketbase';
 
@@ -12,19 +19,27 @@ export abstract class BaseCollectionService<T> {
     return this.pb.collection(this.collectionName);
   }
 
-  list(filter?: string): Signal<T[]> {
-    const data = signal<T[]>([]);
-    this.collection
-      .getFullList({ filter })
-      .then((records) => {
-        data.set(records as unknown as T[]);
-        this.error.set(null);
-      })
-      .catch((err) => this.error.set(err));
+  list(filter?: string, options?: ListOptions): ReloadableSignal<T[]> {
+    const data = signal<T[]>([]) as ReloadableSignal<T[]>;
+    const load = () => {
+      this.collection
+        .getFullList({
+          filter,
+          expand: options?.expand,
+          sort: options?.sort
+        })
+        .then((records) => {
+          data.set(records as unknown as T[]);
+          this.error.set(null);
+        })
+        .catch((err) => this.error.set(err));
+    };
+    data.reload = load;
+    load();
     return data;
   }
 
-  get(id: string): Signal<T | null> {
+  get(id: string): WritableSignal<T | null> {
     const data = signal<T | null>(null);
     this.collection
       .getOne(id)

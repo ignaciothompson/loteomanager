@@ -1,1 +1,46 @@
 /* Unidades Component Styles */
+
+:host {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.unidades-filters {
+  display: grid;
+  grid-template-columns: 14rem 10rem 12rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.unidades-filters__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.unidades-filters ::ng-deep .p-autocomplete,
+.unidades-filters ::ng-deep .p-select {
+  width: 100%;
+}
+
+.estado-inline-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--p-surface-600, #64748b);
+  color: #fff;
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.estado-inline-cancel:hover {
+  background: var(--p-surface-700, #475569);
+}

@@ -1,0 +1,149 @@
+<p-dialog
+    [visible]="visible()"
+    (visibleChange)="onVisibleChange($event)"
+    [style]="dialogStyle"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="!saving()"
+    [dismissableMask]="false"
+    [closeOnEscape]="!saving()"
+    appendTo="body"
+    styleClass="lm-barrio-dialog"
+>
+    <ng-template pTemplate="header">
+        <div class="lm-dialog-header">
+            <h4 class="m-0 font-semibold">
+                {{ isEdit() ? 'Editar barrio' : 'Nuevo barrio' }}
+            </h4>
+            <p class="lm-dialog-subtitle">
+                {{ isEdit() ? 'Modificá los datos del barrio.' : 'Completá los datos para dar de alta un barrio.' }}
+            </p>
+        </div>
+    </ng-template>
+
+    <form class="lm-dialog-body" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <section class="lm-section">
+            <header class="lm-section-header">
+                <span class="lm-section-header-title">
+                    <i class="pi pi-map-marker" aria-hidden="true"></i>
+                    Identificación
+                </span>
+            </header>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="lm-field lg:col-span-2">
+                    <label for="nombre" class="lm-field-label">
+                        Nombre <span class="lm-required">*</span>
+                    </label>
+                    <input
+                        id="nombre"
+                        type="text"
+                        pInputText
+                        formControlName="nombre"
+                        class="w-full"
+                        autofocus
+                    />
+                    @if (showError(form.controls.nombre)) {
+                        <span class="lm-error">Nombre requerido (máx. 120 caracteres).</span>
+                    }
+                </div>
+
+                <div class="lm-field lg:col-span-2">
+                    <label for="ubicacion_texto" class="lm-field-label">Ubicación (texto)</label>
+                    <input
+                        id="ubicacion_texto"
+                        type="text"
+                        pInputText
+                        formControlName="ubicacion_texto"
+                        class="w-full"
+                    />
+                    <span class="lm-hint">Referencia geográfica o dirección general del barrio.</span>
+                </div>
+
+                <div class="lm-field lg:col-span-2">
+                    <label for="slug" class="lm-field-label">
+                        Slug (URL) <span class="lm-required">*</span>
+                    </label>
+                    <input
+                        id="slug"
+                        type="text"
+                        pInputText
+                        formControlName="slug"
+                        class="w-full"
+                    />
+                    @if (showError(form.controls.slug)) {
+                        <span class="lm-error">Slug requerido (máx. 120 caracteres).</span>
+                    } @else {
+                        <span class="lm-hint">Identificador único en la URL pública (ej: las-tipas).</span>
+                    }
+                </div>
+            </div>
+        </section>
+
+        @if (extrasDefinidos().length) {
+            <section class="lm-section lm-extras-container">
+                <header class="lm-section-header lm-section-header--sticky">
+                    <span class="lm-section-header-title">
+                        <i class="pi pi-tags" aria-hidden="true"></i>
+                        Información adicional
+                    </span>
+                    <input
+                        type="search"
+                        pInputText
+                        class="lm-extras-search w-full"
+                        placeholder="Buscar..."
+                        [ngModel]="extrasFilter()"
+                        (ngModelChange)="extrasFilter.set($event)"
+                        [ngModelOptions]="{ standalone: true }"
+                    />
+                </header>
+                <lib-extras-editor
+                    [(extras)]="extras"
+                    [entidad]="'barrios'"
+                    [filterQuery]="extrasFilter()"
+                />
+            </section>
+        } @else {
+            <section class="lm-section">
+                <header class="lm-section-header">
+                    <span class="lm-section-header-title">
+                        <i class="pi pi-tags" aria-hidden="true"></i>
+                        Información adicional
+                    </span>
+                </header>
+                <lib-extras-editor [(extras)]="extras" [entidad]="'barrios'" />
+            </section>
+        }
+    </form>
+
+    <ng-template pTemplate="footer">
+        <div class="lm-dialog-footer">
+            @if (form.invalid && form.touched) {
+                <span class="lm-footer-hint">
+                    <i class="pi pi-exclamation-triangle mr-1"></i>
+                    Revisá los campos marcados
+                </span>
+            }
+            <div class="lm-footer-actions">
+                <button
+                    pButton
+                    type="button"
+                    label="Cancelar"
+                    icon="pi pi-times"
+                    class="p-button-text"
+                    [disabled]="saving()"
+                    (click)="onCancel()"
+                ></button>
+                <button
+                    pButton
+                    type="button"
+                    label="Guardar"
+                    icon="pi pi-check"
+                    [loading]="saving()"
+                    [disabled]="saving()"
+                    (click)="onSubmit()"
+                ></button>
+            </div>
+        </div>
+    </ng-template>
+</p-dialog>
