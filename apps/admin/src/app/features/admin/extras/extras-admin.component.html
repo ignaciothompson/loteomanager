@@ -1,0 +1,113 @@
+<div class="default-height">
+    <div class="card">
+        <div class="extras-admin-filters">
+            <div class="extras-admin-filters__field">
+                <input
+                    pInputText
+                    type="text"
+                    placeholder="Buscar por nombre…"
+                    class="w-full"
+                    [ngModel]="filterNombre()"
+                    (ngModelChange)="filterNombre.set($event)"
+                />
+            </div>
+            <div class="extras-admin-filters__field">
+                <input
+                    pInputText
+                    type="text"
+                    placeholder="Buscar por code…"
+                    class="w-full"
+                    [ngModel]="filterCode()"
+                    (ngModelChange)="filterCode.set($event)"
+                />
+            </div>
+            <div class="extras-admin-filters__actions">
+                @if (hasActiveFilters()) {
+                    <button
+                        pButton
+                        type="button"
+                        label="Limpiar"
+                        icon="pi pi-filter-slash"
+                        class="p-button-text"
+                        (click)="clearFilters()"
+                    ></button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <p-toast />
+
+        <div class="default-height__header flex justify-between items-center mb-4">
+            <h5 class="m-0">Definición de extras</h5>
+            <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Nuevo extra"
+                class="p-button-success"
+                (click)="openNew()"
+            ></button>
+        </div>
+
+        <div class="default-height__scroll">
+            <p-table
+                [value]="rowsFiltradas()"
+                [scrollable]="true"
+                scrollHeight="flex"
+                [rows]="15"
+                [paginator]="true"
+            >
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Entidad</th>
+                        <th>Code</th>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Activo</th>
+                        <th class="buttons-col"></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-row>
+                    <tr>
+                        <td>{{ row.entidad }}</td>
+                        <td><code>{{ row.code }}</code></td>
+                        <td>{{ row.nombre }}</td>
+                        <td>{{ row.tipo }}</td>
+                        <td>{{ row.activo ? 'Sí' : 'No' }}</td>
+                        <td class="buttons-col">
+                            <button
+                                pButton
+                                type="button"
+                                icon="pi pi-pencil"
+                                class="p-button-secondary p-button-text"
+                                [attr.aria-label]="'Editar'"
+                                (click)="openEdit(row)"
+                            ></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="6">
+                            @if (hasActiveFilters()) {
+                                No hay extras que coincidan con los filtros.
+                            } @else {
+                                No hay extras definidos.
+                            }
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<app-extra-form-dialog
+    [visible]="dialogVisible()"
+    (visibleChange)="dialogVisible.set($event)"
+    [editingId]="editingId()"
+    [currentExtra]="currentExtra()"
+    (save)="onSave($event)"
+/>

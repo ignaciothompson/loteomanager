@@ -156,9 +156,43 @@ export const ComparativasTipoOptions = {
 	"comparacion_multiple": "comparacion_multiple",
 } as const
 export type ComparativasTipoOptions = typeof ComparativasTipoOptions[keyof typeof ComparativasTipoOptions]
-export type ComparativasRecord = {
+export type ComparativaSnapshotUnidad = {
+	id: string
+	codigoInterno: string
+	tipoUnidad: 'lote' | 'casa' | 'departamento'
+	tipoUnidadLabel: string
+	precio: number
+	moneda: 'USD' | 'ARS'
+	precioFormateado: string
+	enOferta: boolean
+	precioOriginal?: number | null
+	precioOriginalFormateado?: string | null
+	metrosCuadrados: number
+	metrosConstruidos?: number | null
+	ambientes?: number | null
+	antiguedadAnios?: number | null
+	cocheras?: number | null
+	barrioId?: string | null
+	barrioNombre?: string | null
+	lat?: number | null
+	lng?: number | null
+	ubicacionTexto?: string | null
+	imagenHero?: string | null
+	galeria?: string[]
+	urlPlano?: string | null
+}
+
+export type ComparativaSnapshot = {
+	titulo: string
+	mensajePersonalizado?: string | null
+	unidades: ComparativaSnapshotUnidad[]
+	generadoEn: IsoDateString
+}
+
+export type ComparativasRecord<Tcontenido_snapshot = ComparativaSnapshot | null> = {
 	cliente_destinatario_email?: string
 	cliente_destinatario_nombre?: string
+	contenido_snapshot?: null | Tcontenido_snapshot
 	creado_por: RecordIdString
 	expira_en?: IsoDateString
 	id: string
@@ -387,7 +421,7 @@ export type ArquitectosResponse<Texpand = unknown> = Required<ArquitectosRecord>
 export type AuditLogResponse<Tafter = unknown, Tbefore = unknown, Texpand = unknown> = Required<AuditLogRecord<Tafter, Tbefore>> & BaseSystemFields<Texpand>
 export type BarriosResponse<Textras = unknown, Texpand = unknown> = Required<BarriosRecord<Textras>> & BaseSystemFields<Texpand>
 export type ComparativaVistasResponse<Texpand = unknown> = Required<ComparativaVistasRecord> & BaseSystemFields<Texpand>
-export type ComparativasResponse<Texpand = unknown> = Required<ComparativasRecord> & BaseSystemFields<Texpand>
+export type ComparativasResponse<Tcontenido_snapshot = ComparativaSnapshot, Texpand = unknown> = Required<ComparativasRecord<Tcontenido_snapshot>> & BaseSystemFields<Texpand>
 export type ConfigResponse<Texpand = unknown> = Required<ConfigRecord> & BaseSystemFields<Texpand>
 export type ImportacionFilasResponse<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Texpand = unknown> = Required<ImportacionFilasRecord<Tdatos_normalizados, Tdatos_originales>> & BaseSystemFields<Texpand>
 export type ImportacionesResponse<Texpand = unknown> = Required<ImportacionesRecord> & BaseSystemFields<Texpand>

@@ -7,8 +7,8 @@
 
 .card {
     background: var(--surface-card);
-    padding: 2rem;
-    margin-bottom: 2rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
     border-radius: var(--content-border-radius);
 
     &:last-child {
@@ -22,4 +22,73 @@
     &.p-toast-top-center {
         top: 100px;
     }
+}
+
+/* Filter card + table card: table body scrolls inside fixed viewport slice */
+.default-height {
+    --default-height-offset: 200px;
+    --default-height-viewport: calc(100vh - var(--default-height-offset));
+
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    > .card:first-child {
+        flex: 0 0 auto;
+    }
+
+    > .card:last-child {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: var(--default-height-viewport);
+        max-height: var(--default-height-viewport);
+        margin-bottom: 0;
+        overflow: hidden;
+        border-bottom: none;
+    }
+
+    &__header {
+        flex: 0 0 auto;
+    }
+
+    &__scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+
+        .p-datatable {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            height: 100%;
+        }
+
+        .p-datatable-flex-scrollable {
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .p-datatable-table-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        .p-datatable-paginator-bottom {
+            flex: 0 0 auto;
+        }
+    }
+}
+
+.buttons-col{
+    text-align: right !important;
+    width: 110px !important;
+}
+
+.button-input-label{
+    padding: 0 !important;
 }

@@ -1,1 +1,23 @@
-/* Interesados Component Styles */
+:host {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.interesados-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12rem auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.interesados-filters__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.interesados-filters ::ng-deep .p-inputtext,
+.interesados-filters ::ng-deep .p-select {
+  width: 100%;
+}

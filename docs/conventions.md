@@ -1,0 +1,3 @@
+﻿# conventions
+
+> Documentacion pendiente.

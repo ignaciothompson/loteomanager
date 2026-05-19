@@ -1,0 +1,46 @@
+<p-dialog
+    [visible]="visible()"
+    (visibleChange)="visibleChange.emit($event)"
+    [style]="{ width: '400px' }"
+    header="Nuevo Barrio Rápido"
+    [modal]="true"
+    appendTo="body"
+>
+    <ng-template pTemplate="content">
+        <div class="flex flex-col gap-2 mt-4">
+            <label for="nuevo_barrio" class="font-semibold">Nombre del Barrio</label>
+            <input
+                type="text"
+                pInputText
+                id="nuevo_barrio"
+                [ngModel]="nombre()"
+                (ngModelChange)="nombre.set($event)"
+                placeholder="Ej: Las Tipas"
+                class="w-full"
+                autofocus
+            />
+            <small class="text-muted-color">El slug se generará automáticamente.</small>
+        </div>
+    </ng-template>
+    <ng-template pTemplate="footer">
+        <button
+            pButton
+            pRipple
+            label="Cancelar"
+            icon="pi pi-times"
+            class="p-button-text text-surface-600"
+            type="button"
+            (click)="onCancel()"
+        ></button>
+        <button
+            pButton
+            pRipple
+            label="Crear"
+            icon="pi pi-check"
+            class="p-button-primary"
+            type="button"
+            (click)="save.emit()"
+            [disabled]="!nombre()"
+        ></button>
+    </ng-template>
+</p-dialog>

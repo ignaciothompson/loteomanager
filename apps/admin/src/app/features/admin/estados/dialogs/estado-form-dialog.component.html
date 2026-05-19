@@ -1,0 +1,110 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [header]="editingId() ? 'Editar estado' : 'Nuevo estado'"
+  [style]="{ width: '90vw', maxWidth: '520px' }"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="false"
+  [closable]="!saving()"
+  [closeOnEscape]="!saving()"
+  appendTo="body"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="form" class="lm-dialog-body" (ngSubmit)="onSubmit()">
+      <section class="lm-section">
+        <header class="lm-section-header">
+          <span class="lm-section-header-title">
+            <i class="pi pi-flag" aria-hidden="true"></i>
+            ESTADO
+          </span>
+        </header>
+        <div class="grid grid-cols-1 gap-4">
+          <div class="lm-field">
+            <label for="estado-entidad" class="lm-field-label">Entidad</label>
+            <p-select
+              inputId="estado-entidad"
+              formControlName="entidad"
+              [options]="entidadesOpts"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              appendTo="body"
+            />
+          </div>
+          <div class="lm-field">
+            <label for="estado-code" class="lm-field-label">
+              Code <span class="lm-required">*</span>
+            </label>
+            <input pInputText id="estado-code" formControlName="code" class="w-full" />
+            @if (showError(form.controls.code)) {
+              <span class="lm-error">Code requerido.</span>
+            }
+          </div>
+          <div class="lm-field">
+            <label for="estado-nombre" class="lm-field-label">
+              Nombre <span class="lm-required">*</span>
+            </label>
+            <input pInputText id="estado-nombre" formControlName="nombre" class="w-full" />
+            @if (showError(form.controls.nombre)) {
+              <span class="lm-error">Nombre requerido.</span>
+            }
+          </div>
+          <div class="lm-field">
+            <label for="estado-color" class="lm-field-label">Color (hex)</label>
+            <input pInputText id="estado-color" formControlName="color" class="w-full" />
+          </div>
+          <div class="lm-field">
+            <label for="estado-icono" class="lm-field-label">Icono PrimeIcons</label>
+            <input
+              pInputText
+              id="estado-icono"
+              formControlName="icono"
+              placeholder="pi pi-flag"
+              class="w-full"
+            />
+          </div>
+          <div class="lm-field">
+            <label for="estado-orden" class="lm-field-label">Orden</label>
+            <input pInputText id="estado-orden" type="number" formControlName="orden_display" class="w-full" />
+          </div>
+          <div class="lm-toggle-row">
+            <div class="lm-toggle-copy">
+              <span class="lm-toggle-label">Activo</span>
+            </div>
+            <p-toggleSwitch formControlName="activo" />
+          </div>
+        </div>
+      </section>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <div class="lm-dialog-footer">
+      @if (form.invalid && form.touched) {
+        <span class="lm-footer-hint">Revisá los campos marcados.</span>
+      }
+      <div class="lm-footer-actions">
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Cancelar"
+          class="p-button-text"
+          [disabled]="saving()"
+          (click)="onCancel()"
+        ></button>
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Guardar"
+          icon="pi pi-check"
+          class="p-button-primary"
+          [loading]="saving()"
+          (click)="onSubmit()"
+        ></button>
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>

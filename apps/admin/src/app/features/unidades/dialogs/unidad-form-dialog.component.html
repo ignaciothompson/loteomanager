@@ -1,0 +1,451 @@
+<p-dialog
+    [visible]="visible()"
+    (visibleChange)="onVisibleChange($event)"
+    [style]="dialogStyle"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="!saving()"
+    [dismissableMask]="false"
+    [closeOnEscape]="!saving()"
+    appendTo="body"
+    styleClass="lm-unidad-dialog"
+>
+    <ng-template pTemplate="header">
+        <h4 class="m-0 font-semibold">
+            {{ isEdit() ? 'Editar unidad' : 'Nueva unidad' }}
+        </h4>
+    </ng-template>
+
+    <form class="lm-dialog-body" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <section class="lm-section">
+            <header class="lm-section-header">
+                <span class="lm-section-header-title">
+                    <i class="pi pi-id-card" aria-hidden="true"></i>
+                    Identificación
+                </span>
+            </header>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lm-field">
+                    <label for="codigo_interno" class="lm-field-label">
+                        Código interno <span class="lm-required">*</span>
+                    </label>
+                    <input
+                        id="codigo_interno"
+                        type="text"
+                        pInputText
+                        formControlName="codigo_interno"
+                        maxlength="50"
+                        class="w-full"
+                    />
+                    @if (showError(form.controls.codigo_interno)) {
+                        <span class="lm-error">Código requerido (máx. 50 caracteres).</span>
+                    }
+                </div>
+
+                <div class="lm-field">
+                    <div class="flex justify-between items-center">
+                        <label for="barrio_id" class="lm-field-label">Barrio</label>
+                        <button
+                            pButton
+                            type="button"
+                            icon="pi pi-plus"
+                            class="p-button-text p-button-sm button-input-label"
+                            pTooltip="Nuevo barrio"
+                            (click)="newBarrio.emit()"
+                            tabindex="-1"
+                        ></button>
+                    </div>
+                    <p-select
+                        inputId="barrio_id"
+                        formControlName="barrio_id"
+                        [options]="barriosOptions()"
+                        optionLabel="nombre"
+                        optionValue="id"
+                        placeholder="Sin barrio"
+                        [filter]="true"
+                        [showClear]="true"
+                        [resetFilterOnHide]="true"
+                        styleClass="w-full"
+                        appendTo="body"
+                    />
+                </div>
+
+                <div class="lm-field">
+                    <label for="tipo_unidad" class="lm-field-label">
+                        Tipo <span class="lm-required">*</span>
+                    </label>
+                    <p-select
+                        inputId="tipo_unidad"
+                        formControlName="tipo_unidad"
+                        [options]="tipos"
+                        optionLabel="label"
+                        optionValue="value"
+                        styleClass="w-full"
+                        appendTo="body"
+                    />
+                </div>
+
+                @if (sinBarrio()) {
+                    <div class="lm-field lg:col-span-3">
+                        <label for="direccion_propia" class="lm-field-label">
+                            Dirección propia <span class="lm-required">*</span>
+                        </label>
+                        <input
+                            id="direccion_propia"
+                            type="text"
+                            pInputText
+                            formControlName="direccion_propia"
+                            class="w-full"
+                        />
+                        @if (showError(form.controls.direccion_propia)) {
+                            <span class="lm-error">Requerida cuando la unidad no pertenece a un barrio.</span>
+                        } @else {
+                            <span class="lm-hint">Requerida cuando la unidad no pertenece a un barrio.</span>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="lm-section">
+            <header class="lm-section-header">
+                <span class="lm-section-header-title">
+                    <i class="pi pi-expand" aria-hidden="true"></i>
+                    Características
+                </span>
+            </header>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lm-field">
+                    <label for="metros_cuadrados" class="lm-field-label">
+                        Superficie <span class="lm-required">*</span>
+                    </label>
+                    <p-inputNumber
+                        inputId="metros_cuadrados"
+                        formControlName="metros_cuadrados"
+                        [min]="0"
+                        suffix=" m²"
+                        styleClass="w-full"
+                        [inputStyle]="{ width: '100%' }"
+                    />
+                    @if (showError(form.controls.metros_cuadrados)) {
+                        <span class="lm-error">Superficie requerida.</span>
+                    }
+                </div>
+
+                @if (esConstruccion()) {
+                    <div class="lm-field">
+                        <label for="metros_construidos" class="lm-field-label">m² construidos</label>
+                        <p-inputNumber
+                            inputId="metros_construidos"
+                            formControlName="metros_construidos"
+                            [min]="0"
+                            suffix=" m²"
+                            styleClass="w-full"
+                            [inputStyle]="{ width: '100%' }"
+                        />
+                    </div>
+                    <div class="lm-field">
+                        <label for="ambientes" class="lm-field-label">Ambientes</label>
+                        <p-inputNumber
+                            inputId="ambientes"
+                            formControlName="ambientes"
+                            [min]="0"
+                            [showButtons]="true"
+                            styleClass="w-full"
+                            [inputStyle]="{ width: '100%' }"
+                        />
+                    </div>
+                    <div class="lm-field">
+                        <label for="antiguedad_anios" class="lm-field-label">Antigüedad</label>
+                        <p-inputNumber
+                            inputId="antiguedad_anios"
+                            formControlName="antiguedad_anios"
+                            [min]="0"
+                            suffix=" años"
+                            styleClass="w-full"
+                            [inputStyle]="{ width: '100%' }"
+                        />
+                    </div>
+                    <div class="lm-field" [class.lg:col-span-3]="!esConstruccion()">
+                        <label for="cocheras" class="lm-field-label">Cocheras</label>
+                        <p-inputNumber
+                            inputId="cocheras"
+                            formControlName="cocheras"
+                            [min]="0"
+                            [showButtons]="true"
+                            styleClass="w-full"
+                            [inputStyle]="{ width: '100%' }"
+                        />
+                    </div>
+                }
+
+            </div>
+        </section>
+
+        <section class="lm-section">
+            <header class="lm-section-header">
+                <span class="lm-section-header-title">
+                    <i class="pi pi-dollar" aria-hidden="true"></i>
+                    Información comercial
+                </span>
+            </header>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lm-field">
+                    <label for="moneda" class="lm-field-label">
+                        Moneda <span class="lm-required">*</span>
+                    </label>
+                    <p-select
+                        inputId="moneda"
+                        formControlName="moneda"
+                        [options]="monedas"
+                        optionLabel="label"
+                        optionValue="value"
+                        styleClass="w-full"
+                        appendTo="body"
+                    />
+                </div>
+                <div class="lm-field">
+                    <label for="precio" class="lm-field-label">
+                        Precio <span class="lm-required">*</span>
+                    </label>
+                    <p-inputNumber
+                        inputId="precio"
+                        formControlName="precio"
+                        mode="currency"
+                        [currency]="form.controls.moneda.value"
+                        locale="en-US"
+                        [min]="0"
+                        styleClass="w-full"
+                        [inputStyle]="{ width: '100%' }"
+                    />
+                    @if (showError(form.controls.precio)) {
+                        <span class="lm-error">Precio requerido.</span>
+                    }
+                </div>
+                <div class="lm-field">
+                    <label for="estado" class="lm-field-label">
+                        Estado <span class="lm-required">*</span>
+                    </label>
+                    <p-select
+                        inputId="estado"
+                        formControlName="estado"
+                        [options]="estadosOptions()"
+                        optionLabel="nombre"
+                        optionValue="code"
+                        styleClass="w-full"
+                        appendTo="body"
+                    >
+                        <ng-template let-estado pTemplate="item">
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="lm-estado-dot"
+                                    [style.background-color]="estado.color || '#64748b'"
+                                ></span>
+                                <span>{{ estado.nombre }}</span>
+                            </div>
+                        </ng-template>
+                        <ng-template let-estado pTemplate="selectedItem">
+                            @if (estado) {
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="lm-estado-dot"
+                                        [style.background-color]="estado.color || '#64748b'"
+                                    ></span>
+                                    <span>{{ estado.nombre }}</span>
+                                </div>
+                            }
+                        </ng-template>
+                    </p-select>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 mt-4">
+                <div class="lm-toggle-row">
+                    <div class="lm-toggle-copy">
+                        <span class="lm-toggle-label">En oferta</span>
+                        <span class="lm-toggle-desc">Mostrar precio promocional en listados</span>
+                    </div>
+                    <p-toggleSwitch formControlName="oferta" />
+                </div>
+                @if (form.controls.oferta.value) {
+                    <div class="lm-field max-w-sm">
+                        <label for="precio_oferta" class="lm-field-label">Precio de oferta</label>
+                        <p-inputNumber
+                            inputId="precio_oferta"
+                            formControlName="precio_oferta"
+                            mode="currency"
+                            [currency]="form.controls.moneda.value"
+                            locale="en-US"
+                            [min]="0"
+                            styleClass="w-full"
+                            [inputStyle]="{ width: '100%' }"
+                        />
+                    </div>
+                }
+                <div class="lm-toggle-row">
+                    <div class="lm-toggle-copy">
+                        <span class="lm-toggle-label">Destacado</span>
+                        <span class="lm-toggle-desc">Priorizar en comparativas y listados</span>
+                    </div>
+                    <p-toggleSwitch formControlName="destacado" />
+                </div>
+            </div>
+        </section>
+
+        <section class="lm-section">
+            <header class="lm-section-header">
+                <span class="lm-section-header-title">
+                    <i class="pi pi-user" aria-hidden="true"></i>
+                    Responsable
+                </span>
+            </header>
+            <div class="lm-field max-w-md">
+                <label for="responsable" class="lm-field-label">
+                    Vendedor <span class="lm-required">*</span>
+                </label>
+                <p-autocomplete
+                    inputId="responsable"
+                    [(ngModel)]="responsableDisplay"
+                    [ngModelOptions]="{ standalone: true }"
+                    [suggestions]="responsablesSugeridos()"
+                    (completeMethod)="buscarResponsables($event)"
+                    (onSelect)="onResponsableSelect($event.value)"
+                    (onClear)="onResponsableClear()"
+                    optionLabel="name"
+                    [dropdown]="true"
+                    [showClear]="true"
+                    [forceSelection]="true"
+                    placeholder="Buscar por nombre o email"
+                    styleClass="w-full"
+                    appendTo="body"
+                >
+                    <ng-template let-user pTemplate="item">
+                        <div class="flex flex-col py-1">
+                            <span class="font-medium">{{ user.name }}</span>
+                            <small class="text-muted-color">{{ user.email }}</small>
+                        </div>
+                    </ng-template>
+                </p-autocomplete>
+                @if (showError(form.controls.responsable_id)) {
+                    <span class="lm-error">Seleccioná un vendedor responsable.</span>
+                }
+            </div>
+        </section>
+
+        <section class="lm-section">
+            <header class="lm-section-header">
+                <span class="lm-section-header-title">
+                    <i class="pi pi-align-left" aria-hidden="true"></i>
+                    Descripción
+                </span>
+            </header>
+            <div class="lm-field">
+                <textarea
+                    pTextarea
+                    id="descripcion"
+                    formControlName="descripcion"
+                    rows="4"
+                    [autoResize]="true"
+                    class="w-full"
+                ></textarea>
+            </div>
+        </section>
+
+        <section class="lm-section">
+            <header class="lm-section-header">
+                <span class="lm-section-header-title">
+                    <i class="pi pi-images" aria-hidden="true"></i>
+                    Imágenes
+                </span>
+            </header>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="lm-field">
+                    <label class="lm-field-label">Galería</label>
+                    <p-fileUpload
+                        mode="advanced"
+                        [multiple]="true"
+                        accept="image/*"
+                        [maxFileSize]="5000000"
+                        [fileLimit]="10"
+                        [showUploadButton]="false"
+                        [showCancelButton]="false"
+                        chooseLabel="Seleccionar imágenes"
+                        (onSelect)="onGaleriaSelect($event)"
+                        (onClear)="onGaleriaClear()"
+                    />
+                    <span class="lm-hint">Hasta 10 imágenes, 5 MB c/u.</span>
+                </div>
+                <div class="lm-field">
+                    <label class="lm-field-label">Plano</label>
+                    <p-fileUpload
+                        mode="advanced"
+                        [multiple]="false"
+                        accept="image/*,application/pdf"
+                        [maxFileSize]="10000000"
+                        [showUploadButton]="false"
+                        [showCancelButton]="false"
+                        chooseLabel="Seleccionar plano"
+                        (onSelect)="onPlanoSelect($event)"
+                        (onClear)="onPlanoClear()"
+                    />
+                    <span class="lm-hint">Imagen o PDF, máx. 10 MB.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="lm-section lm-extras-container">
+            <header class="lm-section-header lm-section-header--sticky">
+                <span class="lm-section-header-title">
+                    <i class="pi pi-tags" aria-hidden="true"></i>
+                    Información adicional
+                </span>
+                <input
+                    type="search"
+                    pInputText
+                    class="lm-extras-search w-full"
+                    placeholder="Buscar..."
+                    [ngModel]="extrasFilter()"
+                    (ngModelChange)="extrasFilter.set($event)"
+                    [ngModelOptions]="{ standalone: true }"
+                />
+            </header>
+            <lib-extras-editor
+                [(extras)]="extras"
+                [entidad]="'unidades'"
+                [filterQuery]="extrasFilter()"
+            />
+        </section>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <div class="lm-dialog-footer">
+            @if (form.invalid && form.touched) {
+                <span class="lm-footer-hint">
+                    <i class="pi pi-exclamation-triangle mr-1"></i>
+                    Revisá los campos marcados
+                </span>
+            }
+            <div class="lm-footer-actions">
+                <button
+                    pButton
+                    type="button"
+                    label="Cancelar"
+                    icon="pi pi-times"
+                    class="p-button-text"
+                    [disabled]="saving()"
+                    (click)="onCancel()"
+                ></button>
+                <button
+                    pButton
+                    type="button"
+                    label="Guardar"
+                    icon="pi pi-check"
+                    [loading]="saving()"
+                    [disabled]="saving()"
+                    (click)="onSubmit()"
+                ></button>
+            </div>
+        </div>
+    </ng-template>
+</p-dialog>
