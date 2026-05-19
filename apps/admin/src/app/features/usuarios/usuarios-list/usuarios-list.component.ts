@@ -1,22 +1,16 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UsersService, PermisosService, POCKETBASE } from '@loteomanager/shared-pb-client';
 import { UsersResponse } from '@loteomanager/shared-types';
-
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
-
 import { UsuarioFormComponent } from '../usuario-form/usuario-form.component';
 import { UsuarioAsignacionesComponent } from '../usuario-asignaciones/usuario-asignaciones.component';
 
@@ -28,23 +22,19 @@ import { UsuarioAsignacionesComponent } from '../usuario-asignaciones/usuario-as
     FormsModule,
     TableModule,
     ButtonModule,
-    DialogModule,
     ToastModule,
     TagModule,
     InputTextModule,
     ConfirmDialogModule,
-    IconFieldModule,
-    InputIconModule,
-    ProgressSpinnerModule,
     TooltipModule,
     UsuarioFormComponent,
-    UsuarioAsignacionesComponent,
+    UsuarioAsignacionesComponent
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './usuarios-list.component.html',
-  styleUrls: ['./usuarios-list.component.css'],
+  styleUrl: './usuarios-list.component.css'
 })
-export class UsuariosListComponent implements OnInit {
+export class UsuariosListComponent {
   private usersService = inject(UsersService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
@@ -52,28 +42,32 @@ export class UsuariosListComponent implements OnInit {
 
   readonly permisosService = inject(PermisosService);
 
-  usuarios = signal<UsersResponse[]>([]);
-  loading = signal(false);
+  usuarios = this.usersService.list(undefined, { sort: '-created' });
+
+  filterNombre = signal('');
+  filterEmail = signal('');
+
+  usuariosFiltrados = computed(() => {
+    let rows = this.usuarios();
+    const nombre = this.filterNombre().trim().toLowerCase();
+    const email = this.filterEmail().trim().toLowerCase();
+    if (nombre) rows = rows.filter((u) => (u.name || '').toLowerCase().includes(nombre));
+    if (email) rows = rows.filter((u) => u.email.toLowerCase().includes(email));
+    return rows;
+  });
+
+  hasActiveFilters = computed(
+    () => !!this.filterNombre().trim() || !!this.filterEmail().trim()
+  );
+
   showFormDialog = signal(false);
   showAsignacionesDialog = signal(false);
   editingUser = signal<UsersResponse | null>(null);
   asignandoUser = signal<UsersResponse | null>(null);
 
-  ngOnInit(): void {
-    void this.loadUsuarios();
-  }
-
-  async loadUsuarios(): Promise<void> {
-    this.loading.set(true);
-    try {
-      const list = await this.usersService.listAsync();
-      this.usuarios.set(list);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al cargar usuarios.';
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
-    } finally {
-      this.loading.set(false);
-    }
+  clearFilters(): void {
+    this.filterNombre.set('');
+    this.filterEmail.set('');
   }
 
   openNew(): void {
@@ -91,6 +85,10 @@ export class UsuariosListComponent implements OnInit {
     this.showAsignacionesDialog.set(true);
   }
 
+  onUsuariosSaved(): void {
+    this.usuarios.reload();
+  }
+
   toggleActivo(u: UsersResponse): void {
     if (u.activo) {
       this.confirmationService.confirm({
@@ -99,7 +97,7 @@ export class UsuariosListComponent implements OnInit {
         icon: 'pi pi-exclamation-triangle',
         acceptLabel: 'Sí, desactivar',
         rejectLabel: 'Cancelar',
-        accept: () => void this.setActivo(u, false),
+        accept: () => void this.setActivo(u, false)
       });
     } else {
       void this.setActivo(u, true);
@@ -112,9 +110,9 @@ export class UsuariosListComponent implements OnInit {
       this.messageService.add({
         severity: 'success',
         summary: 'Éxito',
-        detail: `Usuario ${activo ? 'activado' : 'desactivado'} correctamente.`,
+        detail: `Usuario ${activo ? 'activado' : 'desactivado'} correctamente.`
       });
-      await this.loadUsuarios();
+      this.usuarios.reload();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al actualizar el usuario.';
       this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
@@ -128,7 +126,7 @@ export class UsuariosListComponent implements OnInit {
         severity: 'success',
         summary: 'Email enviado',
         detail: `Se envió el email de reseteo de contraseña a ${u.email}.`,
-        life: 5000,
+        life: 5000
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al enviar el email.';
@@ -136,7 +134,6 @@ export class UsuariosListComponent implements OnInit {
     }
   }
 
-  /** ultimo_acceso not yet in generated types */
   getUltimoAcceso(u: UsersResponse): string | null {
     return (u as UsersResponse & { ultimo_acceso?: string }).ultimo_acceso ?? null;
   }

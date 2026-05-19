@@ -4,26 +4,26 @@
   min-height: 0;
 }
 
-.comparativas-filters {
+.extras-admin-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: end;
 }
 
-.comparativas-filters__field {
+.extras-admin-filters__field {
   flex: 0 1 30%;
   max-width: 30%;
   min-width: 12rem;
 }
 
-.comparativas-filters__actions {
+.extras-admin-filters__actions {
   flex: 1 1 auto;
   display: flex;
   justify-content: flex-end;
   align-items: center;
 }
 
-.comparativas-filters ::ng-deep .p-inputtext {
+.extras-admin-filters ::ng-deep .p-inputtext {
   width: 100%;
 }

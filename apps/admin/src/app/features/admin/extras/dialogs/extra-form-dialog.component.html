@@ -1,0 +1,155 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [header]="editingId() ? 'Editar extra' : 'Nuevo extra'"
+  [style]="{ width: '90vw', maxWidth: '560px' }"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="false"
+  [closable]="!saving()"
+  [closeOnEscape]="!saving()"
+  appendTo="body"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="form" class="lm-dialog-body" (ngSubmit)="onSubmit()">
+      <section class="lm-section">
+        <header class="lm-section-header">
+          <span class="lm-section-header-title">
+            <i class="pi pi-sliders-h" aria-hidden="true"></i>
+            DEFINICIÓN
+          </span>
+        </header>
+        <div class="grid grid-cols-1 gap-4">
+          <div class="lm-field">
+            <label for="extra-entidad" class="lm-field-label">Entidad</label>
+            <p-select
+              inputId="extra-entidad"
+              formControlName="entidad"
+              [options]="entidadesOpts"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              appendTo="body"
+            />
+          </div>
+          <div class="lm-field">
+            <label for="extra-code" class="lm-field-label">
+              Code (snake_case) <span class="lm-required">*</span>
+            </label>
+            <input pInputText id="extra-code" formControlName="code" class="w-full" />
+            @if (showError(form.controls.code)) {
+              <span class="lm-error">Code requerido (snake_case).</span>
+            }
+          </div>
+          <div class="lm-field">
+            <label for="extra-nombre" class="lm-field-label">
+              Nombre visible <span class="lm-required">*</span>
+            </label>
+            <input pInputText id="extra-nombre" formControlName="nombre" class="w-full" />
+            @if (showError(form.controls.nombre)) {
+              <span class="lm-error">Nombre requerido.</span>
+            }
+          </div>
+          <div class="lm-field">
+            <label for="extra-descripcion" class="lm-field-label">Descripción</label>
+            <input pInputText id="extra-descripcion" formControlName="descripcion" class="w-full" />
+          </div>
+          <div class="lm-field">
+            <label for="extra-tipo" class="lm-field-label">Tipo</label>
+            <p-select
+              inputId="extra-tipo"
+              formControlName="tipo"
+              [options]="tiposOpts"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              appendTo="body"
+            />
+          </div>
+          @if (isOpciones()) {
+            <div class="lm-field">
+              <label for="extra-opciones" class="lm-field-label">Opciones (coma separadas)</label>
+              <input
+                pInputText
+                id="extra-opciones"
+                class="w-full"
+                [value]="opcionesTexto()"
+                (input)="opcionesTexto.set($any($event.target).value)"
+              />
+            </div>
+          }
+          <div class="lm-field">
+            <label for="extra-grupo" class="lm-field-label">Grupo (opcional)</label>
+            <input pInputText id="extra-grupo" formControlName="grupo" class="w-full" />
+          </div>
+        </div>
+      </section>
+
+      <section class="lm-section">
+        <header class="lm-section-header">
+          <span class="lm-section-header-title">
+            <i class="pi pi-eye" aria-hidden="true"></i>
+            VISIBILIDAD
+          </span>
+        </header>
+        <div class="flex flex-col gap-3">
+          <div class="lm-toggle-row">
+            <div class="lm-toggle-copy">
+              <span class="lm-toggle-label">Requerido</span>
+            </div>
+            <p-toggleSwitch formControlName="requerido" />
+          </div>
+          <div class="lm-toggle-row">
+            <div class="lm-toggle-copy">
+              <span class="lm-toggle-label">Visible en lista</span>
+            </div>
+            <p-toggleSwitch formControlName="visible_en_lista" />
+          </div>
+          <div class="lm-toggle-row">
+            <div class="lm-toggle-copy">
+              <span class="lm-toggle-label">Visible en comparativa</span>
+            </div>
+            <p-toggleSwitch formControlName="visible_en_comparativa" />
+          </div>
+          <div class="lm-toggle-row">
+            <div class="lm-toggle-copy">
+              <span class="lm-toggle-label">Activo</span>
+            </div>
+            <p-toggleSwitch formControlName="activo" />
+          </div>
+        </div>
+      </section>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <div class="lm-dialog-footer">
+      @if (form.invalid && form.touched) {
+        <span class="lm-footer-hint">Revisá los campos marcados.</span>
+      }
+      <div class="lm-footer-actions">
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Cancelar"
+          class="p-button-text"
+          [disabled]="saving()"
+          (click)="onCancel()"
+        ></button>
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Guardar"
+          icon="pi pi-check"
+          class="p-button-primary"
+          [loading]="saving()"
+          (click)="onSubmit()"
+        ></button>
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
+

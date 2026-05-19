@@ -1,0 +1,29 @@
+:host {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.usuarios-list-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.usuarios-list-filters__field {
+  flex: 0 1 30%;
+  max-width: 30%;
+  min-width: 12rem;
+}
+
+.usuarios-list-filters__actions {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.usuarios-list-filters ::ng-deep .p-inputtext {
+  width: 100%;
+}

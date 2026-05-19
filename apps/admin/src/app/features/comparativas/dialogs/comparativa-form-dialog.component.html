@@ -1,0 +1,105 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  header="Generar enlace comparativo"
+  [style]="{ width: '90vw', maxWidth: '560px' }"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="false"
+  [closable]="!saving()"
+  [closeOnEscape]="!saving()"
+  appendTo="body"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="form" class="lm-dialog-body" (ngSubmit)="onSubmit()">
+      <section class="lm-section">
+        <header class="lm-section-header">
+          <span class="lm-section-header-title">
+            <i class="pi pi-link" aria-hidden="true"></i>
+            COMPARATIVA
+          </span>
+        </header>
+        <div class="grid grid-cols-1 gap-4">
+          <div class="lm-field">
+            <label for="comp-interesado" class="lm-field-label">
+              Lead / interesado <span class="lm-required">*</span>
+            </label>
+            <p-select
+              inputId="comp-interesado"
+              formControlName="interesadoId"
+              [options]="interesados()"
+              optionLabel="nombre"
+              optionValue="id"
+              placeholder="Seleccionar interesado…"
+              styleClass="w-full"
+              appendTo="body"
+            />
+            @if (showError(form.controls.interesadoId)) {
+              <span class="lm-error">Seleccioná un interesado.</span>
+            }
+          </div>
+          <div class="lm-field">
+            <label for="comp-unidades" class="lm-field-label">
+              Unidades a comparar <span class="lm-required">*</span>
+            </label>
+            <p-multiSelect
+              inputId="comp-unidades"
+              formControlName="unidades_ids"
+              [options]="unidadesDisponibles()"
+              optionLabel="codigo_interno"
+              optionValue="id"
+              placeholder="Seleccionar unidades…"
+              display="chip"
+              styleClass="w-full"
+              appendTo="body"
+            />
+            <span class="lm-hint">Solo unidades con estado disponible.</span>
+            @if (showError(form.controls.unidades_ids)) {
+              <span class="lm-error">Seleccioná al menos una unidad.</span>
+            }
+          </div>
+          <div class="lm-field">
+            <label for="comp-mensaje" class="lm-field-label">Mensaje para el cliente</label>
+            <textarea
+              pTextarea
+              id="comp-mensaje"
+              formControlName="mensaje_personalizado"
+              rows="3"
+              class="w-full"
+            ></textarea>
+          </div>
+        </div>
+      </section>
+    </form>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <div class="lm-dialog-footer">
+      @if (form.invalid && form.touched) {
+        <span class="lm-footer-hint">Revisá los campos marcados.</span>
+      }
+      <div class="lm-footer-actions">
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Cancelar"
+          class="p-button-text"
+          [disabled]="saving()"
+          (click)="onCancel()"
+        ></button>
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Generar y obtener link"
+          icon="pi pi-link"
+          class="p-button-primary"
+          [loading]="saving()"
+          [disabled]="!canSubmit()"
+          (click)="onSubmit()"
+        ></button>
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>

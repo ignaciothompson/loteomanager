@@ -1,0 +1,36 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  header="Reemplazar estado antes de borrar"
+  [style]="{ width: '90vw', maxWidth: '440px' }"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+>
+  <ng-template pTemplate="content">
+    <p class="mb-3">
+      Hay registros usando este estado. Elegí el estado de reemplazo (misma entidad).
+    </p>
+    <p-select
+      [options]="options()"
+      [ngModel]="reemplazoId()"
+      (ngModelChange)="reemplazoId.set($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Estado reemplazo"
+      styleClass="w-full"
+      appendTo="body"
+    />
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cancelar" class="p-button-text" (click)="onCancel()"></button>
+    <button
+      pButton
+      type="button"
+      label="Reemplazar y borrar"
+      [disabled]="!reemplazoId()"
+      (click)="onConfirm()"
+    ></button>
+  </ng-template>
+</p-dialog>
