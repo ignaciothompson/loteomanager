@@ -1,4 +1,4 @@
-import { Component, ViewChild, inject, model, signal } from '@angular/core';
+import { Component, ViewChild, computed, inject, model, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BarriosService } from '@loteomanager/shared-pb-client';
 import {
@@ -11,6 +11,7 @@ import {
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
+import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import {
   BarrioFormDialogComponent,
@@ -25,6 +26,7 @@ import {
     TableModule,
     ButtonModule,
     ToastModule,
+    InputTextModule,
     BarrioFormDialogComponent
   ],
   providers: [MessageService],
@@ -40,12 +42,26 @@ export class BarriosComponent {
 
   barrios = this.barriosService.list();
 
+  filtroNombre = signal('');
+
+  readonly barriosFiltrados = computed(() => {
+    const q = this.filtroNombre().trim().toLowerCase();
+    if (!q) return this.barrios();
+    return this.barrios().filter(b => b.nombre.toLowerCase().includes(q));
+  });
+
+  readonly hasActiveFilters = computed(() => this.filtroNombre().trim().length > 0);
+
   displayDialog = signal(false);
   isEdit = signal(false);
   currentBarrio: Partial<BarriosRecord> = {};
   currentId = '';
 
   extrasModel = model<ExtraPersistido[]>([]);
+
+  clearFilters(): void {
+    this.filtroNombre.set('');
+  }
 
   openNew(): void {
     this.currentBarrio = {};
