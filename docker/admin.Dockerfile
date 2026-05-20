@@ -3,27 +3,23 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copiar manifiestos y limpiar cachés
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copiar el código fuente completo del monorepo
 COPY . .
-
-# Build de la aplicación admin (Sakai-NG, CSR)
 RUN npx nx build admin --configuration=production
 
 # Stage 2: Serve con NGINX
 FROM nginx:alpine
 
-# Copiar archivo de configuración personalizado de nginx para SPA (Single Page Application)
-# Nota: Puedes montar el nginx.conf o agregarlo luego si lo requieres.
-# COPY ./docker/nginx.conf /etc/nginx/conf.d/default.conf
+RUN apk add --no-cache wget
 
-# Copiar el build al directorio de NGINX
+COPY ./docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist/apps/admin/browser /usr/share/nginx/html
 
-# Exponer el puerto (por defecto 80 en nginx)
 EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --quiet --spider http://localhost/healthz || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

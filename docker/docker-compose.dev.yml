@@ -1,0 +1,7 @@
+# Override local: expone PocketBase en localhost para dev / migraciones / pb:types
+# Uso: docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d pocketbase
+
+services:
+  pocketbase:
+    ports:
+      - "127.0.0.1:8080:8080"
