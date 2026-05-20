@@ -43,5 +43,17 @@ Thumbs.db
 
 # PocketBase data
 pb_data/
+docker/pb_data/
+
+# Output residual de comandos exploratorios
+tree.txt
+*.tree
+
+# Carpetas temporales del scaffolding
+sakai-temp/
+
+# Backups locales
+*.backup
+*.backup-before-*
 
 /code-sessions/
