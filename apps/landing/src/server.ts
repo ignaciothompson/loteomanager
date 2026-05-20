@@ -19,6 +19,10 @@ const browserDistFolder = resolve(serverDistFolder, '../browser');
 const app = express();
 app.use(express.json());
 
+app.get('/healthz', (_req, res) => {
+  res.status(200).send('ok');
+});
+
 // ── /api/config-publica ──────────────────────────────────────────────────────
 app.get('/api/config-publica', async (_req, res) => {
   // Config table doesn't have logo/nombre_inmobiliaria yet — return fallback
@@ -32,7 +36,7 @@ app.get('/api/config-publica', async (_req, res) => {
 // ── /api/comparativas/:token ─────────────────────────────────────────────────
 app.get('/api/comparativas/:token', async (req, res) => {
   const { token } = req.params;
-  const pb = getPocketBaseClient();
+  const pb = await getPocketBaseClient();
   const pbUrl = process.env['PB_INTERNAL_URL'] ?? process.env['POCKETBASE_URL'] ?? 'http://localhost:8080';
 
   try {
@@ -97,7 +101,7 @@ app.post('/api/leads/from-comparativa', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
 
-  const pb = getPocketBaseClient();
+  const pb = await getPocketBaseClient();
 
   try {
     const comp = await pb.collection('comparativas').getOne(comparativa_id) as ComparativasResponse;
@@ -127,7 +131,7 @@ app.post('/api/leads/from-comparativa', async (req, res) => {
 // ── /api/comparativas/:token/pdf ─────────────────────────────────────────────
 app.get('/api/comparativas/:token/pdf', async (req, res) => {
   const { token } = req.params;
-  const pb = getPocketBaseClient();
+  const pb = await getPocketBaseClient();
 
   try {
     const comp = await pb.collection('comparativas').getFirstListItem(
@@ -241,7 +245,7 @@ app.use('/**', async (req, res, next) => {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 async function buildLiveSnapshot(
   comp: ComparativasResponse,
-  pb: ReturnType<typeof getPocketBaseClient>,
+  pb: Awaited<ReturnType<typeof getPocketBaseClient>>,
   pbUrl: string,
 ) {
   if (!comp.unidades_ids?.length) {
@@ -264,7 +268,7 @@ async function buildLiveSnapshot(
 }
 
 async function trackView(token: string, ip: string | undefined, userAgent: string | undefined) {
-  const pb = getPocketBaseClient();
+  const pb = await getPocketBaseClient();
   try {
     const comp = await pb.collection('comparativas').getFirstListItem(`token_publico = "${token}"`);
     await Promise.all([
