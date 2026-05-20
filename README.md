@@ -245,13 +245,13 @@ Editar `.env` con los valores correspondientes (ver [Variables de entorno](#vari
 
 ### 3. Levantar PocketBase
 
-**Opción A — Docker (recomendado):**
+**Opción A — Docker (solo PocketBase en local):**
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d pocketbase
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d pocketbase
 ```
 
-PocketBase queda accesible en `http://localhost:8080`. La UI de administración está en `http://localhost:8080/_/`.
+PocketBase queda en `http://localhost:8080` (UI: `http://localhost:8080/_/`). El compose base sin `docker-compose.dev.yml` es el de producción (sin puertos expuestos).
 
 **Opción B — Binario nativo:**
 
@@ -335,7 +335,9 @@ Ver `.env.example` para la lista completa. Las variables críticas son:
 
 | Variable | Descripción |
 |---|---|
-| `CF_TUNNEL_TOKEN` | Token del Cloudflare Tunnel |
+| `CLOUDFLARE_TUNNEL_TOKEN` | Token del Cloudflare Tunnel |
+| `PB_ENCRYPTION_KEY` | Clave de encriptación de PocketBase (`openssl rand -base64 32`) |
+| `PB_VERSION` | Versión del binario PocketBase en Docker (ej: `0.23.0`) |
 | `B2_KEY_ID` | Application Key ID de Backblaze |
 | `B2_APP_KEY` | Application Key secreta |
 | `B2_BUCKET` | Nombre del bucket de backups |
