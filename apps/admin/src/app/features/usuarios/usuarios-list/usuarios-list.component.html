@@ -162,7 +162,7 @@
   [visible]="showFormDialog()"
   (visibleChange)="showFormDialog.set($event)"
   [user]="editingUser()"
-  (saved)="loadUsuarios()"
+  (saved)="onUsuariosSaved()"
   (userCreatedWithPassword)="onUserCreated($event)"
 />
 

@@ -4,16 +4,14 @@ import type { TypedPocketBase } from '@loteomanager/shared-types';
 let _pb: TypedPocketBase | null = null;
 
 /**
- * Returns a singleton PocketBase client for server-side use.
- *
- * Authentication priority:
- * 1. PB_SERVICE_TOKEN env var (if set — use for superuser-level operations)
- * 2. No auth (works because public collections have open view/create rules)
- *
+ * Singleton PocketBase client for server-side use.
+ * Authenticates with PB_SERVICE_USER/PB_SERVICE_PASSWORD on startup (session auto-refreshed by SDK).
  * ONLY use server-side — never import from browser code.
  */
-export function getPocketBaseClient(): TypedPocketBase {
-  if (_pb) return _pb;
+export async function getPocketBaseClient(): Promise<TypedPocketBase> {
+  if (_pb?.authStore.isValid) {
+    return _pb;
+  }
 
   const url =
     process.env['PB_INTERNAL_URL'] ??
@@ -22,11 +20,12 @@ export function getPocketBaseClient(): TypedPocketBase {
 
   _pb = new PocketBase(url) as TypedPocketBase;
 
-  const token = process.env['PB_SERVICE_TOKEN'];
-  if (token) {
-    _pb.authStore.save(token, null);
+  const user = process.env['PB_SERVICE_USER'];
+  const password = process.env['PB_SERVICE_PASSWORD'];
+  if (user && password) {
+    await _pb.collection('users').authWithPassword(user, password);
+    return _pb;
   }
-  // No token? Public collection rules handle access.
 
   return _pb;
 }
