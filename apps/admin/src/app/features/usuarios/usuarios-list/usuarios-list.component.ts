@@ -92,7 +92,7 @@ export class UsuariosListComponent {
   onPasswordConfirmed(): void {
     this.showPasswordDialog.set(false);
     this.passwordDialogInfo.set(null);
-    void this.loadUsuarios();
+    this.usuarios.reload();
   }
 
   asignarUser(u: UsersResponse): void {
