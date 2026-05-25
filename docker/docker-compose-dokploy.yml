@@ -7,7 +7,9 @@
 #   - Variables se cargan desde la pestaña Environment del servicio en Dokploy
 #   - cloudflared corre como contenedor aparte (fuera de este compose)
 #
-# Puertos host: 6102 Admin, 6103 Landing. PocketBase solo en red interna.
+# Puertos host: 6101 PocketBase, 6102 Admin, 6103 Landing.
+# Acceso al admin de PocketBase vía Cloudflare Tunnel apuntando al puerto 6101
+# (o al servicio interno http://pocketbase:8080 si cloudflared corre en loteo_network).
 
 services:
   pocketbase:
@@ -18,8 +20,8 @@ services:
         PB_VERSION: ${PB_VERSION:-0.23.0}
     container_name: loteo_pocketbase
     restart: unless-stopped
-    expose:
-      - "8080"
+    ports:
+      - "6101:8080"
     volumes:
       - pb_data:/pb_data
       - ../pb_migrations:/pb_migrations:ro
