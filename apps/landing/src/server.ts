@@ -37,7 +37,14 @@ app.get('/api/config-publica', async (_req, res) => {
 app.get('/api/comparativas/:token', async (req, res) => {
   const { token } = req.params;
   const pb = await getPocketBaseClient();
-  const pbUrl = process.env['PB_INTERNAL_URL'] ?? process.env['POCKETBASE_URL'] ?? 'http://localhost:8080';
+  // URL pública del PB para que las URLs de archivos del snapshot las pueda
+  // resolver el browser. Si no está seteada, fallback a la interna (asume
+  // que el deploy expone PB en la misma red que el browser, p.ej. dev).
+  const pbUrl =
+    process.env['POCKETBASE_PUBLIC_URL'] ??
+    process.env['PB_INTERNAL_URL'] ??
+    process.env['POCKETBASE_URL'] ??
+    'http://localhost:8080';
 
   try {
     const comp = await pb.collection('comparativas').getFirstListItem(
@@ -144,7 +151,12 @@ app.get('/api/comparativas/:token/pdf', async (req, res) => {
 
     // Use cached PDF if available and comparativa hasn't been updated since
     if (comp.pdf_generado) {
-      const pbUrl = process.env['PB_INTERNAL_URL'] ?? process.env['POCKETBASE_URL'] ?? 'http://localhost:8080';
+      // Fetch server-side, así que usamos la URL interna preferentemente.
+      const pbUrl =
+        process.env['PB_INTERNAL_URL'] ??
+        process.env['POCKETBASE_PUBLIC_URL'] ??
+        process.env['POCKETBASE_URL'] ??
+        'http://localhost:8080';
       const pdfUrl = `${pbUrl}/api/files/comparativas/${comp.id}/${comp.pdf_generado}`;
       const cached = await fetch(pdfUrl);
       if (cached.ok) {

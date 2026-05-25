@@ -12,9 +12,12 @@ RUN wget https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSIO
 COPY ./pb_hooks /pb_hooks
 COPY ./pb_migrations /pb_migrations
 
+COPY ./docker/pocketbase-entrypoint.sh /pocketbase-entrypoint.sh
+RUN chmod +x /pocketbase-entrypoint.sh
+
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget --quiet --spider http://localhost:8080/api/health || exit 1
 
-CMD ["/pocketbase", "serve", "--http=0.0.0.0:8080", "--dir=/pb_data"]
+ENTRYPOINT ["/pocketbase-entrypoint.sh"]

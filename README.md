@@ -263,13 +263,17 @@ Descargar el binario de PocketBase desde https://github.com/pocketbase/pocketbas
 
 ### 4. Aplicar migraciones y crear superuser
 
-Al primer arranque, PocketBase aplicará automáticamente las migraciones de `pb_migrations/`. Crear un superuser:
+Al primer arranque, PocketBase aplicará automáticamente las migraciones de `pb_migrations/`.
+
+**Con Docker (recomendado):** si seteaste `PB_SUPERUSER_EMAIL` y `PB_SUPERUSER_PASSWORD` en `.env`, el entrypoint del contenedor crea/actualiza el superuser automáticamente (`upsert`) en cada arranque. La password debe tener mínimo 10 caracteres. Más detalle en `docs/runbook-deploy.md`, sección 5.
+
+Si preferís crearlo a mano (o si las vars no están seteadas):
 
 ```bash
-# Si usás Docker:
-docker compose exec pocketbase ./pocketbase superuser create admin@local admin12345
+# Con Docker:
+docker compose exec pocketbase /pocketbase superuser create admin@local admin12345
 
-# Si usás binario:
+# Con binario:
 ./pocketbase superuser create admin@local admin12345
 ```
 
@@ -312,9 +316,10 @@ Ver `.env.example` para la lista completa. Las variables críticas son:
 
 | Variable | Descripción |
 |---|---|
-| `PB_INTERNAL_URL` | URL interna donde corre PocketBase (ej: `http://localhost:8080`) |
-| `PB_ADMIN_EMAIL` | Email del superuser de PocketBase |
-| `PB_ADMIN_PASSWORD` | Password del superuser |
+| `PB_INTERNAL_URL` | URL interna donde corre PocketBase (ej: `http://pocketbase:8080`). Usada por el SSR de la landing dentro de la red Docker. |
+| `POCKETBASE_PUBLIC_URL` | URL pública del PB desde el browser. El admin-web la inyecta en `env.js` al arrancar; la landing la usa para las URLs de archivos en el snapshot. Cambiarla y redeployar — no requiere rebuild. |
+| `PB_SUPERUSER_EMAIL` | Email del superuser de PocketBase (creado/actualizado vía bootstrap del entrypoint) |
+| `PB_SUPERUSER_PASSWORD` | Password del superuser (mín. 10 caracteres; rotable cambiando el valor y redeployando) |
 
 ### SSR de la landing
 

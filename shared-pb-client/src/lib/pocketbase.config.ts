@@ -1,17 +1,23 @@
-import { InjectionToken } from '@angular/core';
+import { inject, InjectionToken } from '@angular/core';
 import PocketBase from 'pocketbase';
 
-export const POCKETBASE_URL = new InjectionToken<string>('POCKETBASE_URL');
+/**
+ * URL del backend PocketBase (origen sin trailing slash).
+ *
+ * El consumidor (app shell) debe proveerla en bootstrap. En el admin se
+ * resuelve a partir de `window.__env.POCKETBASE_URL` (inyectado por
+ * `public/env.js`, generado por el entrypoint del contenedor a partir de la
+ * env var `POCKETBASE_URL`). Esto permite usar la misma imagen en dev y en
+ * cualquier deploy sin rebuild.
+ *
+ * Si no se provee, el fallback es `http://localhost:8080` (dev local).
+ */
+export const POCKETBASE_URL = new InjectionToken<string>('POCKETBASE_URL', {
+  providedIn: 'root',
+  factory: () => 'http://localhost:8080',
+});
 
 export const POCKETBASE = new InjectionToken<PocketBase>('POCKETBASE', {
   providedIn: 'root',
-  factory: () => {
-    // Note: since this is a library, the actual URL should be provided by the app
-    // via POCKETBASE_URL provider. We'll default to localhost if not provided,
-    // but in a real scenario, the app modules would provide it.
-    const url = 'http://localhost:8080';
-    
-    return new PocketBase(url);
-  },
+  factory: () => new PocketBase(inject(POCKETBASE_URL)),
 });
-

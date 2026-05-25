@@ -30,6 +30,9 @@ En la sección de Environment Variables de la aplicación, agregar todas las var
 |---|---|
 | `PB_VERSION` | Última versión estable, ej: `0.23.0` |
 | `PB_ENCRYPTION_KEY` | `openssl rand -base64 32` |
+| `PB_SUPERUSER_EMAIL` | Email del superuser de PocketBase (se crea/actualiza al arrancar) |
+| `PB_SUPERUSER_PASSWORD` | Password del superuser (mín. 10 caracteres). Rotable: cambiar el valor y redeployar. |
+| `POCKETBASE_PUBLIC_URL` | URL pública del PB desde el browser, ej: `https://pb.tu-dominio.com` o `http://<host>:6101`. Se inyecta en `env.js` del admin y se usa para URLs de archivos en la landing. |
 | `PB_SERVICE_USER` | Email del user de servicio (después se crea en PocketBase) |
 | `PB_SERVICE_PASSWORD` | `openssl rand -base64 24` |
 | `PUBLIC_BASE_URL` | URL de la landing pública (ej: `https://www.example.com`) |
@@ -54,29 +57,60 @@ En el dashboard del Tunnel (Cloudflare Zero Trust → Networks → Tunnels):
 
 **Nota:** los hostnames apuntan a los nombres internos de los contenedores en la red `loteo_network`. PocketBase NO se expone públicamente.
 
+#### 3.b. Hostname público para PocketBase (necesario para el admin SPA)
+
+El admin SPA corre en el browser del usuario y necesita una URL pública para llegar a PocketBase. Hay dos opciones:
+
+**Opción A (recomendada): Cloudflare Tunnel + Access**
+
+Agregar un Public Hostname al Tunnel:
+
+| Subdomain | Domain | Service |
+|---|---|---|
+| `pb` | `tu-dominio.com` | `http://pocketbase:8080` |
+
+Proteger con Cloudflare Access (email OTP, lista blanca de emails o SSO). Setear `POCKETBASE_PUBLIC_URL=https://pb.tu-dominio.com` en Environment.
+
+**Opción B: puerto host expuesto (`docker-compose-dokploy.yml` ya mapea `6101:8080`)**
+
+Setear `POCKETBASE_PUBLIC_URL=http://<host>:6101`. **No recomendado** sin firewall delante: el endpoint queda abierto a internet.
+
+> El admin-web genera `env.js` al arrancar a partir de `POCKETBASE_URL` (que en el compose se setea desde `POCKETBASE_PUBLIC_URL`). Si querés cambiar la URL pública, basta con redeployar el admin-web — no hace falta rebuildear la imagen.
+
 ### 4. Desplegar
 
 1. En Dokploy, click en **Deploy**.
 2. Monitorear los logs de build de cada contenedor.
 3. Esperar a que los 4 servicios queden en estado `healthy`.
 
-### 5. Configuración inicial de PocketBase
+### 5. Bootstrap automático del superuser de PocketBase
 
-Una vez desplegado, PocketBase necesita un superuser inicial. Hay dos formas:
+Desde la versión actual, **el superuser se crea/actualiza automáticamente** al arrancar el contenedor a partir de las variables `PB_SUPERUSER_EMAIL` y `PB_SUPERUSER_PASSWORD` definidas en el paso anterior.
 
-**Opción A — Vía exec en Dokploy:**
+El entrypoint del contenedor (`docker/pocketbase-entrypoint.sh`):
 
-```bash
-docker exec -it loteo_pocketbase /pocketbase superuser create admin@example.com una_password_fuerte
+1. Levanta PocketBase y espera a que `/api/health` responda 200 (máx. 30s).
+2. Ejecuta `pocketbase superuser upsert "$PB_SUPERUSER_EMAIL" "$PB_SUPERUSER_PASSWORD"`. `upsert` es **idempotente**: crea el superuser si no existe y actualiza la password si ya existe, así que **no rompe en redeploys**.
+3. Si alguna de las dos vars no está seteada, loguea un warning (`PB_SUPERUSER_EMAIL/PASSWORD no definidas, skip bootstrap`) y continúa sin fallar.
+4. Si la password tiene menos de 10 caracteres, **falla el arranque** con un mensaje claro.
+
+**Verificación:** en los logs de Dokploy del servicio `pocketbase` debería aparecer:
+
+```
+[entrypoint] PocketBase healthy after Ns.
+[entrypoint] Bootstrapping superuser admin@example.com (upsert)...
+[entrypoint] Superuser upsert OK.
 ```
 
-**Opción B — Vía Dokploy terminal:**
+**Rotar la password:** cambiar el valor de `PB_SUPERUSER_PASSWORD` en Environment y hacer redeploy. El upsert va a actualizar la password en el próximo arranque.
 
-Entrar al contenedor `loteo_pocketbase` desde la UI de Dokploy y ejecutar:
+> **Seguridad:** la password del superuser queda en el entorno del contenedor. En producción, considerar guardarla en un gestor de secretos (Dokploy soporta secrets cifrados en disco, o usar HashiCorp Vault / Doppler / Bitwarden Secrets Manager si el setup lo requiere). **Nunca commitear el `.env` con valores reales.**
 
-```bash
-/pocketbase superuser create admin@example.com una_password_fuerte
-```
+> **Compatibilidad con el flujo viejo:** si por alguna razón las vars no están seteadas (entornos legacy o de prueba), el contenedor arranca igual y se puede crear el superuser manualmente:
+>
+> ```bash
+> docker exec -it loteo_pocketbase /pocketbase superuser create admin@example.com una_password_fuerte
+> ```
 
 ### 6. Acceder al admin de PocketBase
 

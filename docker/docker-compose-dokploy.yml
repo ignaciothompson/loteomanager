@@ -30,6 +30,8 @@ services:
       - loteo_network
     environment:
       - PB_ENCRYPTION_KEY=${PB_ENCRYPTION_KEY}
+      - PB_SUPERUSER_EMAIL=${PB_SUPERUSER_EMAIL}
+      - PB_SUPERUSER_PASSWORD=${PB_SUPERUSER_PASSWORD}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/api/health"]
       interval: 30s
@@ -50,6 +52,8 @@ services:
     depends_on:
       pocketbase:
         condition: service_healthy
+    environment:
+      - POCKETBASE_URL=${POCKETBASE_PUBLIC_URL}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/healthz"]
       interval: 30s
@@ -74,6 +78,7 @@ services:
       - PORT=4000
       - NODE_ENV=production
       - PB_INTERNAL_URL=http://pocketbase:8080
+      - POCKETBASE_PUBLIC_URL=${POCKETBASE_PUBLIC_URL}
       - PB_SERVICE_USER=${PB_SERVICE_USER}
       - PB_SERVICE_PASSWORD=${PB_SERVICE_PASSWORD}
       - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
