@@ -1,1 +1,14 @@
-/* Login styles */
+.lm-login-page{background:var(--surface-ground);color:var(--text-color)}
+.lm-login-card{background:var(--surface-card);border:.5px solid var(--surface-border);border-radius:16px}
+.lm-login-theme-toggle{padding:0;background:transparent;border:1px solid var(--surface-border);border-radius:8px;color:var(--text-color-secondary);transition:color .15s,background-color .15s}
+.lm-login-theme-toggle:hover{color:var(--text-color);background:var(--surface-hover)}
+.lm-login-theme-toggle i{font-size:14px}
+.lm-login-brand-mark{background:var(--primary-color);color:var(--primary-contrast-color)}
+.lm-login-brand-mark i{font-size:14px}
+.lm-login-muted{color:var(--text-color-secondary)}
+:host ::ng-deep .lm-login-card input.p-inputtext,:host ::ng-deep .lm-login-card .p-password input{height:42px;border-radius:10px;font-size:14px}
+:host ::ng-deep .lm-login-card .p-password{width:100%}
+.lm-login-error{color:var(--p-red-500)}
+.lm-login-link{color:var(--primary-color);text-decoration:none}
+:host ::ng-deep .lm-login-submit>.p-button{height:44px;border-radius:10px;font-weight:500}
+.lm-login-footer{border-top:1px solid var(--surface-border);color:var(--text-color-secondary)}

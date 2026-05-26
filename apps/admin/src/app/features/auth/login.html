@@ -1,32 +1,80 @@
-    <div class="bg-surface-50 dark:bg-surface-900 flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden">
-      <div class="flex flex-col items-center justify-center">
-        <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
-          <div class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20" style="border-radius: 53px">
-            <div class="text-center mb-12">
-              <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">¡Bienvenido a LoteoManager!</div>
-              <span class="text-muted-color font-medium">Iniciá sesión para continuar</span>
-            </div>
+<div class="min-h-screen w-full flex items-center justify-center p-6 lm-login-page">
+  <div class="relative w-full max-w-[400px] py-10 px-9 lm-login-card">
+    <button
+      type="button"
+      class="absolute top-4 right-4 w-8 h-8 inline-flex items-center justify-center cursor-pointer lm-login-theme-toggle"
+      (click)="toggleTheme()"
+      [attr.aria-label]="'Cambiar tema'"
+      [attr.aria-pressed]="isDark()"
+    >
+      <i [class]="themeIcon()" aria-hidden="true"></i>
+    </button>
 
-            <form (ngSubmit)="login()" #loginForm="ngForm">
-              <div *ngIf="errorMsg()" class="mb-6">
-                <p-message severity="error" [text]="errorMsg()"></p-message>
-              </div>
-
-              <div>
-                <label for="email" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-4">Email</label>
-                <input id="email" type="email" name="email" placeholder="Email" pInputText class="w-full md:w-[30rem] mb-12" [(ngModel)]="email" required />
-
-                <label for="password" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-4">Contraseña</label>
-                <p-password id="password" name="password" [(ngModel)]="password" placeholder="Contraseña" [toggleMask]="true" styleClass="mb-12" inputStyleClass="w-full p-3 md:w-[30rem]" [feedback]="false" required></p-password>
-
-                <button pButton pRipple label="Ingresar" class="w-full p-4 text-xl" [loading]="loading()"></button>
-
-                <div class="text-center mt-6">
-                  <a routerLink="/auth/recuperar" class="text-primary text-sm cursor-pointer hover:underline">¿Olvidaste tu contraseña?</a>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
+    <div class="flex items-center justify-center gap-2.5 mb-7">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg lm-login-brand-mark" aria-hidden="true">
+        <i class="pi pi-map-marker"></i>
+      </span>
+      <span class="text-[15px] font-medium">LoteoManager</span>
     </div>
+
+    <h1 class="text-[22px] font-medium text-center mb-1.5">Iniciá sesión</h1>
+    <p class="text-sm text-center mb-7 lm-login-muted">Accedé al panel de administración</p>
+
+    <form class="flex flex-col gap-4" (ngSubmit)="login()" #loginForm="ngForm">
+      <div class="flex flex-col">
+        <label for="email" class="text-[13px] font-medium mb-1.5">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          pInputText
+          class="w-full"
+          placeholder="tu@email.com"
+          [(ngModel)]="email"
+          required
+        />
+      </div>
+
+      <div class="flex flex-col">
+        <label for="password" class="text-[13px] font-medium mb-1.5">Contraseña</label>
+        <p-password
+          inputId="password"
+          name="password"
+          autocomplete="current-password"
+          placeholder="Tu contraseña"
+          [feedback]="false"
+          [toggleMask]="true"
+          [styleClass]="'w-full'"
+          [inputStyleClass]="'w-full'"
+          [(ngModel)]="password"
+          required
+        ></p-password>
+      </div>
+
+      @if (errorMsg()) {
+        <p class="text-sm -mt-1 lm-login-error" role="alert">{{ errorMsg() }}</p>
+      }
+
+      <div class="flex items-center justify-between gap-3 mt-1">
+        <label class="inline-flex items-center gap-2 text-[13px] cursor-pointer">
+          <p-checkbox name="rememberMe" inputId="rememberMe" [binary]="true" [(ngModel)]="rememberMe"></p-checkbox>
+          <span>Recordarme</span>
+        </label>
+        <a routerLink="/auth/recuperar" class="text-[13px] hover:underline lm-login-link">¿Olvidaste tu contraseña?</a>
+      </div>
+
+      <p-button
+        type="submit"
+        label="Ingresar"
+        styleClass="lm-login-submit w-full"
+        severity="primary"
+        [loading]="loading()"
+      ></p-button>
+    </form>
+
+    <div class="mt-7 pt-4 text-center text-xs lm-login-footer">
+      <span>LoteoManager &copy; {{ currentYear }}</span>
+    </div>
+  </div>
+</div>

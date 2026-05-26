@@ -57,3 +57,5 @@ sakai-temp/
 *.backup-before-*
 
 /code-sessions/
+
+/graphify-out/
