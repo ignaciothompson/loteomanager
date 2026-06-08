@@ -65,6 +65,57 @@
         </div>
       }
 
+      @if (form.role === 'supervisor') {
+        <div class="flex flex-col gap-2">
+          <label for="uf-deptos" class="font-semibold">Departamentos asignados</label>
+          <p-multiSelect
+            id="uf-deptos"
+            [(ngModel)]="selectedDepartamentos"
+            [options]="departamentosOpts"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccioná departamentos"
+            class="w-full"
+            appendTo="body"
+            [disabled]="loadingGeo()"
+          />
+          <small class="text-500">Incluí "Todo" para acceso completo.</small>
+        </div>
+      }
+
+      @if (form.role === 'vendedor') {
+        <div class="flex flex-col gap-2">
+          <label for="uf-zonas" class="font-semibold">Zonas asignadas</label>
+          <p-multiSelect
+            id="uf-zonas"
+            [(ngModel)]="selectedZonas"
+            [options]="zonasOpts"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccioná zonas"
+            class="w-full"
+            appendTo="body"
+            [disabled]="loadingGeo()"
+          />
+          <small class="text-500">Incluí "Todo" para acceso completo vía zonas.</small>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label for="uf-barrios" class="font-semibold">Barrios directos</label>
+          <p-multiSelect
+            id="uf-barrios"
+            [(ngModel)]="selectedBarrios"
+            [options]="barriosOpts"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccioná barrios"
+            class="w-full"
+            appendTo="body"
+            [disabled]="loadingGeo()"
+          />
+        </div>
+      }
+
       <div class="flex flex-col gap-2">
         <label for="uf-telefono" class="font-semibold">Teléfono</label>
         <input

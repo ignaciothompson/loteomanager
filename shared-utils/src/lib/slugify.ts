@@ -9,3 +9,6 @@ export function slugify(str: string): string {
     .replace(/\s+/g, '-') // collapse whitespace and replace by -
     .replace(/-+/g, '-'); // collapse dashes
 }
+
+/** Alias semántico usado por servicios de geografía. */
+export const toSlug = slugify;

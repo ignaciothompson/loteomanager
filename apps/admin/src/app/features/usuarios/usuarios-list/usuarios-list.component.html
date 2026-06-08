@@ -80,8 +80,8 @@
                         </td>
                         <td>
                             <p-tag
-                                [value]="u.role === 'admin' ? 'Admin' : 'Vendedor'"
-                                [severity]="u.role === 'admin' ? 'info' : 'success'"
+                                [value]="roleLabel(u.role)"
+                                [severity]="roleSeverity(u.role)"
                             />
                         </td>
                         <td>
@@ -109,15 +109,17 @@
                                     [attr.aria-label]="'Editar'"
                                     (click)="editUser(u)"
                                 ></button>
-                                <button
-                                    pButton
-                                    type="button"
-                                    icon="pi pi-map-marker"
-                                    class="p-button-info p-button-text mr-2"
-                                    pTooltip="Asignar barrios/zonas"
-                                    [attr.aria-label]="'Asignar barrios'"
-                                    (click)="asignarUser(u)"
-                                ></button>
+                                @if (u.role === 'vendedor') {
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-map-marker"
+                                        class="p-button-info p-button-text mr-2"
+                                        pTooltip="Asignar barrios/zonas"
+                                        [attr.aria-label]="'Asignar barrios'"
+                                        (click)="asignarUser(u)"
+                                    ></button>
+                                }
                                 <button
                                     pButton
                                     type="button"

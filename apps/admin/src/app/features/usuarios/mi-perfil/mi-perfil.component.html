@@ -59,8 +59,8 @@
         <label class="font-semibold text-500">Rol</label>
         <div>
           <p-tag
-            [value]="user()?.['role'] === 'admin' ? 'Admin' : 'Vendedor'"
-            [severity]="user()?.['role'] === 'admin' ? 'info' : 'success'"
+            [value]="roleLabel(user()?.['role'])"
+            [severity]="roleSeverity(user()?.['role'])"
           />
         </div>
       </div>
@@ -129,11 +129,24 @@
     </div>
   </p-card>
 
-  <!-- Mis asignaciones (solo vendedor) -->
-  @if (user()?.['role'] === 'vendedor') {
+  <!-- Mis asignaciones (vendedor / supervisor) -->
+  @if (user()?.['role'] === 'vendedor' || user()?.['role'] === 'supervisor') {
     <p-card header="Mis asignaciones" styleClass="h-full">
       @if (loadingAsignaciones()) {
         <p class="text-500">Cargando...</p>
+      } @else if (user()?.['role'] === 'supervisor') {
+        <div>
+          <p class="font-semibold mb-2">Departamentos asignados</p>
+          @if (departamentosAsignados().length === 0) {
+            <p class="text-500 text-sm">Sin departamentos asignados.</p>
+          } @else {
+            <div class="flex flex-wrap gap-2">
+              @for (d of departamentosAsignados(); track d.id) {
+                <p-tag [value]="d.nombre" severity="warn" />
+              }
+            </div>
+          }
+        </div>
       } @else {
         <div class="flex flex-col gap-4">
           <div>
@@ -158,8 +171,8 @@
               <p class="text-500 text-sm">Sin zonas asignadas.</p>
             } @else {
               <div class="flex flex-wrap gap-2">
-                @for (z of zonasAsignadas(); track z) {
-                  <p-tag [value]="z" severity="secondary" />
+                @for (z of zonasAsignadas(); track z.id) {
+                  <p-tag [value]="z.nombre" severity="secondary" />
                 }
               </div>
             }

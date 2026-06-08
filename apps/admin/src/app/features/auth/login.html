@@ -71,6 +71,21 @@
         severity="primary"
         [loading]="loading()"
       ></p-button>
+
+      @if (isDev) {
+        <div class="mt-2 p-3 rounded-lg text-xs lm-login-muted border border-dashed">
+          <p class="m-0 mb-2">Testing local (seed migración):</p>
+          <code class="block mb-2">admin@loteomanager.com / admin1234</code>
+          <p-button
+            type="button"
+            label="Usar credenciales dev"
+            severity="secondary"
+            [text]="true"
+            size="small"
+            (click)="fillDevCredentials()"
+          />
+        </div>
+      }
     </form>
 
     <div class="mt-7 pt-4 text-center text-xs lm-login-footer">

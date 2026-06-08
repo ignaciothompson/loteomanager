@@ -9,8 +9,13 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { POCKETBASE, VendedorAccesoService } from '@loteomanager/shared-pb-client';
-import { UsersResponse, BarriosResponse } from '@loteomanager/shared-types';
+import {
+  POCKETBASE,
+  VendedorAccesoService,
+  ZonasService,
+  buildVendedorZonaCreatePayload,
+} from '@loteomanager/shared-pb-client';
+import { BarriosResponse, UsersResponse, ZonasResponse } from '@loteomanager/shared-types';
 
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
@@ -22,12 +27,9 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { MessageService } from 'primeng/api';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
-type BarrioWithZona = BarriosResponse & { zona?: string };
-
-interface ZonaAsignada {
-  zona: string;
-  id?: string;
-}
+type BarrioRow = BarriosResponse & {
+  expand?: { zona_id?: ZonasResponse };
+};
 
 @Component({
   selector: 'app-usuario-asignaciones',
@@ -55,6 +57,7 @@ export class UsuarioAsignacionesComponent implements OnChanges {
   @Output() saved = new EventEmitter<void>();
 
   private pb = inject(POCKETBASE);
+  private zonasSvc = inject(ZonasService);
   private vendedorAccesoService = inject(VendedorAccesoService);
   private messageService = inject(MessageService);
 
@@ -64,60 +67,56 @@ export class UsuarioAsignacionesComponent implements OnChanges {
 
   activeTab = 'directos';
 
-  barriosDisponibles = signal<BarrioWithZona[]>([]);
-  barriosAsignados = signal<BarrioWithZona[]>([]);
-  zonasDisponibles = signal<{ zona: string }[]>([]);
+  barriosDisponibles = signal<BarrioRow[]>([]);
+  barriosAsignados = signal<BarrioRow[]>([]);
+  zonasOpts = signal<{ label: string; value: string }[]>([]);
   zonasSeleccionadas: string[] = [];
-  nuevaZona = '';
 
   private originalDirectosIds = new Set<string>();
   private originalZonaIds = new Map<string, string>();
 
   ngOnChanges(): void {
-    if (this.visible && this.user) {
+    if (this.visible && this.user?.role === 'vendedor') {
       void this.loadData();
     }
   }
 
-  getZona(barrio: BarrioWithZona): string | undefined {
-    return (barrio as BarrioWithZona).zona;
+  getZonaNombre(barrio: BarrioRow): string | undefined {
+    return barrio.expand?.zona_id?.nombre;
   }
 
   private async loadData(): Promise<void> {
     if (!this.user) return;
     this.loading.set(true);
     try {
-      const [todosBarrios, asignadosRecs, zonasRecs] = await Promise.all([
-        this.pb.collection('barrios').getFullList({ sort: 'nombre' }) as Promise<BarrioWithZona[]>,
+      const [todosBarrios, asignadosRecs, zonasRecs, zonasCatalog] = await Promise.all([
+        this.pb.collection('barrios').getFullList({
+          sort: 'nombre',
+          expand: 'zona_id',
+        }) as Promise<BarrioRow[]>,
         this.pb.collection('vendedor_barrios').getFullList({
           filter: `vendedor_id="${this.user.id}"`,
         }),
         this.pb.collection('vendedor_zonas').getFullList({
           filter: `vendedor_id="${this.user.id}"`,
         }),
+        this.zonasSvc.listAsync(undefined),
       ]);
 
-      const asignadosIds = new Set(asignadosRecs.map((r) => r['barrio_id'] as string));
-      this.originalDirectosIds = new Set(asignadosIds);
+      const barrioIds = new Set(asignadosRecs.map((r) => r['barrio_id'] as string));
 
-      const asignados = todosBarrios.filter((b) => asignadosIds.has(b.id));
-      const disponibles = todosBarrios.filter((b) => !asignadosIds.has(b.id));
+      this.barriosAsignados.set(todosBarrios.filter((b) => barrioIds.has(b.id)));
+      this.barriosDisponibles.set(todosBarrios.filter((b) => !barrioIds.has(b.id)));
+      this.originalDirectosIds = new Set(barrioIds);
 
-      this.barriosAsignados.set(asignados);
-      this.barriosDisponibles.set(disponibles);
-
-      const zonasSet = new Set<string>();
-      for (const b of todosBarrios) {
-        const z = (b as BarrioWithZona).zona;
-        if (z) zonasSet.add(z);
-      }
-      this.zonasDisponibles.set([...zonasSet].map((z) => ({ zona: z })));
+      this.zonasOpts.set(
+        (zonasCatalog as ZonasResponse[]).map((z) => ({ label: z.nombre, value: z.id }))
+      );
 
       this.originalZonaIds = new Map(
-        zonasRecs.map((r) => [r['zona'] as string, r.id])
+        zonasRecs.map((r) => [r['zona_id'] as string, r.id])
       );
       this.zonasSeleccionadas = [...this.originalZonaIds.keys()];
-
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al cargar datos.';
       this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
@@ -126,14 +125,14 @@ export class UsuarioAsignacionesComponent implements OnChanges {
     }
   }
 
-  onMoveToTarget(event: { items: BarrioWithZona[] }): void {
+  onMoveToTarget(event: { items: BarrioRow[] }): void {
     this.barriosAsignados.update((prev) => [...prev, ...event.items]);
     this.barriosDisponibles.update((prev) =>
       prev.filter((b) => !event.items.some((i) => i.id === b.id))
     );
   }
 
-  onMoveToSource(event: { items: BarrioWithZona[] }): void {
+  onMoveToSource(event: { items: BarrioRow[] }): void {
     this.barriosDisponibles.update((prev) => [...prev, ...event.items]);
     this.barriosAsignados.update((prev) =>
       prev.filter((b) => !event.items.some((i) => i.id === b.id))
@@ -193,18 +192,6 @@ export class UsuarioAsignacionesComponent implements OnChanges {
     }
   }
 
-  agregarZona(): void {
-    const z = this.nuevaZona.trim();
-    if (!z) return;
-    if (!this.zonasDisponibles().some((zd) => zd.zona === z)) {
-      this.zonasDisponibles.update((prev) => [...prev, { zona: z }]);
-    }
-    if (!this.zonasSeleccionadas.includes(z)) {
-      this.zonasSeleccionadas = [...this.zonasSeleccionadas, z];
-    }
-    this.nuevaZona = '';
-  }
-
   async saveZonas(): Promise<void> {
     if (!this.user) return;
     this.savingZonas.set(true);
@@ -212,25 +199,25 @@ export class UsuarioAsignacionesComponent implements OnChanges {
       const currentSet = new Set(this.zonasSeleccionadas);
       const originalSet = new Set(this.originalZonaIds.keys());
 
-      const toDelete = [...originalSet].filter((z) => !currentSet.has(z));
+      const toDelete = [...originalSet].filter((id) => !currentSet.has(id));
       await Promise.all(
-        toDelete.map((z) => {
-          const id = this.originalZonaIds.get(z);
-          return id ? this.pb.collection('vendedor_zonas').delete(id) : Promise.resolve();
+        toDelete.map((id) => {
+          const recId = this.originalZonaIds.get(id);
+          return recId ? this.pb.collection('vendedor_zonas').delete(recId) : Promise.resolve();
         })
       );
 
-      const toAdd = [...currentSet].filter((z) => !originalSet.has(z));
+      const toAdd = [...currentSet].filter((id) => !originalSet.has(id));
+      const zonaNombreById = new Map(this.zonasOpts().map((z) => [z.value, z.label]));
       const created = await Promise.all(
-        toAdd.map((z) =>
-          this.pb.collection('vendedor_zonas').create({
-            vendedor_id: this.user!.id,
-            zona: z,
-          })
+        toAdd.map((zona_id) =>
+          this.pb.collection('vendedor_zonas').create(
+            buildVendedorZonaCreatePayload(this.user!.id, zona_id, zonaNombreById.get(zona_id))
+          )
         )
       );
 
-      for (const z of toDelete) this.originalZonaIds.delete(z);
+      for (const id of toDelete) this.originalZonaIds.delete(id);
       for (let i = 0; i < toAdd.length; i++) {
         this.originalZonaIds.set(toAdd[i], created[i].id);
       }

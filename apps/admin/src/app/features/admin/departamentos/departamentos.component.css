@@ -1,0 +1,10 @@
+.departamentos-filters {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.departamentos-filters__field {
+  min-width: 0;
+}

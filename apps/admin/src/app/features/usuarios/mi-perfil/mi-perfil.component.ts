@@ -1,8 +1,13 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService, VendedorAccesoService, POCKETBASE } from '@loteomanager/shared-pb-client';
-import { BarriosResponse } from '@loteomanager/shared-types';
+import { AuthService, POCKETBASE } from '@loteomanager/shared-pb-client';
+import {
+  BarriosResponse,
+  DepartamentosResponse,
+  UsersRoleOptions,
+  ZonasResponse,
+} from '@loteomanager/shared-types';
 
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -39,7 +44,6 @@ interface PasswordForm {
 })
 export class MiPerfilComponent implements OnInit {
   private authService = inject(AuthService);
-  private vendedorAccesoService = inject(VendedorAccesoService);
   private pb = inject(POCKETBASE);
   private messageService = inject(MessageService);
 
@@ -56,7 +60,8 @@ export class MiPerfilComponent implements OnInit {
   passForm: PasswordForm = { oldPassword: '', password: '', passwordConfirm: '' };
 
   barriosAsignados = signal<BarriosResponse[]>([]);
-  zonasAsignadas = signal<string[]>([]);
+  zonasAsignadas = signal<ZonasResponse[]>([]);
+  departamentosAsignados = signal<DepartamentosResponse[]>([]);
   loadingAsignaciones = signal(false);
 
   ngOnInit(): void {
@@ -66,34 +71,65 @@ export class MiPerfilComponent implements OnInit {
       this.editTelefono = (u['telefono'] as string) ?? '';
       this.editWhatsapp = (u['whatsapp'] as string) ?? '';
 
-      if (u['role'] === 'vendedor') {
-        void this.loadAsignaciones(u['id'] as string);
+      const role = u['role'] as UsersRoleOptions;
+      if (role === 'vendedor' || role === 'supervisor') {
+        void this.loadAsignaciones(u['id'] as string, role);
       }
     }
   }
 
-  private async loadAsignaciones(userId: string): Promise<void> {
+  roleLabel(role?: string | unknown): string {
+    const r = String(role ?? '');
+    if (r === 'admin') return 'Admin';
+    if (r === 'supervisor') return 'Supervisor';
+    return 'Vendedor';
+  }
+
+  roleSeverity(role?: string | unknown): 'info' | 'warn' | 'success' {
+    const r = String(role ?? '');
+    if (r === 'admin') return 'info';
+    if (r === 'supervisor') return 'warn';
+    return 'success';
+  }
+
+  private async loadAsignaciones(userId: string, role: UsersRoleOptions): Promise<void> {
     this.loadingAsignaciones.set(true);
     try {
+      if (role === 'supervisor') {
+        const recs = await this.pb.collection('supervisor_departamentos').getFullList({
+          filter: `user_id="${userId}"`,
+          expand: 'departamento_id',
+        });
+        const deptos = recs
+          .map((r) => (r as { expand?: { departamento_id?: DepartamentosResponse } }).expand?.departamento_id)
+          .filter((d): d is DepartamentosResponse => !!d);
+        this.departamentosAsignados.set(deptos);
+        return;
+      }
+
       const [directosRecs, zonasRecs] = await Promise.all([
         this.pb.collection('vendedor_barrios').getFullList({
           filter: `vendedor_id="${userId}"`,
         }),
         this.pb.collection('vendedor_zonas').getFullList({
           filter: `vendedor_id="${userId}"`,
+          expand: 'zona_id',
         }),
       ]);
 
       if (directosRecs.length > 0) {
         const barrioIds = directosRecs.map((r) => `id="${r['barrio_id']}"`).join(' || ');
-        const barrios = await this.pb.collection('barrios').getFullList({
+        const barrios = (await this.pb.collection('barrios').getFullList({
           filter: barrioIds,
           sort: 'nombre',
-        }) as BarriosResponse[];
+        })) as BarriosResponse[];
         this.barriosAsignados.set(barrios);
       }
 
-      this.zonasAsignadas.set(zonasRecs.map((r) => r['zona'] as string));
+      const zonas = zonasRecs
+        .map((r) => (r as { expand?: { zona_id?: ZonasResponse } }).expand?.zona_id)
+        .filter((z): z is ZonasResponse => !!z);
+      this.zonasAsignadas.set(zonas);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al cargar asignaciones.';
       this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });

@@ -4,7 +4,6 @@ import {
   Input,
   OnInit,
   computed,
-  effect,
   inject,
   input,
   model,
@@ -20,11 +19,13 @@ import {
   type AbstractControl
 } from '@angular/forms';
 import { BarriosRecord, ExtraPersistido } from '@loteomanager/shared-types';
-import { DefinicionesCacheService } from '@loteomanager/shared-pb-client';
+import { DefinicionesCacheService, ZonasService } from '@loteomanager/shared-pb-client';
+import { toSlug } from '@loteomanager/shared-utils';
 import { ExtrasEditorComponent } from '@loteomanager/shared-ui';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { RippleModule } from 'primeng/ripple';
 
 export type BarrioFormSavePayload = {
@@ -43,6 +44,7 @@ export type BarrioFormSavePayload = {
     DialogModule,
     ButtonModule,
     InputTextModule,
+    SelectModule,
     RippleModule,
     ExtrasEditorComponent
   ],
@@ -52,6 +54,7 @@ export type BarrioFormSavePayload = {
 export class BarrioFormDialogComponent implements OnInit {
   private fb = inject(FormBuilder);
   private cache = inject(DefinicionesCacheService);
+  private zonasSvc = inject(ZonasService);
 
   visible = input(false);
   visibleChange = output<boolean>();
@@ -69,6 +72,16 @@ export class BarrioFormDialogComponent implements OnInit {
 
   readonly dialogStyle = { width: '90vw', maxWidth: '640px' };
 
+  /** Evita repatch al abrir overlay del p-select (visibleChange spurious). */
+  private dialogOpen = false;
+
+  zonas = this.zonasSvc.list(undefined, { sort: 'nombre' });
+  zonaOpts = computed(() =>
+    this.zonas().map((z) => ({ label: z.nombre, value: z.id }))
+  );
+
+  slugPreview = signal('');
+
   readonly extrasDefinidos = computed(
     () => this.cache.extrasByEntidad().get('barrios') ?? []
   );
@@ -76,18 +89,13 @@ export class BarrioFormDialogComponent implements OnInit {
   form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(120)]],
     ubicacion_texto: ['', Validators.maxLength(255)],
-    slug: ['', [Validators.required, Validators.maxLength(120)]]
+    zona_id: ['', Validators.required]
   });
 
-  constructor() {
-    effect(() => {
-      if (!this.visible()) return;
-      this.patchFromCurrent();
-    });
-  }
-
   ngOnInit(): void {
-    this.patchFromCurrent();
+    this.form.get('nombre')?.valueChanges.subscribe((v) => {
+      this.slugPreview.set(toSlug(v ?? ''));
+    });
   }
 
   showError(control: AbstractControl | null): boolean {
@@ -95,6 +103,10 @@ export class BarrioFormDialogComponent implements OnInit {
   }
 
   onVisibleChange(open: boolean): void {
+    if (open && !this.dialogOpen) {
+      this.patchFromCurrent();
+    }
+    this.dialogOpen = open;
     this.visibleChange.emit(open);
     if (!open) {
       this.saving.set(false);
@@ -118,7 +130,8 @@ export class BarrioFormDialogComponent implements OnInit {
         ...this.currentBarrio,
         nombre: raw.nombre.trim(),
         ubicacion_texto: raw.ubicacion_texto.trim() || undefined,
-        slug: raw.slug.trim()
+        zona_id: raw.zona_id,
+        slug: toSlug(raw.nombre.trim())
       };
       this.save.emit({ barrio, extras: this.extras() });
     } catch {
@@ -132,10 +145,11 @@ export class BarrioFormDialogComponent implements OnInit {
 
   private patchFromCurrent(): void {
     const b = this.currentBarrio;
-    this.form.patchValue({
+    this.form.reset({
       nombre: b.nombre ?? '',
       ubicacion_texto: b.ubicacion_texto ?? '',
-      slug: b.slug ?? ''
+      zona_id: b.zona_id ?? ''
     });
+    this.slugPreview.set(b.slug ?? toSlug(b.nombre ?? ''));
   }
 }

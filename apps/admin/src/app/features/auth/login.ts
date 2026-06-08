@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, isDevMode, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@loteomanager/shared-pb-client';
@@ -44,6 +44,12 @@ export class Login {
   themeIcon = computed(() => (this.isDark() ? 'pi pi-sun' : 'pi pi-moon'));
 
   currentYear = new Date().getFullYear();
+  readonly isDev = isDevMode();
+
+  fillDevCredentials(): void {
+    this.email = 'admin@loteomanager.com';
+    this.password = 'admin1234';
+  }
 
   toggleTheme(): void {
     this.layoutService.layoutConfig.update((state) => ({

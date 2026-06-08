@@ -48,8 +48,8 @@
                   <div class="flex align-items-center gap-2 py-1">
                     <i class="pi pi-map-marker text-500"></i>
                     <span>{{ barrio.nombre }}</span>
-                    @if (getZona(barrio)) {
-                      <span class="text-xs text-500 ml-auto">{{ getZona(barrio) }}</span>
+                    @if (getZonaNombre(barrio)) {
+                      <span class="text-xs text-500 ml-auto">{{ getZonaNombre(barrio) }}</span>
                     }
                   </div>
                 </ng-template>
@@ -76,34 +76,15 @@
                 <label class="font-semibold">Zonas disponibles</label>
                 <p-multiselect
                   [(ngModel)]="zonasSeleccionadas"
-                  [options]="zonasDisponibles()"
-                  optionLabel="zona"
-                  optionValue="zona"
+                  [options]="zonasOpts()"
+                  optionLabel="label"
+                  optionValue="value"
                   placeholder="Seleccioná una o más zonas"
                   [showClear]="true"
                   display="chip"
                   class="w-full"
+                  appendTo="body"
                 />
-              </div>
-
-              <div class="flex flex-col gap-2">
-                <label class="font-semibold">Agregar nueva zona</label>
-                <div class="flex gap-2">
-                  <input
-                    pInputText
-                    [(ngModel)]="nuevaZona"
-                    placeholder="Nombre de la zona"
-                    class="flex-1"
-                    (keyup.enter)="agregarZona()"
-                  />
-                  <p-button
-                    icon="pi pi-plus"
-                    label="Agregar"
-                    severity="secondary"
-                    (click)="agregarZona()"
-                    [disabled]="!nuevaZona.trim()"
-                  />
-                </div>
               </div>
 
               <div class="flex justify-end">

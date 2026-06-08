@@ -43,6 +43,18 @@ export const appRoutes: Routes = [
                 data: { title: 'Enlaces Compartibles' }
             },
             {
+                path: 'config/departamentos',
+                canActivate: [authGuard, permisoGuard('departamentos.manage')],
+                loadComponent: () => import('./app/features/admin/departamentos/departamentos.component').then(m => m.DepartamentosComponent),
+                data: { title: 'Departamentos' }
+            },
+            {
+                path: 'config/zonas',
+                canActivate: [authGuard, permisoGuard('zonas.manage')],
+                loadComponent: () => import('./app/features/admin/zonas/zonas.component').then(m => m.ZonasComponent),
+                data: { title: 'Zonas' }
+            },
+            {
                 path: 'config/extras',
                 canActivate: [authGuard, permisoGuard('config.update')],
                 loadComponent: () => import('./app/features/admin/extras/extras-admin.component').then(m => m.ExtrasAdminComponent),

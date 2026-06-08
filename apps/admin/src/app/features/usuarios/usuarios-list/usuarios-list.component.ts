@@ -152,4 +152,16 @@ export class UsuariosListComponent {
   getUltimoAcceso(u: UsersResponse): string | null {
     return (u as UsersResponse & { ultimo_acceso?: string }).ultimo_acceso ?? null;
   }
+
+  roleLabel(role: string): string {
+    if (role === 'admin') return 'Admin';
+    if (role === 'supervisor') return 'Supervisor';
+    return 'Vendedor';
+  }
+
+  roleSeverity(role: string): 'info' | 'warn' | 'success' {
+    if (role === 'admin') return 'info';
+    if (role === 'supervisor') return 'warn';
+    return 'success';
+  }
 }

@@ -1,3 +1,3 @@
 export * from './lib/validators/validators';
 export * from './lib/formatters/formatters';
-export * from './lib/slugify';
+export { slugify, toSlug } from './lib/slugify';

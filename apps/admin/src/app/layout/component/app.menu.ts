@@ -32,19 +32,12 @@ export class AppMenu {
 
         this.model = [
             {
-                label: 'Home',
                 items: [
                     {
                         label: 'Dashboard',
                         icon: 'pi pi-fw pi-home',
                         routerLink: ['/']
                     }
-                ]
-            },
-            {
-                label: 'Mi Cuenta',
-                items: [
-                    { label: 'Mi Perfil', icon: 'pi pi-fw pi-user', routerLink: ['/mi-perfil'] }
                 ]
             },
             {
@@ -57,9 +50,14 @@ export class AppMenu {
                         routerLink: ['/barrios']
                     },
                     {
-                        label: 'Lotes / Unidades',
+                        label: 'Unidades',
                         icon: 'pi pi-fw pi-th-large',
                         routerLink: ['/lotes']
+                    },
+                    {
+                        label: 'Actualizacion Web',
+                        icon: 'pi pi-fw pi-cloud-upload',
+                        routerLink: ['/actualizacion-web']
                     }
                 ]
             },
@@ -68,7 +66,7 @@ export class AppMenu {
                 icon: 'pi pi-fw pi-shopping-cart',
                 items: [
                     {
-                        label: 'Interesados',
+                        label: 'Contactos',
                         icon: 'pi pi-fw pi-users',
                         routerLink: ['/interesados']
                     },
@@ -76,6 +74,11 @@ export class AppMenu {
                         label: 'Comparativas',
                         icon: 'pi pi-fw pi-link',
                         routerLink: ['/enlaces']
+                    },
+                    {
+                        label: 'Seguimiento',
+                        icon: 'pi pi-fw pi-chart-line',
+                        routerLink: ['/seguimiento']
                     }
                 ]
             }
@@ -87,14 +90,31 @@ export class AppMenu {
                 icon: 'pi pi-fw pi-cog',
                 items: [
                     {
-                        label: 'Extras',
-                        icon: 'pi pi-fw pi-list',
-                        routerLink: ['/config/extras']
-                    },
-                    {
-                        label: 'Estados',
-                        icon: 'pi pi-fw pi-flag',
-                        routerLink: ['/config/estados']
+                        label: 'Organizar',
+                        icon: 'pi pi-fw pi-sliders-h',
+                        path: '/config',
+                        items: [
+                            {
+                                label: 'Departamentos',
+                                icon: 'pi pi-fw pi-sitemap',
+                                routerLink: ['/config/departamentos']
+                            },
+                            {
+                                label: 'Zonas',
+                                icon: 'pi pi-fw pi-map',
+                                routerLink: ['/config/zonas']
+                            },
+                            {
+                                label: 'Extras',
+                                icon: 'pi pi-fw pi-list',
+                                routerLink: ['/config/extras']
+                            },
+                            {
+                                label: 'Estados',
+                                icon: 'pi pi-fw pi-flag',
+                                routerLink: ['/config/estados']
+                            }
+                        ]
                     },
                     {
                         label: 'Arquitectos',
@@ -110,6 +130,25 @@ export class AppMenu {
                         label: 'Importador',
                         icon: 'pi pi-fw pi-cloud-upload',
                         routerLink: ['/importador']
+                    }
+                ]
+            });
+        } else if (role === 'supervisor') {
+            this.model.push({
+                label: 'Configuración',
+                icon: 'pi pi-fw pi-cog',
+                items: [
+                    {
+                        label: 'Organizar',
+                        icon: 'pi pi-fw pi-sliders-h',
+                        path: '/config',
+                        items: [
+                            {
+                                label: 'Zonas',
+                                icon: 'pi pi-fw pi-map',
+                                routerLink: ['/config/zonas']
+                            }
+                        ]
                     }
                 ]
             });

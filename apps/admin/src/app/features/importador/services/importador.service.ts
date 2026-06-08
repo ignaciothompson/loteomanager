@@ -6,35 +6,23 @@ import {
   ImportacionesService,
   ImportacionFilasService,
   DefinicionesCacheService,
+  ZonasService,
   POCKETBASE,
 } from '@loteomanager/shared-pb-client';
+import { toSlug } from '@loteomanager/shared-utils';
 import {
   BarriosResponse,
   UnidadesResponse,
   ImportacionesResponse,
   ImportacionFilasResponse,
 } from '@loteomanager/shared-types';
+import type { FilaExtendida, ImportacionExtendida } from '../importador-types';
 import { parseExcelFile, RawRow } from '../parser/excel-parser';
 import { normalizeBarrioRow, normalizeUnidadRow } from '../parser/normalizer';
 import { validateBarrio, validateUnidad } from '../parser/row-validator';
 import { checkBarrioDuplicate, checkUnidadDuplicate } from '../parser/duplicate-detector';
 import { AnalisisColumnas, MapeoColumnas, MapeoExtras, ResultadoCommit } from '../parser/types';
 import PocketBase from 'pocketbase';
-
-// ── Types for migration 1700000070 new fields (not yet in generated pocketbase-types) ──
-
-interface ImportacionExtendida extends ImportacionesResponse {
-  nombre_archivo?: string;
-  mapeo_columnas?: Record<string, string | null>;
-  mapeo_extras?: Record<string, string | null>;
-}
-
-interface FilaExtendida extends ImportacionFilasResponse {
-  tipo_fila: 'barrio' | 'unidad';
-  mensajes: string[];
-  registro_creado_id?: string;
-  error_aplicacion?: string;
-}
 
 // Payload shape stored in datos_normalizados for each tipo_fila
 interface BarrioDatosNormalizados {
@@ -81,6 +69,7 @@ export class ImportadorService {
   private usersService = inject(UsersService);
   private importacionesService = inject(ImportacionesService);
   private filasService = inject(ImportacionFilasService);
+  private zonasService = inject(ZonasService);
 
   // ── Public read-only signals ────────────────────────────────────────────
 
@@ -840,8 +829,8 @@ export class ImportadorService {
     barriosCreados: Map<string, string>
   ): Promise<void> {
     const datos = fila.datos_normalizados as BarrioDatosNormalizados;
+    const zona_id = await this.resolveZonaId(datos.zona);
 
-    // Build PB payload (extras stay as-is; PB handles JSON serialization)
     const payload: Record<string, unknown> = {
       nombre: datos.nombre,
       slug: datos.slug,
@@ -849,7 +838,7 @@ export class ImportadorService {
       ubicacion_texto: datos.ubicacion_texto ?? null,
       lat: datos.lat ?? null,
       lng: datos.lng ?? null,
-      zona: datos.zona ?? null,
+      zona_id,
       extras: datos.extras ?? null,
     };
 
@@ -869,6 +858,28 @@ export class ImportadorService {
     } else if (shouldUpdate && fila.registro_existente_id) {
       await this.pb.collection('barrios').update(fila.registro_existente_id, payload);
       await this.pb.collection('importacion_filas').update(fila.id, { aplicada: true });
+    }
+  }
+
+  /** Resuelve texto de columna "zona" del Excel → zona_id en PB. Crea zona bajo depto Todo si no existe. */
+  private async resolveZonaId(zonaText?: string | null): Promise<string> {
+    const trimmed = zonaText?.trim();
+    if (!trimmed) {
+      const todo = await this.pb.collection('zonas').getFirstListItem('slug="todo"');
+      return todo.id;
+    }
+
+    const slug = toSlug(trimmed);
+    try {
+      const existing = await this.pb.collection('zonas').getFirstListItem(`slug="${slug}"`);
+      return existing.id;
+    } catch {
+      const dept = await this.pb.collection('departamentos').getFirstListItem('slug="todo"');
+      const created = await this.zonasService.create({
+        nombre: trimmed,
+        departamento_id: dept.id,
+      });
+      return created.id;
     }
   }
 

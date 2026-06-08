@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ImportacionExtendida, FilaExtendida } from '../importador-types';
 import { ImportacionesResponse, ImportacionFilasResponse } from '@loteomanager/shared-types';
 import { ImportadorService } from '../services/importador.service';
 import { MapeoColumnas, MapeoExtras } from '../parser/types';
@@ -19,19 +20,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TabsModule } from 'primeng/tabs';
 import { TooltipModule } from 'primeng/tooltip';
 import { ImportadorResumenTabComponent } from '../components/importador-resumen-tab.component';
-import {
-  ImportadorFilasTabComponent,
-  FilaExtendida,
-} from '../components/importador-filas-tab.component';
+import { ImportadorFilasTabComponent } from '../components/importador-filas-tab.component';
 import { ImportadorFilaDetailComponent } from '../components/importador-fila-detail.component';
 import { MapeoColumnasDialogComponent } from '../components/mapeo-columnas-dialog.component';
 import { MapeoExtrasDialogComponent } from '../components/mapeo-extras-dialog.component';
-
-interface ImportacionExtendida extends ImportacionesResponse {
-  nombre_archivo?: string;
-  mapeo_columnas?: Record<string, string | null>;
-  mapeo_extras?: Record<string, string | null>;
-}
 
 @Component({
   selector: 'app-importador-review',

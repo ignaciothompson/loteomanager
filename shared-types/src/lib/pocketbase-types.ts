@@ -17,12 +17,18 @@ export const Collections = {
 	ComparativaVistas: "comparativa_vistas",
 	Comparativas: "comparativas",
 	Config: "config",
+	Departamentos: "departamentos",
+	EstadosDefiniciones: "estados_definiciones",
+	ExtrasDefiniciones: "extras_definiciones",
 	ImportacionFilas: "importacion_filas",
 	Importaciones: "importaciones",
 	Interesados: "interesados",
 	Unidades: "unidades",
 	Users: "users",
 	VendedorBarrios: "vendedor_barrios",
+	VendedorZonas: "vendedor_zonas",
+	Zonas: "zonas",
+	SupervisorDepartamentos: "supervisor_departamentos",
 } as const
 export type Collections = typeof Collections[keyof typeof Collections]
 
@@ -141,6 +147,7 @@ export type BarriosRecord<Textras = unknown> = {
 	plano_general?: FileNameString
 	slug: string
 	ubicacion_texto?: string
+	zona_id: RecordIdString
 }
 
 export type ComparativaVistasRecord = {
@@ -156,40 +163,7 @@ export const ComparativasTipoOptions = {
 	"comparacion_multiple": "comparacion_multiple",
 } as const
 export type ComparativasTipoOptions = typeof ComparativasTipoOptions[keyof typeof ComparativasTipoOptions]
-export type ComparativaSnapshotUnidad = {
-	id: string
-	codigoInterno: string
-	tipoUnidad: 'lote' | 'casa' | 'departamento'
-	tipoUnidadLabel: string
-	precio: number
-	moneda: 'USD' | 'ARS'
-	precioFormateado: string
-	enOferta: boolean
-	precioOriginal?: number | null
-	precioOriginalFormateado?: string | null
-	metrosCuadrados: number
-	metrosConstruidos?: number | null
-	ambientes?: number | null
-	antiguedadAnios?: number | null
-	cocheras?: number | null
-	barrioId?: string | null
-	barrioNombre?: string | null
-	lat?: number | null
-	lng?: number | null
-	ubicacionTexto?: string | null
-	imagenHero?: string | null
-	galeria?: string[]
-	urlPlano?: string | null
-}
-
-export type ComparativaSnapshot = {
-	titulo: string
-	mensajePersonalizado?: string | null
-	unidades: ComparativaSnapshotUnidad[]
-	generadoEn: IsoDateString
-}
-
-export type ComparativasRecord<Tcontenido_snapshot = ComparativaSnapshot | null> = {
+export type ComparativasRecord<Tcontenido_snapshot = unknown> = {
 	cliente_destinatario_email?: string
 	cliente_destinatario_nombre?: string
 	contenido_snapshot?: null | Tcontenido_snapshot
@@ -214,6 +188,59 @@ export type ConfigRecord = {
 	whatsapp_notif_enabled?: boolean
 }
 
+export const EstadosDefinicionesEntidadOptions = {
+	"unidades": "unidades",
+	"interesados": "interesados",
+} as const
+export type EstadosDefinicionesEntidadOptions = typeof EstadosDefinicionesEntidadOptions[keyof typeof EstadosDefinicionesEntidadOptions]
+export type EstadosDefinicionesRecord = {
+	activo?: boolean
+	code: string
+	color?: string
+	created: IsoAutoDateString
+	entidad: EstadosDefinicionesEntidadOptions
+	es_core?: boolean
+	icono?: string
+	id: string
+	nombre: string
+	orden_display?: number
+	updated: IsoAutoDateString
+}
+
+export const ExtrasDefinicionesEntidadOptions = {
+	"barrios": "barrios",
+	"unidades": "unidades",
+	"interesados": "interesados",
+} as const
+export type ExtrasDefinicionesEntidadOptions = typeof ExtrasDefinicionesEntidadOptions[keyof typeof ExtrasDefinicionesEntidadOptions]
+
+export const ExtrasDefinicionesTipoOptions = {
+	"texto": "texto",
+	"numero": "numero",
+	"opciones": "opciones",
+	"booleano": "booleano",
+	"fecha": "fecha",
+} as const
+export type ExtrasDefinicionesTipoOptions = typeof ExtrasDefinicionesTipoOptions[keyof typeof ExtrasDefinicionesTipoOptions]
+export type ExtrasDefinicionesRecord<Topciones = unknown> = {
+	activo?: boolean
+	code: string
+	created: IsoAutoDateString
+	descripcion?: string
+	entidad: ExtrasDefinicionesEntidadOptions
+	grupo?: string
+	id: string
+	nombre: string
+	opciones?: null | Topciones
+	orden_display?: number
+	requerido?: boolean
+	tipo: ExtrasDefinicionesTipoOptions
+	updated: IsoAutoDateString
+	visible_en_comparativa?: boolean
+	visible_en_landing?: boolean
+	visible_en_lista?: boolean
+}
+
 export const ImportacionFilasEstadoFilaOptions = {
 	"ok": "ok",
 	"duplicado": "duplicado",
@@ -229,17 +256,27 @@ export const ImportacionFilasDecisionUsuarioOptions = {
 	"actualizar": "actualizar",
 } as const
 export type ImportacionFilasDecisionUsuarioOptions = typeof ImportacionFilasDecisionUsuarioOptions[keyof typeof ImportacionFilasDecisionUsuarioOptions]
-export type ImportacionFilasRecord<Tdatos_normalizados = unknown, Tdatos_originales = unknown> = {
+
+export const ImportacionFilasTipoFilaOptions = {
+	"barrio": "barrio",
+	"unidad": "unidad",
+} as const
+export type ImportacionFilasTipoFilaOptions = typeof ImportacionFilasTipoFilaOptions[keyof typeof ImportacionFilasTipoFilaOptions]
+export type ImportacionFilasRecord<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Tmensajes = unknown> = {
 	aplicada?: boolean
 	datos_normalizados?: null | Tdatos_normalizados
 	datos_originales?: null | Tdatos_originales
 	decision_usuario?: ImportacionFilasDecisionUsuarioOptions
+	error_aplicacion?: string
 	estado_fila: ImportacionFilasEstadoFilaOptions
 	id: string
 	importacion_id: RecordIdString
 	mensaje?: string
+	mensajes?: null | Tmensajes
 	numero_fila: number
+	registro_creado_id?: string
 	registro_existente_id?: string
+	tipo_fila: ImportacionFilasTipoFilaOptions
 }
 
 export const ImportacionesTipoOptions = {
@@ -263,7 +300,7 @@ export const ImportacionesEstadoOptions = {
 	"con_errores": "con_errores",
 } as const
 export type ImportacionesEstadoOptions = typeof ImportacionesEstadoOptions[keyof typeof ImportacionesEstadoOptions]
-export type ImportacionesRecord = {
+export type ImportacionesRecord<Tmapeo_columnas = unknown, Tmapeo_extras = unknown> = {
 	archivo_origen?: FileNameString
 	confirmada_en?: IsoDateString
 	creado_por: RecordIdString
@@ -273,6 +310,9 @@ export type ImportacionesRecord = {
 	filas_error?: number
 	filas_ok?: number
 	id: string
+	mapeo_columnas?: null | Tmapeo_columnas
+	mapeo_extras?: null | Tmapeo_extras
+	nombre_archivo?: string
 	origen: ImportacionesOrigenOptions
 	tipo: ImportacionesTipoOptions
 	total_filas?: number
@@ -284,26 +324,17 @@ export const InteresadosOrigenOptions = {
 } as const
 export type InteresadosOrigenOptions = typeof InteresadosOrigenOptions[keyof typeof InteresadosOrigenOptions]
 
-export const InteresadosEstadoOptions = {
-	"nuevo": "nuevo",
-	"contactado": "contactado",
-	"reunion": "reunion",
-	"oferta": "oferta",
-	"cerrado_ganado": "cerrado_ganado",
-	"cerrado_perdido": "cerrado_perdido",
-} as const
-export type InteresadosEstadoOptions = typeof InteresadosEstadoOptions[keyof typeof InteresadosEstadoOptions]
-
 export const InteresadosSyncStatusOptions = {
 	"pending": "pending",
 	"synced": "synced",
 	"error": "error",
 } as const
 export type InteresadosSyncStatusOptions = typeof InteresadosSyncStatusOptions[keyof typeof InteresadosSyncStatusOptions]
-export type InteresadosRecord = {
+export type InteresadosRecord<Textras = unknown> = {
 	comparativa_id?: RecordIdString
 	email: string
-	estado: InteresadosEstadoOptions
+	estado: string
+	extras?: null | Textras
 	hubspot_contact_id?: string
 	hubspot_deal_id?: string
 	id: string
@@ -331,17 +362,7 @@ export const UnidadesMonedaOptions = {
 	"ARS": "ARS",
 } as const
 export type UnidadesMonedaOptions = typeof UnidadesMonedaOptions[keyof typeof UnidadesMonedaOptions]
-
-export const UnidadesEstadoOptions = {
-	"disponible": "disponible",
-	"bloqueado": "bloqueado",
-	"reservado": "reservado",
-	"sena": "sena",
-	"vendido": "vendido",
-	"escriturado": "escriturado",
-} as const
-export type UnidadesEstadoOptions = typeof UnidadesEstadoOptions[keyof typeof UnidadesEstadoOptions]
-export type UnidadesRecord = {
+export type UnidadesRecord<Textras = unknown> = {
 	ambientes?: number
 	antiguedad_anios?: number
 	arquitecto_id?: RecordIdString
@@ -351,7 +372,8 @@ export type UnidadesRecord = {
 	descripcion?: HTMLString
 	destacado?: boolean
 	direccion_propia?: string
-	estado: UnidadesEstadoOptions
+	estado: string
+	extras?: null | Textras
 	fecha_bloqueo?: IsoDateString
 	fecha_escritura?: IsoDateString
 	fecha_ingreso?: IsoDateString
@@ -375,6 +397,7 @@ export type UnidadesRecord = {
 
 export const UsersRoleOptions = {
 	"admin": "admin",
+	"supervisor": "supervisor",
 	"vendedor": "vendedor",
 } as const
 export type UsersRoleOptions = typeof UsersRoleOptions[keyof typeof UsersRoleOptions]
@@ -397,9 +420,12 @@ export type UsersRecord = {
 	must_change_password?: boolean
 	name?: string
 	password: string
+	reset_token?: string
+	reset_token_expires?: IsoDateString
 	role: UsersRoleOptions
 	telefono?: string
 	tokenKey: string
+	ultimo_acceso?: IsoDateString
 	updated: IsoAutoDateString
 	verified?: boolean
 	whatsapp?: string
@@ -409,6 +435,31 @@ export type VendedorBarriosRecord = {
 	barrio_id: RecordIdString
 	id: string
 	vendedor_id: RecordIdString
+}
+
+export type VendedorZonasRecord = {
+	id: string
+	vendedor_id: RecordIdString
+	zona_id: RecordIdString
+}
+
+export type DepartamentosRecord = {
+	id: string
+	nombre: string
+	slug: string
+}
+
+export type ZonasRecord = {
+	departamento_id: RecordIdString
+	id: string
+	nombre: string
+	slug: string
+}
+
+export type SupervisorDepartamentosRecord = {
+	departamento_id: RecordIdString
+	id: string
+	user_id: RecordIdString
 }
 
 // Response types include system fields and match responses from the PocketBase API
@@ -421,14 +472,20 @@ export type ArquitectosResponse<Texpand = unknown> = Required<ArquitectosRecord>
 export type AuditLogResponse<Tafter = unknown, Tbefore = unknown, Texpand = unknown> = Required<AuditLogRecord<Tafter, Tbefore>> & BaseSystemFields<Texpand>
 export type BarriosResponse<Textras = unknown, Texpand = unknown> = Required<BarriosRecord<Textras>> & BaseSystemFields<Texpand>
 export type ComparativaVistasResponse<Texpand = unknown> = Required<ComparativaVistasRecord> & BaseSystemFields<Texpand>
-export type ComparativasResponse<Tcontenido_snapshot = ComparativaSnapshot, Texpand = unknown> = Required<ComparativasRecord<Tcontenido_snapshot>> & BaseSystemFields<Texpand>
+export type ComparativasResponse<Tcontenido_snapshot = unknown, Texpand = unknown> = Required<ComparativasRecord<Tcontenido_snapshot>> & BaseSystemFields<Texpand>
 export type ConfigResponse<Texpand = unknown> = Required<ConfigRecord> & BaseSystemFields<Texpand>
-export type ImportacionFilasResponse<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Texpand = unknown> = Required<ImportacionFilasRecord<Tdatos_normalizados, Tdatos_originales>> & BaseSystemFields<Texpand>
-export type ImportacionesResponse<Texpand = unknown> = Required<ImportacionesRecord> & BaseSystemFields<Texpand>
-export type InteresadosResponse<Texpand = unknown> = Required<InteresadosRecord> & BaseSystemFields<Texpand>
-export type UnidadesResponse<Texpand = unknown> = Required<UnidadesRecord> & BaseSystemFields<Texpand>
+export type EstadosDefinicionesResponse<Texpand = unknown> = Required<EstadosDefinicionesRecord> & BaseSystemFields<Texpand>
+export type ExtrasDefinicionesResponse<Topciones = unknown, Texpand = unknown> = Required<ExtrasDefinicionesRecord<Topciones>> & BaseSystemFields<Texpand>
+export type ImportacionFilasResponse<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Tmensajes = unknown, Texpand = unknown> = Required<ImportacionFilasRecord<Tdatos_normalizados, Tdatos_originales, Tmensajes>> & BaseSystemFields<Texpand>
+export type ImportacionesResponse<Tmapeo_columnas = unknown, Tmapeo_extras = unknown, Texpand = unknown> = Required<ImportacionesRecord<Tmapeo_columnas, Tmapeo_extras>> & BaseSystemFields<Texpand>
+export type InteresadosResponse<Textras = unknown, Texpand = unknown> = Required<InteresadosRecord<Textras>> & BaseSystemFields<Texpand>
+export type UnidadesResponse<Textras = unknown, Texpand = unknown> = Required<UnidadesRecord<Textras>> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 export type VendedorBarriosResponse<Texpand = unknown> = Required<VendedorBarriosRecord> & BaseSystemFields<Texpand>
+export type VendedorZonasResponse<Texpand = unknown> = Required<VendedorZonasRecord> & BaseSystemFields<Texpand>
+export type DepartamentosResponse<Texpand = unknown> = Required<DepartamentosRecord> & BaseSystemFields<Texpand>
+export type ZonasResponse<Texpand = unknown> = Required<ZonasRecord> & BaseSystemFields<Texpand>
+export type SupervisorDepartamentosResponse<Texpand = unknown> = Required<SupervisorDepartamentosRecord> & BaseSystemFields<Texpand>
 
 // Types containing all Records and Responses, useful for creating typing helper functions
 
@@ -444,12 +501,18 @@ export type CollectionRecords = {
 	comparativa_vistas: ComparativaVistasRecord
 	comparativas: ComparativasRecord
 	config: ConfigRecord
+	departamentos: DepartamentosRecord
+	estados_definiciones: EstadosDefinicionesRecord
+	extras_definiciones: ExtrasDefinicionesRecord
 	importacion_filas: ImportacionFilasRecord
 	importaciones: ImportacionesRecord
 	interesados: InteresadosRecord
 	unidades: UnidadesRecord
 	users: UsersRecord
 	vendedor_barrios: VendedorBarriosRecord
+	vendedor_zonas: VendedorZonasRecord
+	zonas: ZonasRecord
+	supervisor_departamentos: SupervisorDepartamentosRecord
 }
 
 export type CollectionResponses = {
@@ -464,12 +527,18 @@ export type CollectionResponses = {
 	comparativa_vistas: ComparativaVistasResponse
 	comparativas: ComparativasResponse
 	config: ConfigResponse
+	departamentos: DepartamentosResponse
+	estados_definiciones: EstadosDefinicionesResponse
+	extras_definiciones: ExtrasDefinicionesResponse
 	importacion_filas: ImportacionFilasResponse
 	importaciones: ImportacionesResponse
 	interesados: InteresadosResponse
 	unidades: UnidadesResponse
 	users: UsersResponse
 	vendedor_barrios: VendedorBarriosResponse
+	vendedor_zonas: VendedorZonasResponse
+	zonas: ZonasResponse
+	supervisor_departamentos: SupervisorDepartamentosResponse
 }
 
 // Utility types for create/update operations

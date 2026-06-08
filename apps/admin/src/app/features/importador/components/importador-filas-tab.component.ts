@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output, computed, inject, signal, OnChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FilaExtendida } from '../importador-types';
 import { ImportacionFilasResponse } from '@loteomanager/shared-types';
 import { POCKETBASE } from '@loteomanager/shared-pb-client';
 import { MessageService } from 'primeng/api';
@@ -11,12 +12,7 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import PocketBase from 'pocketbase';
 
-export interface FilaExtendida extends ImportacionFilasResponse {
-  tipo_fila: 'barrio' | 'unidad';
-  mensajes: string[];
-  registro_creado_id?: string;
-  error_aplicacion?: string;
-}
+export type { FilaExtendida } from '../importador-types';
 
 type TagSeverity = 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast';
 

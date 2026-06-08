@@ -1,15 +1,12 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ImportacionExtendida } from '../importador-types';
 import { ImportacionesResponse } from '@loteomanager/shared-types';
 import { DefinicionesCacheService } from '@loteomanager/shared-pb-client';
 import { MapeoExtras } from '../parser/types';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
-
-interface ImportacionExtendida extends ImportacionesResponse {
-  mapeo_extras?: Record<string, string | null>;
-}
 
 interface SelectOpcion {
   label: string;

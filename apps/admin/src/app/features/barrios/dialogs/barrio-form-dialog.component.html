@@ -9,6 +9,7 @@
     [dismissableMask]="false"
     [closeOnEscape]="!saving()"
     appendTo="body"
+    [focusTrap]="false"
     styleClass="lm-barrio-dialog"
 >
     <ng-template pTemplate="header">
@@ -61,22 +62,31 @@
                 </div>
 
                 <div class="lm-field lg:col-span-2">
-                    <label for="slug" class="lm-field-label">
-                        Slug (URL) <span class="lm-required">*</span>
+                    <label for="zona_id" class="lm-field-label">
+                        Zona <span class="lm-required">*</span>
                     </label>
-                    <input
-                        id="slug"
-                        type="text"
-                        pInputText
-                        formControlName="slug"
+                    <p-select
+                        inputId="zona_id"
+                        formControlName="zona_id"
+                        [options]="zonaOpts()"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Seleccioná una zona"
                         class="w-full"
+                        appendTo="body"
                     />
-                    @if (showError(form.controls.slug)) {
-                        <span class="lm-error">Slug requerido (máx. 120 caracteres).</span>
-                    } @else {
-                        <span class="lm-hint">Identificador único en la URL pública (ej: las-tipas).</span>
+                    @if (showError(form.controls.zona_id)) {
+                        <span class="lm-error">Zona requerida.</span>
                     }
                 </div>
+
+                @if (isEdit()) {
+                    <div class="lm-field lg:col-span-2">
+                        <label class="lm-field-label">Slug (URL)</label>
+                        <code class="block p-2 border-round surface-100">{{ slugPreview() || '—' }}</code>
+                        <span class="lm-hint">Se genera automáticamente desde el nombre.</span>
+                    </div>
+                }
             </div>
         </section>
 

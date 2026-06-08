@@ -1,17 +1,10 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal } from '@angular/core';
 import { JsonPipe } from '@angular/common';
-import { ImportacionFilasResponse } from '@loteomanager/shared-types';
+import { FilaExtendida } from '../importador-types';
 import { ImportadorService } from '../services/importador.service';
 import { MessageService } from 'primeng/api';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-
-export interface FilaExtendida extends ImportacionFilasResponse {
-  tipo_fila: 'barrio' | 'unidad';
-  mensajes: string[];
-  registro_creado_id?: string;
-  error_aplicacion?: string;
-}
 
 @Component({
   selector: 'app-importador-fila-detail',

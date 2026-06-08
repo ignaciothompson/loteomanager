@@ -2,16 +2,13 @@ import { Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { ImportadorService } from '../services/importador.service';
+import { ImportacionExtendida } from '../importador-types';
 import { ImportacionesResponse } from '@loteomanager/shared-types';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-
-interface ImportacionExtendida extends ImportacionesResponse {
-  nombre_archivo?: string;
-}
 
 type TagSeverity = 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast';
 

@@ -1,13 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { ImportacionesResponse } from '@loteomanager/shared-types';
-import { ImportacionFilasResponse } from '@loteomanager/shared-types';
-
-interface FilaExtendida extends ImportacionFilasResponse {
-  tipo_fila: 'barrio' | 'unidad';
-  mensajes: string[];
-  registro_creado_id?: string;
-  error_aplicacion?: string;
-}
+import { FilaExtendida } from '../importador-types';
 
 @Component({
   selector: 'app-importador-resumen-tab',

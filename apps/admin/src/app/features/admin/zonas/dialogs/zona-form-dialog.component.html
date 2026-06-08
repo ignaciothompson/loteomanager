@@ -1,0 +1,48 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="onVisibleChange($event)"
+  [header]="editingId() ? 'Editar zona' : 'Nueva zona'"
+  [modal]="true"
+  [style]="dialogStyle"
+  appendTo="body"
+>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
+    <div class="flex flex-col gap-2">
+      <label for="zona-nombre" class="font-semibold">Nombre *</label>
+      <input pInputText id="zona-nombre" formControlName="nombre" class="w-full" />
+      @if (showError(form.get('nombre'))) {
+        <small class="text-red-500">Nombre requerido.</small>
+      }
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="zona-depto" class="font-semibold">Departamento *</label>
+      <p-select
+        inputId="zona-depto"
+        formControlName="departamento_id"
+        [options]="departamentoOpts()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Seleccioná departamento"
+        class="w-full"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <span class="text-500 text-sm">Slug (automático)</span>
+      <code>{{ slugPreview() || '—' }}</code>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [text]="true" (click)="onCancel()" />
+    <p-button
+      [label]="editingId() ? 'Guardar' : 'Crear'"
+      icon="pi pi-check"
+      [loading]="saving()"
+      [disabled]="form.invalid"
+      (click)="onSubmit()"
+    />
+  </ng-template>
+</p-dialog>

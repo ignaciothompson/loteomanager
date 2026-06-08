@@ -129,14 +129,33 @@ onRecordUpdateRequest((e) => {
     let tieneAccesoPorZona = false;
     try {
       const barrio = $app.findRecordById("barrios", barrioId);
-      const zona = barrio.get("zona");
-      if (zona) {
+      const zonaId = barrio.get("zona_id");
+      if (zonaId) {
         const zonas = $app.findRecordsByFilter(
           "vendedor_zonas",
-          `vendedor_id = '${vendedorId}' && zona = '${zona}'`,
+          `vendedor_id = '${vendedorId}' && zona_id = '${zonaId}'`,
           "-created", 1, 0,
         );
         tieneAccesoPorZona = zonas.length > 0;
+      }
+      if (!tieneAccesoPorZona && zonaId) {
+        const zonaRec = $app.findRecordById("zonas", zonaId);
+        if (zonaRec.get("slug") === "todo") {
+          const vzTodo = $app.findRecordsByFilter(
+            "vendedor_zonas",
+            `vendedor_id = '${vendedorId}'`,
+            "-created", 50, 0,
+          );
+          for (let i = 0; i < vzTodo.length; i++) {
+            try {
+              const z = $app.findRecordById("zonas", vzTodo[i].get("zona_id"));
+              if (z.get("slug") === "todo") {
+                tieneAccesoPorZona = true;
+                break;
+              }
+            } catch (_e2) {}
+          }
+        }
       }
     } catch (_e) {}
 
@@ -486,22 +505,18 @@ onRecordUpdateRequest((e) => {
 // ─── HOOK D — VALIDACIÓN DE ZONA EN VENDEDOR_ZONAS ───────────────────────────
 
 onRecordCreateRequest((e) => {
-  const zona = e.record.get("zona");
-  if (!zona) { e.next(); return; }
+  const zonaId = e.record.get("zona_id");
+  if (!zonaId) { e.next(); return; }
 
   let zonaExiste = false;
   try {
-    const barrios = $app.findRecordsByFilter(
-      "barrios",
-      `zona = '${zona}'`,
-      "", 1, 0,
-    );
-    zonaExiste = barrios.length > 0;
+    $app.findRecordById("zonas", zonaId);
+    zonaExiste = true;
   } catch (_e) {}
 
   if (!zonaExiste) {
     throw new BadRequestError(
-      `La zona '${zona}' no existe en ningún barrio. Asigná la zona a un barrio primero.`
+      "La zona seleccionada no existe. Elegí una zona válida."
     );
   }
 

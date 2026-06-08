@@ -555,9 +555,10 @@ function validarAccesoBarrioExtendido(event, mockDb) {
   if (!tieneAccesoDirecto) {
     let tieneAccesoPorZona = false;
     const barrio = (mockDb.barrios || []).find(b => b.id === barrioId);
-    if (barrio && barrio.zona) {
+    const zonaId = barrio?.zona_id;
+    if (zonaId) {
       const zonas = (mockDb.vendedor_zonas || []).filter(
-        vz => vz.vendedor_id === vendedorId && vz.zona === barrio.zona
+        vz => vz.vendedor_id === vendedorId && vz.zona_id === zonaId
       );
       tieneAccesoPorZona = zonas.length > 0;
     }
@@ -590,13 +591,13 @@ function protegerRoleYActivo(event, mockDb) {
  * Lógica extraída del Hook D para testear en aislamiento.
  */
 function validarZonaEnVendedorZonas(event, mockDb) {
-  const zona = event.record.get("zona");
-  if (!zona) return;
+  const zonaId = event.record.get("zona_id");
+  if (!zonaId) return;
 
-  const barrios = (mockDb.barrios || []).filter(b => b.zona === zona);
-  if (barrios.length === 0) {
+  const zonas = (mockDb.zonas || []).filter(z => z.id === zonaId);
+  if (zonas.length === 0) {
     throw new BadRequestError(
-      `La zona '${zona}' no existe en ningún barrio. Asigná la zona a un barrio primero.`
+      "La zona seleccionada no existe. Elegí una zona válida."
     );
   }
 }
@@ -634,12 +635,15 @@ const mockDbExtendido = {
     { vendedor_id: "vendor_1", barrio_id: "barrio_A" },
   ],
   vendedor_zonas: [
-    { vendedor_id: "vendor_2", zona: "zona_norte" },
+    { vendedor_id: "vendor_2", zona_id: "zona_norte_id" },
+  ],
+  zonas: [
+    { id: "zona_norte_id", slug: "zona-norte", nombre: "zona_norte" },
   ],
   barrios: [
-    { id: "barrio_A", zona: "zona_sur"   },
-    { id: "barrio_B", zona: "zona_norte" },
-    { id: "barrio_C", zona: null          },
+    { id: "barrio_A", zona_id: "zona_sur_id"   },
+    { id: "barrio_B", zona_id: "zona_norte_id" },
+    { id: "barrio_C", zona_id: null            },
   ],
 };
 
@@ -778,47 +782,44 @@ test("sin auth no hace nada", () => {
 console.log("\n-- Hook D: Validación de zona en vendedor_zonas --");
 
 const mockDbBarrios = {
-  barrios: [
-    { id: "barrio_A", zona: "zona_norte" },
-    { id: "barrio_B", zona: "zona_sur"   },
+  zonas: [
+    { id: "zona_norte_id", slug: "zona-norte" },
   ],
 };
 
 test("crear vendedor_zona con zona válida → pasa", () => {
   const event = makeEvent(
     "vendedor_zonas",
-    { zona: "zona_norte" },
+    { zona_id: "zona_norte_id" },
     {},
     null,
     {},
   );
-  // No debe lanzar
   validarZonaEnVendedorZonas(event, mockDbBarrios);
 });
 
 test("crear vendedor_zona con zona inexistente → lanza BadRequestError", () => {
   const event = makeEvent(
     "vendedor_zonas",
-    { zona: "zona_fantasma" },
+    { zona_id: "zona_fantasma" },
     {},
     null,
     {},
   );
   assertThrows(
     () => validarZonaEnVendedorZonas(event, mockDbBarrios),
-    "no existe en ningún barrio",
+    "no existe",
   );
 });
 
 test("crear vendedor_zona sin zona → pasa sin validar", () => {
   const event = makeEvent(
     "vendedor_zonas",
-    { zona: null },
+    { zona_id: null },
     {},
     null,
     {},
   );
-  // No debe lanzar (zona vacía se ignora)
   validarZonaEnVendedorZonas(event, mockDbBarrios);
 });
 
