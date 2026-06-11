@@ -1,6 +1,11 @@
-import { Component, ViewChild, computed, inject, model, signal } from '@angular/core';
+import { Component, ViewChild, computed, effect, inject, model, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BarriosService } from '@loteomanager/shared-pb-client';
+import {
+  AuthService,
+  BarriosService,
+  VendedorAccesoService,
+  type ReloadableSignal
+} from '@loteomanager/shared-pb-client';
 import {
   BarriosRecord,
   BarriosResponse,
@@ -38,9 +43,19 @@ export class BarriosComponent {
   private barrioFormDialog?: BarrioFormDialogComponent;
 
   private barriosService = inject(BarriosService);
+  private authService = inject(AuthService);
+  private vendedorAcceso = inject(VendedorAccesoService);
   private messageService = inject(MessageService);
 
-  barrios = this.barriosService.list();
+  barrios = this.createAccesoList((ids) => this.barriosService.listVisibles(ids));
+
+  constructor() {
+    effect(() => {
+      this.vendedorAcceso.barriosVisibles();
+      this.authService.currentUser();
+      this.barrios.reload();
+    });
+  }
 
   filtroNombre = signal('');
 
@@ -129,6 +144,29 @@ export class BarriosComponent {
         detail: 'No se pudo eliminar el barrio'
       });
     }
+  }
+
+  private createAccesoList<T>(
+    loader: (barrioIds: string[] | null) => Promise<T[]>
+  ): ReloadableSignal<T[]> {
+    const data = signal<T[]>([]) as ReloadableSignal<T[]>;
+    const load = async () => {
+      const role = this.authService.currentUser()?.['role'] as string | undefined;
+      let barrioIds: string[] | null = null;
+      if (role && role !== 'admin') {
+        barrioIds = this.vendedorAcceso.barriosVisibles();
+        if (barrioIds === null) {
+          data.set([]);
+          return;
+        }
+      }
+      data.set(await loader(barrioIds));
+    };
+    data.reload = () => {
+      void load();
+    };
+    void load();
+    return data;
   }
 
   private parseExtras(raw: unknown): ExtraPersistido[] {

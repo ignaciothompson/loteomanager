@@ -26,6 +26,17 @@ export class VendedorAccesoService {
     }
   }
 
+  async loadVendedorZonas(userId: string): Promise<string[]> {
+    const recs = await this.pb.collection('vendedor_zonas').getFullList({
+      filter: `vendedor_id="${userId}"`,
+    });
+    return recs.map((r) => r['zona_id'] as string);
+  }
+
+  async getZonasAccesibles(userId: string): Promise<string[]> {
+    return this.loadVendedorZonas(userId);
+  }
+
   async getBarriosAccesibles(userId: string): Promise<string[]> {
     const [directos, zonasAsignadas] = await Promise.all([
       this.pb.collection('vendedor_barrios').getFullList({ filter: `vendedor_id="${userId}"` }),

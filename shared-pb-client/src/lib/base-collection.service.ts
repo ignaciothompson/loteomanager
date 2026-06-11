@@ -51,9 +51,13 @@ export abstract class BaseCollectionService<T> {
     return data;
   }
 
-  async listAsync(filter?: string): Promise<T[]> {
+  async listAsync(filter?: string, options?: ListOptions): Promise<T[]> {
     try {
-      const records = await this.collection.getFullList({ filter });
+      const records = await this.collection.getFullList({
+        filter,
+        expand: options?.expand,
+        sort: options?.sort
+      });
       return records as unknown as T[];
     } catch (err) {
       throw err;

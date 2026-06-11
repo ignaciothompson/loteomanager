@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BaseCollectionService } from '../base-collection.service';
+import { BaseCollectionService, type ListOptions } from '../base-collection.service';
 import { UnidadesResponse } from '@loteomanager/shared-types';
 
 @Injectable({
@@ -8,16 +8,20 @@ import { UnidadesResponse } from '@loteomanager/shared-types';
 export class UnidadesService extends BaseCollectionService<UnidadesResponse> {
   protected override collectionName = 'unidades';
 
-  async listByBarrios(barrioIds: string[] | null, extraFilter?: string): Promise<UnidadesResponse[]> {
+  async listByBarrios(
+    barrioIds: string[] | null,
+    extraFilter?: string,
+    options?: ListOptions
+  ): Promise<UnidadesResponse[]> {
     if (barrioIds === null) {
-      return this.listAsync(extraFilter);
+      return this.listAsync(extraFilter, options);
     }
     if (barrioIds.length === 0) {
       return [];
     }
     const barrioFilter = barrioIds.map(id => `barrio_id="${id}"`).join(' || ');
     const filter = extraFilter ? `(${barrioFilter}) && (${extraFilter})` : barrioFilter;
-    return this.listAsync(filter);
+    return this.listAsync(filter, options);
   }
 
   async cambiarEstado(unidadId: string, nuevoEstado: string): Promise<UnidadesResponse> {

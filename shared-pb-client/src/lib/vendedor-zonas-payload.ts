@@ -1,18 +1,11 @@
-/** Payload para crear vendedor_zonas; incluye `zona` text si el schema legacy aún lo exige. */
+/** Payload para crear vendedor_zonas (solo relaciones, sin campo text legacy). */
 export function buildVendedorZonaCreatePayload(
   vendedorId: string,
   zonaId: string,
-  zonaNombre?: string,
+  _zonaNombre?: string,
 ): Record<string, unknown> {
-  const payload: Record<string, unknown> = {
+  return {
     vendedor_id: vendedorId,
     zona_id: zonaId,
   };
-
-  const nombre = (zonaNombre ?? '').trim();
-  if (nombre) {
-    payload['zona'] = nombre;
-  }
-
-  return payload;
 }

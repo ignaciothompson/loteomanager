@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import {
   AuthService,
   DepartamentosService,
-  POCKETBASE,
+  SupervisorAccesoService,
   ZonasService
 } from '@loteomanager/shared-pb-client';
 import type { DepartamentosResponse, ZonasResponse } from '@loteomanager/shared-types';
@@ -45,7 +45,7 @@ export class ZonasComponent {
   private svc = inject(ZonasService);
   private deptSvc = inject(DepartamentosService);
   private auth = inject(AuthService);
-  private pb = inject(POCKETBASE);
+  private supervisorAcceso = inject(SupervisorAccesoService);
   private toast = inject(MessageService);
 
   rows = this.svc.list(undefined, { sort: 'nombre', expand: 'departamento_id' });
@@ -63,13 +63,18 @@ export class ZonasComponent {
     const allowed = this.supervisorDeptIds();
     const all = this.deptOpts();
     if (allowed === null) return all;
+    if (allowed.length === 0) return [];
     return all.filter((o) => allowed.includes(o.value));
   });
 
   rowsFiltradas = computed(() => {
     let list = this.rows() as ZonaRow[];
     const allowed = this.supervisorDeptIds();
-    if (allowed !== null) {
+    if (allowed === null) {
+      // acceso total (admin o supervisor con depto Todo)
+    } else if (allowed.length === 0) {
+      return [];
+    } else {
       list = list.filter((r) => allowed.includes(r.departamento_id));
     }
     const deptId = this.filterDepartamentoId();
@@ -97,10 +102,15 @@ export class ZonasComponent {
       this.supervisorDeptIds.set(null);
       return;
     }
-    const recs = await this.pb.collection('supervisor_departamentos').getFullList({
-      filter: `user_id="${user['id']}"`
-    });
-    this.supervisorDeptIds.set(recs.map((r) => r['departamento_id'] as string));
+
+    const userId = user['id'] as string;
+    if (await this.supervisorAcceso.tieneAccesoTotal(userId)) {
+      this.supervisorDeptIds.set(null);
+      return;
+    }
+
+    const deptIds = await this.supervisorAcceso.getDepartamentosAccesibles(userId);
+    this.supervisorDeptIds.set(deptIds ?? []);
   }
 
   deptNombre(row: ZonaRow): string {
