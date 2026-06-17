@@ -1,0 +1,111 @@
+<p-dialog
+  header="Imágenes del barrio"
+  [(visible)]="visible"
+  [modal]="true"
+  [style]="{ width: '32rem' }"
+  [draggable]="false"
+  (onShow)="onShow()"
+  (onHide)="onHide()"
+>
+  <div class="flex flex-col gap-4">
+    <div class="lm-field">
+      <label class="lm-field-label">Plano general</label>
+      <p-fileUpload
+        mode="basic"
+        chooseLabel="Seleccionar plano"
+        accept="image/*,.pdf,.svg"
+        [auto]="true"
+        [customUpload]="true"
+        (onSelect)="onPlanoSelect($event)"
+      />
+      @if (local.planoNombre || local.planoFile) {
+        <span class="lm-hint">{{ local.planoNombre ?? local.planoFile?.name }}</span>
+      }
+      @if (planoPreviewSrc) {
+        <div class="ingreso-imagenes-preview">
+          @if (planoIsImage()) {
+            <button
+              type="button"
+              class="ingreso-imagenes-preview__btn"
+              (click)="openZoom(planoPreviewSrc, 'Plano general')"
+              aria-label="Ampliar plano general"
+            >
+              <img
+                [src]="planoPreviewSrc"
+                alt="Plano general"
+                class="ingreso-imagenes-preview__img"
+              />
+              <span class="ingreso-imagenes-preview__hint">
+                <i class="pi pi-search-plus" aria-hidden="true"></i>
+              </span>
+            </button>
+          } @else {
+            <a
+              class="ingreso-imagenes-preview__file"
+              [href]="planoPreviewSrc"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <i class="pi pi-file-pdf" aria-hidden="true"></i>
+              <span>Ver archivo</span>
+            </a>
+          }
+        </div>
+      }
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Imagen portada</label>
+      <p-fileUpload
+        mode="basic"
+        chooseLabel="Seleccionar imagen"
+        accept="image/*"
+        [auto]="true"
+        [customUpload]="true"
+        (onSelect)="onImagenSelect($event)"
+      />
+      @if (local.imagenNombre || local.imagenFile) {
+        <span class="lm-hint">{{ local.imagenNombre ?? local.imagenFile?.name }}</span>
+      }
+      @if (imagenPreviewSrc && imagenIsImage()) {
+        <div class="ingreso-imagenes-preview">
+          <button
+            type="button"
+            class="ingreso-imagenes-preview__btn"
+            (click)="openZoom(imagenPreviewSrc, 'Imagen portada')"
+            aria-label="Ampliar imagen portada"
+          >
+            <img
+              [src]="imagenPreviewSrc"
+              alt="Imagen portada"
+              class="ingreso-imagenes-preview__img"
+            />
+            <span class="ingreso-imagenes-preview__hint">
+              <i class="pi pi-search-plus" aria-hidden="true"></i>
+            </span>
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cancelar" class="p-button-text" (click)="visible.set(false)"></button>
+    <button pButton type="button" label="Aceptar" icon="pi pi-check" (click)="aceptar()"></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [header]="zoomTitle()"
+  [(visible)]="zoomVisible"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [style]="{ width: 'min(36rem, 92vw)' }"
+  styleClass="ingreso-imagenes-zoom"
+>
+  @if (zoomSrc()) {
+    <img [src]="zoomSrc()!" [alt]="zoomTitle()" class="ingreso-imagenes-zoom__img" />
+  }
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cerrar" icon="pi pi-times" class="p-button-text" (click)="closeZoom()"></button>
+  </ng-template>
+</p-dialog>

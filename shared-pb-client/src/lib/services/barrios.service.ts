@@ -1,7 +1,15 @@
 import { Injectable } from '@angular/core';
 import { toSlug } from '@loteomanager/shared-utils';
-import { BaseCollectionService } from '../base-collection.service';
+import { BaseCollectionService, type ListOptions } from '../base-collection.service';
 import { BarriosResponse } from '@loteomanager/shared-types';
+
+export type BarrioListFilters = {
+  departamentoId?: string | null;
+  zonaId?: string | null;
+  nombre?: string;
+};
+
+export type BarrioConUnidades = BarriosResponse & { unidadesCount: number };
 
 @Injectable({
   providedIn: 'root'
@@ -34,5 +42,81 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
     }
     const filter = vendedorBarrioIds.map(id => `id="${id}"`).join(' || ');
     return this.listAsync(filter);
+  }
+
+  async listFiltered(
+    filters: BarrioListFilters,
+    visibleBarrioIds: string[] | null,
+    options?: ListOptions
+  ): Promise<BarriosResponse[]> {
+    const parts: string[] = [];
+
+    if (visibleBarrioIds !== null) {
+      if (visibleBarrioIds.length === 0) return [];
+      parts.push(`(${visibleBarrioIds.map((id) => `id="${id}"`).join(' || ')})`);
+    }
+
+    if (filters.zonaId) {
+      parts.push(`zona_id="${filters.zonaId}"`);
+    }
+
+    const nombre = filters.nombre?.trim();
+    if (nombre) {
+      const escaped = nombre.replace(/"/g, '\\"');
+      parts.push(`nombre ~ "${escaped}"`);
+    }
+
+    const expand = options?.expand ?? 'zona_id,zona_id.departamento_id';
+    let rows = await this.listAsync(parts.length ? parts.join(' && ') : undefined, {
+      ...options,
+      expand,
+      sort: options?.sort ?? 'nombre'
+    });
+
+    if (filters.departamentoId) {
+      rows = rows.filter((b) => {
+        const zona = this.resolveExpandedZona(b);
+        const deptId = zona?.departamento_id ?? zona?.expand?.departamento_id?.id;
+        return deptId === filters.departamentoId;
+      });
+    }
+
+    return rows;
+  }
+
+  async attachUnidadesCount(barrios: BarriosResponse[]): Promise<BarrioConUnidades[]> {
+    if (!barrios.length) return [];
+
+    const ids = barrios.map((b) => b.id);
+    const unidades = await this.pb.collection('unidades').getFullList({
+      filter: ids.map((id) => `barrio_id="${id}"`).join(' || '),
+      fields: 'id,barrio_id'
+    });
+
+    const counts: Record<string, number> = {};
+    for (const u of unidades) {
+      const bid = u['barrio_id'] as string;
+      counts[bid] = (counts[bid] ?? 0) + 1;
+    }
+
+    return barrios.map((b) => ({
+      ...b,
+      unidadesCount: counts[b.id] ?? 0
+    }));
+  }
+
+  private resolveExpandedZona(barrio: BarriosResponse): {
+    departamento_id?: string;
+    expand?: { departamento_id?: { id: string } };
+  } | undefined {
+    const expand = (barrio as BarriosResponse & {
+      expand?: { zona_id?: { departamento_id?: string | { id: string }; expand?: { departamento_id?: { id: string } } } };
+    }).expand?.zona_id;
+    if (!expand || typeof expand !== 'object') return undefined;
+    const dept = expand.departamento_id;
+    return {
+      departamento_id: typeof dept === 'string' ? dept : dept?.id,
+      expand: typeof dept === 'object' && dept ? { departamento_id: dept } : expand.expand
+    };
   }
 }

@@ -1,0 +1,55 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.ingreso-form-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  min-width: 0;
+}
+
+.ingreso-form-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ingreso-form-panel__actions {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.ingreso-form-panel__mode {
+  margin-bottom: 1rem;
+}
+
+.ingreso-form-panel__mode-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--p-content-hover-background);
+  color: var(--p-text-color);
+  border: 1px solid var(--p-content-border-color);
+}
+
+.ingreso-form-panel__mode-badge--edit {
+  background: color-mix(in srgb, var(--p-primary-color) 18%, transparent);
+  color: var(--p-primary-color);
+  border-color: color-mix(in srgb, var(--p-primary-color) 35%, transparent);
+}
+
+.ingreso-form-panel__mode-badge--plantilla {
+  background: color-mix(in srgb, var(--p-orange-500) 18%, transparent);
+  color: var(--p-orange-500);
+  border-color: color-mix(in srgb, var(--p-orange-500) 35%, transparent);
+}

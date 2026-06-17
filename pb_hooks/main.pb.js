@@ -208,6 +208,24 @@ onRecordUpdateRequest((e) => {
   e.next();
 }, "unidades");
 
+// ─── HOOK 3b — CÓDIGO ÚNICO POR BARRIO EN UNIDADES ───────────────────────────
+// Los handlers JSVM no ven funciones del scope del archivo: require() en cada callback.
+
+onRecordCreateRequest((e) => {
+  const lm = require(__hooks + "/lm_validar_codigo_unidad.js");
+  lm.lmValidarCodigoUnicoUnidad(e.record, null);
+  e.next();
+}, "unidades");
+
+onRecordUpdateRequest((e) => {
+  const body = e.requestInfo().body || {};
+  if (Object.prototype.hasOwnProperty.call(body, "codigo") || Object.prototype.hasOwnProperty.call(body, "barrio_id")) {
+    const lm = require(__hooks + "/lm_validar_codigo_unidad.js");
+    lm.lmValidarCodigoUnicoUnidad(e.record, e.record.id);
+  }
+  e.next();
+}, "unidades");
+
 // ─── HOOK 4 — DUPLICADOS EN INTERESADOS ──────────────────────────────────────
 
 onRecordCreateRequest((e) => {

@@ -23,12 +23,13 @@ export const Collections = {
 	ImportacionFilas: "importacion_filas",
 	Importaciones: "importaciones",
 	Interesados: "interesados",
+	PlantillasUnidad: "plantillas_unidad",
+	SupervisorDepartamentos: "supervisor_departamentos",
 	Unidades: "unidades",
 	Users: "users",
 	VendedorBarrios: "vendedor_barrios",
 	VendedorZonas: "vendedor_zonas",
 	Zonas: "zonas",
-	SupervisorDepartamentos: "supervisor_departamentos",
 } as const
 export type Collections = typeof Collections[keyof typeof Collections]
 
@@ -135,6 +136,8 @@ export type AuditLogRecord<Tafter = unknown, Tbefore = unknown> = {
 	user_id?: RecordIdString
 }
 
+export type TipoUnidadIngreso = 'lote_vacio' | 'casa_construida' | 'casa_prefabricada'
+
 export type BarriosRecord<Textras = unknown> = {
 	descripcion?: HTMLString
 	destacado?: boolean
@@ -146,7 +149,9 @@ export type BarriosRecord<Textras = unknown> = {
 	nombre: string
 	plano_general?: FileNameString
 	slug: string
+	tipos_unidad?: TipoUnidadIngreso[]
 	ubicacion_texto?: string
+	zona?: string
 	zona_id: RecordIdString
 }
 
@@ -186,6 +191,12 @@ export type ConfigRecord = {
 	mensaje_bienvenida_landing?: HTMLString
 	responsable_default_id: RecordIdString
 	whatsapp_notif_enabled?: boolean
+}
+
+export type DepartamentosRecord = {
+	id: string
+	nombre: string
+	slug: string
 }
 
 export const EstadosDefinicionesEntidadOptions = {
@@ -350,28 +361,51 @@ export type InteresadosRecord<Textras = unknown> = {
 	unidad_id?: RecordIdString
 }
 
+export type SupervisorDepartamentosRecord = {
+	departamento_id: RecordIdString
+	id: string
+	user_id: RecordIdString
+}
+
 export const UnidadesTipoUnidadOptions = {
-	"lote": "lote",
-	"casa": "casa",
-	"departamento": "departamento",
+	"lote_vacio": "lote_vacio",
+	"casa_construida": "casa_construida",
+	"casa_prefabricada": "casa_prefabricada",
 } as const
 export type UnidadesTipoUnidadOptions = typeof UnidadesTipoUnidadOptions[keyof typeof UnidadesTipoUnidadOptions]
 
 export const UnidadesMonedaOptions = {
 	"USD": "USD",
+	"UYU": "UYU",
 	"ARS": "ARS",
 } as const
 export type UnidadesMonedaOptions = typeof UnidadesMonedaOptions[keyof typeof UnidadesMonedaOptions]
+
+export const UnidadesOrientacionOptions = {
+	"Norte": "Norte",
+	"Sur": "Sur",
+	"Este": "Este",
+	"Oeste": "Oeste",
+	"Noreste": "Noreste",
+	"Noroeste": "Noroeste",
+	"Sureste": "Sureste",
+	"Suroeste": "Suroeste",
+} as const
+export type UnidadesOrientacionOptions = typeof UnidadesOrientacionOptions[keyof typeof UnidadesOrientacionOptions]
+
 export type UnidadesRecord<Textras = unknown> = {
 	ambientes?: number
 	antiguedad_anios?: number
 	arquitecto_id?: RecordIdString
+	area_m2?: number
 	barrio_id?: RecordIdString
 	cocheras?: number
-	codigo_interno: string
+	codigo: string
+	codigo_interno?: string
 	descripcion?: HTMLString
 	destacado?: boolean
 	direccion_propia?: string
+	en_oferta?: boolean
 	estado: string
 	extras?: null | Textras
 	fecha_bloqueo?: IsoDateString
@@ -384,15 +418,41 @@ export type UnidadesRecord<Textras = unknown> = {
 	id: string
 	interesado_comprador_id?: RecordIdString
 	metros_construidos?: number
-	metros_cuadrados: number
+	metros_cuadrados?: number
 	moneda: UnidadesMonedaOptions
 	numero_unidad?: string
 	oferta?: boolean
+	orientacion?: UnidadesOrientacionOptions
+	pendiente_publicar?: boolean
 	plano_unidad?: FileNameString
-	precio: number
+	precio?: number
 	precio_oferta?: number
 	responsable_id: RecordIdString
 	tipo_unidad: UnidadesTipoUnidadOptions
+	web_visible?: boolean
+}
+
+export const PlantillasUnidadEstadoInicialOptions = {
+	"disponible": "disponible",
+	"reservado": "reservado",
+	"bloqueado": "bloqueado",
+} as const
+export type PlantillasUnidadEstadoInicialOptions = typeof PlantillasUnidadEstadoInicialOptions[keyof typeof PlantillasUnidadEstadoInicialOptions]
+
+export type PlantillasUnidadRecord = {
+	area_m2?: number
+	barrio_id: RecordIdString
+	cantidad: number
+	estado_inicial?: PlantillasUnidadEstadoInicialOptions
+	id: string
+	modelo?: string
+	moneda?: UnidadesMonedaOptions
+	nombre: string
+	orientacion?: UnidadesOrientacionOptions
+	patron_codigo: string
+	precio?: number
+	tipo_unidad: UnidadesTipoUnidadOptions
+	web_visible?: boolean
 }
 
 export const UsersRoleOptions = {
@@ -440,13 +500,8 @@ export type VendedorBarriosRecord = {
 export type VendedorZonasRecord = {
 	id: string
 	vendedor_id: RecordIdString
+	zona: string
 	zona_id: RecordIdString
-}
-
-export type DepartamentosRecord = {
-	id: string
-	nombre: string
-	slug: string
 }
 
 export type ZonasRecord = {
@@ -454,12 +509,6 @@ export type ZonasRecord = {
 	id: string
 	nombre: string
 	slug: string
-}
-
-export type SupervisorDepartamentosRecord = {
-	departamento_id: RecordIdString
-	id: string
-	user_id: RecordIdString
 }
 
 // Response types include system fields and match responses from the PocketBase API
@@ -474,18 +523,19 @@ export type BarriosResponse<Textras = unknown, Texpand = unknown> = Required<Bar
 export type ComparativaVistasResponse<Texpand = unknown> = Required<ComparativaVistasRecord> & BaseSystemFields<Texpand>
 export type ComparativasResponse<Tcontenido_snapshot = unknown, Texpand = unknown> = Required<ComparativasRecord<Tcontenido_snapshot>> & BaseSystemFields<Texpand>
 export type ConfigResponse<Texpand = unknown> = Required<ConfigRecord> & BaseSystemFields<Texpand>
+export type DepartamentosResponse<Texpand = unknown> = Required<DepartamentosRecord> & BaseSystemFields<Texpand>
 export type EstadosDefinicionesResponse<Texpand = unknown> = Required<EstadosDefinicionesRecord> & BaseSystemFields<Texpand>
 export type ExtrasDefinicionesResponse<Topciones = unknown, Texpand = unknown> = Required<ExtrasDefinicionesRecord<Topciones>> & BaseSystemFields<Texpand>
 export type ImportacionFilasResponse<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Tmensajes = unknown, Texpand = unknown> = Required<ImportacionFilasRecord<Tdatos_normalizados, Tdatos_originales, Tmensajes>> & BaseSystemFields<Texpand>
 export type ImportacionesResponse<Tmapeo_columnas = unknown, Tmapeo_extras = unknown, Texpand = unknown> = Required<ImportacionesRecord<Tmapeo_columnas, Tmapeo_extras>> & BaseSystemFields<Texpand>
 export type InteresadosResponse<Textras = unknown, Texpand = unknown> = Required<InteresadosRecord<Textras>> & BaseSystemFields<Texpand>
+export type SupervisorDepartamentosResponse<Texpand = unknown> = Required<SupervisorDepartamentosRecord> & BaseSystemFields<Texpand>
 export type UnidadesResponse<Textras = unknown, Texpand = unknown> = Required<UnidadesRecord<Textras>> & BaseSystemFields<Texpand>
+export type PlantillasUnidadResponse<Texpand = unknown> = Required<PlantillasUnidadRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 export type VendedorBarriosResponse<Texpand = unknown> = Required<VendedorBarriosRecord> & BaseSystemFields<Texpand>
 export type VendedorZonasResponse<Texpand = unknown> = Required<VendedorZonasRecord> & BaseSystemFields<Texpand>
-export type DepartamentosResponse<Texpand = unknown> = Required<DepartamentosRecord> & BaseSystemFields<Texpand>
 export type ZonasResponse<Texpand = unknown> = Required<ZonasRecord> & BaseSystemFields<Texpand>
-export type SupervisorDepartamentosResponse<Texpand = unknown> = Required<SupervisorDepartamentosRecord> & BaseSystemFields<Texpand>
 
 // Types containing all Records and Responses, useful for creating typing helper functions
 
@@ -507,12 +557,13 @@ export type CollectionRecords = {
 	importacion_filas: ImportacionFilasRecord
 	importaciones: ImportacionesRecord
 	interesados: InteresadosRecord
+	plantillas_unidad: PlantillasUnidadRecord
+	supervisor_departamentos: SupervisorDepartamentosRecord
 	unidades: UnidadesRecord
 	users: UsersRecord
 	vendedor_barrios: VendedorBarriosRecord
 	vendedor_zonas: VendedorZonasRecord
 	zonas: ZonasRecord
-	supervisor_departamentos: SupervisorDepartamentosRecord
 }
 
 export type CollectionResponses = {
@@ -533,12 +584,13 @@ export type CollectionResponses = {
 	importacion_filas: ImportacionFilasResponse
 	importaciones: ImportacionesResponse
 	interesados: InteresadosResponse
+	plantillas_unidad: PlantillasUnidadResponse
+	supervisor_departamentos: SupervisorDepartamentosResponse
 	unidades: UnidadesResponse
 	users: UsersResponse
 	vendedor_barrios: VendedorBarriosResponse
 	vendedor_zonas: VendedorZonasResponse
 	zonas: ZonasResponse
-	supervisor_departamentos: SupervisorDepartamentosResponse
 }
 
 // Utility types for create/update operations

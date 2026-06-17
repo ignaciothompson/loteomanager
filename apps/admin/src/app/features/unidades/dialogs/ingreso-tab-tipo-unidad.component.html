@@ -1,0 +1,120 @@
+<div class="flex flex-col gap-4">
+  <p-selectButton
+    [options]="modoOpts"
+    [ngModel]="draft().modo"
+    (ngModelChange)="draft.update((d) => ({ ...d, modo: $event }))"
+    optionLabel="label"
+    optionValue="value"
+  />
+
+  @if (draft().modo === 'plantilla') {
+    <app-plantilla-unidad-form
+      [tipo]="tipo()"
+      [plantillas]="draft().plantillas"
+      (plantillasChange)="onPlantillasChange($event)"
+    />
+  } @else {
+    <section class="lm-section">
+      <header class="lm-section-header">
+        <span class="lm-section-header-title">
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          {{ tipoLabel() }} — individual
+        </span>
+      </header>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="lm-field">
+          <label class="lm-field-label">Código <span class="lm-required">*</span></label>
+          <input type="text" pInputText class="w-full" [(ngModel)]="individualDraft.codigo" />
+        </div>
+        <div class="lm-field">
+          <label class="lm-field-label">Área m²</label>
+          <p-inputNumber [(ngModel)]="individualDraft.area_m2" [min]="0" class="w-full" />
+        </div>
+        @if (showOrientacion()) {
+          <div class="lm-field">
+            <label class="lm-field-label">Orientación</label>
+            <p-select
+              [(ngModel)]="individualDraft.orientacion"
+              [options]="orientacionOpts"
+              optionLabel="label"
+              optionValue="value"
+              [showClear]="true"
+              class="w-full"
+              appendTo="body"
+            />
+          </div>
+        }
+        @if (showModelo()) {
+          <div class="lm-field">
+            <label class="lm-field-label">Modelo</label>
+            <input type="text" pInputText class="w-full" [(ngModel)]="individualDraft.modelo" />
+          </div>
+        }
+        <div class="lm-field">
+          <label class="lm-field-label">Precio</label>
+          <p-inputNumber [(ngModel)]="individualDraft.precio" [min]="0" class="w-full" />
+        </div>
+        <div class="lm-field">
+          <label class="lm-field-label">Moneda</label>
+          <p-select
+            [(ngModel)]="individualDraft.moneda"
+            [options]="monedaOpts"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+          />
+        </div>
+        <div class="lm-field">
+          <label class="lm-field-label">Estado</label>
+          <p-select
+            [(ngModel)]="individualDraft.estado"
+            [options]="estadoOpts"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+          />
+        </div>
+        <div class="lm-field lm-toggle-row lg:col-span-3">
+          <label class="lm-field-label">Visible en web</label>
+          <p-toggleSwitch [(ngModel)]="individualDraft.web_visible" />
+        </div>
+      </div>
+      <div class="flex justify-end mt-3">
+        <button pButton type="button" label="Agregar unidad" icon="pi pi-plus" class="p-button-outlined" (click)="agregarIndividual()"></button>
+      </div>
+      @if (draft().individuales.length) {
+        <div class="flex flex-wrap gap-2 mt-4">
+          @for (u of draft().individuales; track u.localId) {
+            <span class="inline-flex items-center gap-2 px-3 py-1 border-round surface-100 text-sm">
+              {{ u.codigo }}
+              <button
+                pButton
+                type="button"
+                icon="pi pi-times"
+                class="p-button-text p-button-sm p-button-danger"
+                [attr.aria-label]="'Quitar unidad'"
+                (click)="quitarIndividual(u.localId)"
+              ></button>
+            </span>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (tipo() !== 'lote_vacio') {
+    <section class="lm-section">
+      <header class="lm-section-header">
+        <span class="lm-section-header-title">
+          <i class="pi pi-sliders-h" aria-hidden="true"></i>
+          Datos adicionales
+        </span>
+      </header>
+      <p class="text-sm text-500 m-0">
+        Campos específicos de {{ tipoLabel() }} se configurarán en una próxima iteración. Por ahora usá extras al editar cada unidad.
+      </p>
+    </section>
+  }
+</div>

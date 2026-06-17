@@ -1,0 +1,19 @@
+<p-dialog
+  header="Seleccionar en mapa"
+  [(visible)]="visible"
+  [modal]="true"
+  [style]="{ width: '36rem' }"
+  [draggable]="false"
+  (onShow)="onShow()"
+  (onHide)="onHide()"
+>
+  <p class="m-0 mb-3 text-sm text-muted-color">Clic en el mapa o arrastrá el marcador.</p>
+  <div #mapEl class="ingreso-geo-map rounded-border"></div>
+  @if (pickedLat != null && pickedLng != null) {
+    <p class="mt-3 mb-0 text-sm">{{ pickedLat | number: '1.4-6' }}, {{ pickedLng | number: '1.4-6' }}</p>
+  }
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cancelar" class="p-button-text" (click)="visible.set(false)"></button>
+    <button pButton type="button" label="Confirmar" icon="pi pi-check" (click)="aceptar()"></button>
+  </ng-template>
+</p-dialog>

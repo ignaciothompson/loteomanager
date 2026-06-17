@@ -1,0 +1,206 @@
+<div class="default-height">
+    <div class="barrios-metrics grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div class="card barrios-metrics__card" style="margin: 0;">
+            <span class="barrios-metrics__label">Total barrios</span>
+            <span class="barrios-metrics__value">{{ metricDisplay(metricBarrios()) }}</span>
+        </div>
+        <div class="card barrios-metrics__card" style="margin: 0;">
+            <span class="barrios-metrics__label">Total unidades</span>
+            <span class="barrios-metrics__value">{{ metricDisplay(metricUnidades()) }}</span>
+        </div>
+        <div class="card barrios-metrics__card" style="margin: 0;">
+            <span class="barrios-metrics__label">Unidades disponibles</span>
+            <span class="barrios-metrics__value">{{ metricDisplay(metricUnidadesDisponibles()) }}</span>
+        </div>
+        <div class="card barrios-metrics__card" style="margin: 0;">
+            <span class="barrios-metrics__label">Unidades reservadas</span>
+            <span class="barrios-metrics__value">{{ metricDisplay(metricUnidadesReservadas()) }}</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="barrios-filters">
+            <p-select
+                [options]="departamentoOpts()"
+                [ngModel]="filterDepartamento()"
+                (ngModelChange)="onDepartamentoChange($event)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Departamento"
+                [showClear]="true"
+                styleClass="w-full"
+                appendTo="body"
+            />
+            <p-select
+                [options]="zonaOpts()"
+                [ngModel]="filterZona()"
+                (ngModelChange)="filterZona.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Zona"
+                [showClear]="true"
+                [disabled]="!filterDepartamento()"
+                styleClass="w-full"
+                appendTo="body"
+            />
+            <input
+                pInputText
+                type="text"
+                class="w-full"
+                placeholder="Nombre"
+                [ngModel]="filterNombre()"
+                (ngModelChange)="filterNombre.set($event)"
+            />
+            <div class="barrios-filters__actions">
+                @if (hasActiveFilters()) {
+                    <button
+                        pButton
+                        type="button"
+                        label="Limpiar"
+                        icon="pi pi-filter-slash"
+                        class="p-button-text"
+                        (click)="clearFilters()"
+                    ></button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="card barrios-list-panel" [class.barrios-list-panel--toolbar]="viewMode() === 'cards'" style="max-height: calc(100vh - 280px); min-height: calc(100vh - 280px);">
+        <p-toast />
+
+        <div class="default-height__header flex justify-between items-center" [class.mb-4]="viewMode() === 'table'">
+            <h5 class="m-0">Barrios</h5>
+            <div class="flex items-center gap-2">
+                <button
+                    pButton
+                    type="button"
+                    [icon]="viewMode() === 'table' ? 'pi pi-th-large' : 'pi pi-list'"
+                    class="p-button-outlined barrios-view-toggle"
+                    [attr.aria-label]="viewMode() === 'table' ? 'Ver como cards' : 'Ver como tabla'"
+                    (click)="toggleViewMode()"
+                ></button>
+                <button
+                    pButton
+                    type="button"
+                    icon="pi pi-plus"
+                    label="Crear barrio"
+                    class="p-button-success"
+                    (click)="openCrearBarrio()"
+                ></button>
+            </div>
+        </div>
+
+        @if (viewMode() === 'table') {
+            <div class="default-height__scroll">
+                <p-table
+                    [value]="rows()"
+                    [loading]="loading()"
+                    [scrollable]="true"
+                    scrollHeight="flex"
+                    [rows]="10"
+                    [paginator]="rows().length > 10"
+                >
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Zona / Departamento</th>
+                            <th>Cant. unidades</th>
+                            <th>Tipos</th>
+                            <th class="buttons-col"></th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-barrio>
+                        <tr>
+                            <td>{{ barrio.nombre }}</td>
+                            <td>{{ geoLabel(barrio) }}</td>
+                            <td>{{ barrio.unidadesCount }}</td>
+                            <td>
+                                <span class="text-sm text-muted-color">{{ tiposLabel(barrio) }}</span>
+                            </td>
+                            <td class="buttons-col">
+                                <button
+                                    pButton
+                                    type="button"
+                                    icon="pi pi-eye"
+                                    label="Ver"
+                                    class="p-button-secondary p-button-text"
+                                    [attr.aria-label]="'Ver barrio ' + barrio.nombre"
+                                    (click)="verBarrio(barrio)"
+                                ></button>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="5">
+                                @if (hasActiveFilters()) {
+                                    No hay barrios que coincidan con los filtros.
+                                } @else {
+                                    No hay barrios cargados.
+                                }
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+        }
+    </div>
+
+    @if (viewMode() === 'cards') {
+        <div class="barrios-cards-viewport">
+            @if (loading()) {
+                <div class="flex justify-center py-8">
+                    <i class="pi pi-spin pi-spinner text-2xl" aria-hidden="true"></i>
+                </div>
+            } @else if (!rows().length) {
+                <p class="barrios-cards-empty">
+                    @if (hasActiveFilters()) {
+                        No hay barrios que coincidan con los filtros.
+                    } @else {
+                        No hay barrios cargados.
+                    }
+                </p>
+            } @else {
+                <div class="barrios-cards">
+                    @for (barrio of rows(); track barrio.id) {
+                        <article class="barrios-card card !m-0">
+                            <header class="barrios-card__header">
+                                <h6 class="barrios-card__title">{{ barrio.nombre }}</h6>
+                                <button
+                                    pButton
+                                    type="button"
+                                    icon="pi pi-eye"
+                                    label="Ver"
+                                    class="p-button-text p-button-sm"
+                                    [attr.aria-label]="'Ver barrio ' + barrio.nombre"
+                                    (click)="verBarrio(barrio)"
+                                ></button>
+                            </header>
+                            <div class="barrios-card__body">
+                                <div class="barrios-card__row">
+                                    <span class="barrios-card__label">Zona / Departamento</span>
+                                    <span class="barrios-card__value">{{ geoLabel(barrio) }}</span>
+                                </div>
+                                <div class="barrios-card__row">
+                                    <span class="barrios-card__label">Tipos</span>
+                                    <span class="barrios-card__value">{{ tiposLabel(barrio) }}</span>
+                                </div>
+                                <div class="barrios-card__row">
+                                    <span class="barrios-card__label">Cantidad unidades</span>
+                                    <span class="barrios-card__value">{{ barrio.unidadesCount }}</span>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<app-barrio-ver-dialog
+    [visible]="verDialogVisible()"
+    (visibleChange)="verDialogVisible.set($event)"
+    [barrioId]="verBarrioId()"
+/>

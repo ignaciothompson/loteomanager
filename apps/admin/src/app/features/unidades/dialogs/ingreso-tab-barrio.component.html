@@ -1,0 +1,66 @@
+<section class="lm-section">
+  <header class="lm-section-header">
+    <span class="lm-section-header-title">
+      <i class="pi pi-map" aria-hidden="true"></i>
+      Barrio
+    </span>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="lm-field">
+      <label class="lm-field-label">Nombre</label>
+      <code class="block p-2 border-round surface-100 w-full">{{ barrio().nombre }}</code>
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Slug</label>
+      <code class="block p-2 border-round surface-100 w-full">{{ barrio().slug }}</code>
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Departamento</label>
+      <code class="block p-2 border-round surface-100 w-full">{{ departamentoNombre() || '—' }}</code>
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Zona</label>
+      <code class="block p-2 border-round surface-100 w-full">{{ zonaNombre() || '—' }}</code>
+    </div>
+    <div class="lm-field lg:col-span-2">
+      <label for="descripcion" class="lm-field-label">Descripción</label>
+      <textarea
+        id="descripcion"
+        pTextarea
+        class="w-full"
+        rows="4"
+        [(ngModel)]="draft().descripcion"
+        (ngModelChange)="draft.update((d) => ({ ...d, descripcion: $event }))"
+      ></textarea>
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Plano general</label>
+      <p-fileUpload
+        mode="basic"
+        chooseLabel="Seleccionar plano"
+        accept="image/*,.pdf,.svg"
+        [auto]="true"
+        [customUpload]="true"
+        (onSelect)="onPlanoSelect($event)"
+      />
+      @if (draft().planoFile) {
+        <span class="lm-hint">{{ draft().planoFile?.name }}</span>
+      }
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Imagen portada</label>
+      <p-fileUpload
+        mode="basic"
+        chooseLabel="Seleccionar imagen"
+        accept="image/*"
+        [auto]="true"
+        [customUpload]="true"
+        (onSelect)="onImagenSelect($event)"
+      />
+      @if (draft().imagenFile) {
+        <span class="lm-hint">{{ draft().imagenFile?.name }}</span>
+      }
+    </div>
+  </div>
+</section>

@@ -1,0 +1,79 @@
+:host {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.barrio-ingreso-page {
+  --ingreso-panel-height: calc(100vh - 352px);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 1rem;
+}
+
+.barrio-ingreso-page > .ingreso-contenedor-1 {
+  flex: 0 0 auto;
+  min-height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.barrio-ingreso-paso1-form button.save-barrio {
+  height: 30px;
+  margin-top: 1.2rem;
+}
+
+.ingreso-split {
+  display: grid;
+  grid-template-columns: minmax(0, 65%) minmax(0, 35%);
+  gap: 1rem;
+  flex: 0 0 auto;
+  height: var(--ingreso-panel-height);
+  min-height: var(--ingreso-panel-height);
+  max-height: var(--ingreso-panel-height);
+  align-items: stretch;
+}
+
+.ingreso-split__form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.ingreso-split__form app-ingreso-form-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ingreso-split__cards {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ingreso-split__cards app-ingreso-panel-lateral {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+@media (max-width: 1024px) {
+  .barrio-ingreso-page {
+    overflow: auto;
+  }
+
+  .ingreso-split {
+    grid-template-columns: 1fr;
+    flex: 0 1 auto;
+  }
+
+  .ingreso-split__form,
+  .ingreso-split__cards {
+    min-height: 16rem;
+  }
+}

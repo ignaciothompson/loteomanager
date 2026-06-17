@@ -23,13 +23,18 @@ export const appRoutes: Routes = [
             // --- Inventario ---
             {
                 path: 'barrios',
-                loadComponent: () => import('./app/features/barrios/barrios.component').then(m => m.BarriosComponent),
+                loadComponent: () => import('./app/features/barrios/listado/barrios.component').then(m => m.BarriosComponent),
                 data: { title: 'Barrios' }
             },
             {
+                path: 'barrios/:id',
+                loadComponent: () => import('./app/features/barrios/ingreso/barrio-ingreso-page.component').then(m => m.BarrioIngresoPageComponent),
+                data: { title: 'Ingreso barrio' }
+            },
+            {
                 path: 'lotes',
-                loadComponent: () => import('./app/features/unidades/unidades.component').then(m => m.UnidadesComponent),
-                data: { title: 'Lotes' }
+                redirectTo: 'barrios',
+                pathMatch: 'full'
             },
             // --- Ventas ---
             {

@@ -115,8 +115,9 @@ export class UnidadFormDialogComponent implements OnInit {
   });
 
   readonly tipos = [
-    { label: 'Lote', value: 'lote' as const },
-    { label: 'Casa', value: 'casa' as const },
+    { label: 'Lote vacío', value: 'lote_vacio' as const },
+    { label: 'Casa construida', value: 'casa_construida' as const },
+    { label: 'Casa prefabricada', value: 'casa_prefabricada' as const },
   ];
 
   readonly monedas = [
@@ -126,7 +127,9 @@ export class UnidadFormDialogComponent implements OnInit {
 
   readonly estadosOptions = computed(() => this.cache.estadosActivosPara('unidades'));
 
-  readonly esConstruccion = computed(() => this.tipoUnidadValue() === 'casa');
+  readonly esConstruccion = computed(() =>
+    this.tipoUnidadValue() === 'casa_construida' || this.tipoUnidadValue() === 'casa_prefabricada'
+  );
 
   readonly sinBarrio = computed(() => !this.barrioIdValue());
 
@@ -135,7 +138,7 @@ export class UnidadFormDialogComponent implements OnInit {
   readonly form = this.fb.nonNullable.group({
     codigo_interno: ['', [Validators.required, Validators.maxLength(50)]],
     barrio_id: this.fb.control<string | null>(null),
-    tipo_unidad: ['lote' as UnidadesRecord['tipo_unidad'], Validators.required],
+    tipo_unidad: ['lote_vacio' as UnidadesRecord['tipo_unidad'], Validators.required],
     direccion_propia: [''],
     metros_cuadrados: [0, [Validators.required, Validators.min(0)]],
     metros_construidos: this.fb.control<number | null>(null),
@@ -230,6 +233,7 @@ export class UnidadFormDialogComponent implements OnInit {
       const raw = this.form.getRawValue();
       const unidad: Partial<UnidadesRecord> = {
         ...this.currentUnidad,
+        codigo: raw.codigo_interno.trim(),
         codigo_interno: raw.codigo_interno.trim(),
         barrio_id: raw.barrio_id ?? undefined,
         tipo_unidad: raw.tipo_unidad,
@@ -315,9 +319,9 @@ export class UnidadFormDialogComponent implements OnInit {
     const u = this.currentUnidad;
 
     this.form.patchValue({
-      codigo_interno: u.codigo_interno ?? '',
+      codigo_interno: u.codigo ?? u.codigo_interno ?? '',
       barrio_id: this.resolveBarrioId(u.barrio_id) ?? null,
-      tipo_unidad: u.tipo_unidad ?? 'lote',
+      tipo_unidad: u.tipo_unidad ?? 'lote_vacio',
       direccion_propia: u.direccion_propia ?? '',
       metros_cuadrados: u.metros_cuadrados ?? 0,
       metros_construidos: u.metros_construidos ?? null,

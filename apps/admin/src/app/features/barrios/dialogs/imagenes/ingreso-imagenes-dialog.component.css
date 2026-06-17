@@ -1,0 +1,71 @@
+.ingreso-imagenes-preview {
+  margin-top: 0.5rem;
+}
+
+.ingreso-imagenes-preview__btn {
+  position: relative;
+  display: inline-block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: var(--p-content-border-radius);
+}
+
+.ingreso-imagenes-preview__img {
+  display: block;
+  width: 7.5rem;
+  height: 7.5rem;
+  border-radius: var(--p-content-border-radius);
+  border: 1px solid var(--p-content-border-color);
+  object-fit: cover;
+}
+
+.ingreso-imagenes-preview__hint {
+  position: absolute;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--p-surface-900) 65%, transparent);
+  color: #fff;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
+.ingreso-imagenes-preview__file {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--p-content-border-radius);
+  border: 1px solid var(--p-content-border-color);
+  color: var(--p-primary-color);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.ingreso-imagenes-preview__file:hover {
+  background: var(--p-content-hover-background);
+}
+
+:host ::ng-deep .ingreso-imagenes-zoom .p-dialog-content {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
+}
+
+.ingreso-imagenes-zoom__img {
+  display: block;
+  max-width: 100%;
+  max-height: min(28rem, 55vh);
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  border-radius: var(--p-content-border-radius);
+  object-fit: contain;
+}

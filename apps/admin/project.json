@@ -22,7 +22,8 @@
         ],
         "styles": [
           "apps/admin/src/assets/styles.scss",
-          "apps/admin/src/assets/tailwind.css"
+          "apps/admin/src/assets/tailwind.css",
+          "node_modules/leaflet/dist/leaflet.css"
         ],
         "scripts": []
       },

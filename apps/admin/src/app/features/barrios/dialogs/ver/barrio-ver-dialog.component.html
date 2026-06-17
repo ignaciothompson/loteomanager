@@ -1,0 +1,164 @@
+<p-dialog
+  [header]="barrio()?.nombre ?? 'Ver barrio'"
+  [(visible)]="visible"
+  [modal]="true"
+  [style]="{ width: '92vw', maxWidth: '72rem', height: '85vh' }"
+  styleClass="barrio-ver-dialog"
+  [draggable]="false"
+  [maximizable]="false"
+  (onShow)="onShow()"
+  (onHide)="onHide()"
+>
+  @if (loading()) {
+    <div class="barrio-ver-dialog__loading flex justify-center py-8">
+      <i class="pi pi-spin pi-spinner text-2xl" aria-hidden="true"></i>
+    </div>
+  } @else if (barrio()) {
+    <div class="barrio-ver-dialog__shell">
+    <header class="barrio-ver-dialog__header card m-0 mb-4">
+      <div class="barrio-ver-dialog__header-main">
+        <h3 class="barrio-ver-dialog__title">{{ barrio()!.nombre }}</h3>
+        <div class="barrio-ver-dialog__meta">
+          <span><strong>Zona / Depto:</strong> {{ headerGeo() }}</span>
+          <span><strong>Slug:</strong> {{ barrio()!.slug }}</span>
+          <span><strong>Tipos:</strong> {{ headerTipos() }}</span>
+          <span><strong>Unidades:</strong> {{ unidades().length }}</span>
+        </div>
+      </div>
+      <button
+        pButton
+        type="button"
+        label="Editar/Ingresar nuevo"
+        icon="pi pi-external-link"
+        class="p-button-outlined shrink-0"
+        (click)="irAlIngreso()"
+      ></button>
+    </header>
+
+    <section class="barrio-ver-dialog__body">
+      <div class="barrio-ver-dialog__toolbar">
+        @if (tipoTabs().length) {
+          <p-tabs
+            [value]="activeTipo() ?? tipoTabs()[0].value"
+            (valueChange)="activeTipo.set($any($event))"
+            class="barrio-ver-dialog__tabs"
+          >
+            <p-tablist>
+              @for (tab of tipoTabs(); track tab.value) {
+                <p-tab [value]="tab.value">{{ tab.label }}</p-tab>
+              }
+            </p-tablist>
+          </p-tabs>
+        } @else {
+          <span class="text-muted-color text-sm">Sin tipos de unidad configurados.</span>
+        }
+
+        <div class="barrio-ver-dialog__agrupar lm-field">
+          <label class="lm-field-label" for="barrio-ver-agrupar">Agrupar por</label>
+          <p-select
+            inputId="barrio-ver-agrupar"
+            [options]="agruparOpts"
+            [ngModel]="agruparPor()"
+            (ngModelChange)="onAgruparChange($event)"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+          />
+        </div>
+      </div>
+
+      <div class="barrio-ver-dialog__table-wrap card m-0">
+        @if (!activeTipo()) {
+          <p class="barrio-ver-dialog__empty">Seleccioná un tipo de unidad.</p>
+        } @else if (!unidadesFiltradas().length) {
+          <p class="barrio-ver-dialog__empty">No hay unidades de este tipo en el barrio.</p>
+        } @else if (agruparPor() === 'none') {
+          <p-table
+            [value]="unidadesFiltradas()"
+            [scrollable]="true"
+            scrollHeight="flex"
+            styleClass="barrio-ver-table"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Precio</th>
+                <th class="barrio-ver-table__otros">Otros</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-u>
+              <tr>
+                <td>{{ unidadCodigo(u) }}</td>
+                <td>{{ unidadNombre(u) }}</td>
+                <td>{{ tipoLabel(u.tipo_unidad) }}</td>
+                <td><lib-estado-badge [code]="u.estado" entidad="unidades" /></td>
+                <td>{{ unidadPrecio(u) }}</td>
+                <td class="barrio-ver-table__otros">{{ unidadOtros(u) }}</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        } @else {
+          <div class="barrio-ver-grupos">
+            <table class="barrio-ver-grupos__head">
+              <thead>
+                <tr>
+                  <th class="barrio-ver-grupos__toggle-col"></th>
+                  <th>Código</th>
+                  <th>Nombre</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Precio</th>
+                  <th class="barrio-ver-table__otros">Otros</th>
+                </tr>
+              </thead>
+            </table>
+            @for (grupo of grupos(); track grupo.key) {
+              <div class="barrio-ver-grupo">
+                <button
+                  type="button"
+                  class="barrio-ver-grupo__header"
+                  (click)="toggleGrupo(grupo.key)"
+                >
+                  <i
+                    class="pi barrio-ver-grupos__toggle-icon"
+                    [class.pi-chevron-down]="isGrupoExpanded(grupo.key)"
+                    [class.pi-chevron-right]="!isGrupoExpanded(grupo.key)"
+                    aria-hidden="true"
+                  ></i>
+                  <span class="barrio-ver-grupo__label">{{ grupo.label }}</span>
+                  <span class="barrio-ver-grupo__count">{{ grupo.unidades.length }} unidad(es)</span>
+                </button>
+                @if (isGrupoExpanded(grupo.key)) {
+                  <table class="barrio-ver-grupos__body">
+                    <tbody>
+                      @for (u of grupo.unidades; track u.id) {
+                        <tr>
+                          <td class="barrio-ver-grupos__toggle-col"></td>
+                          <td>{{ unidadCodigo(u) }}</td>
+                          <td>{{ unidadNombre(u) }}</td>
+                          <td>{{ tipoLabel(u.tipo_unidad) }}</td>
+                          <td><lib-estado-badge [code]="u.estado" entidad="unidades" /></td>
+                          <td>{{ unidadPrecio(u) }}</td>
+                          <td class="barrio-ver-table__otros">{{ unidadOtros(u) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </section>
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cerrar" class="p-button-text" (click)="visible.set(false)"></button>
+  </ng-template>
+</p-dialog>
