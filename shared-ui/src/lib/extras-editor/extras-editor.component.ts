@@ -20,9 +20,6 @@ import { ExtraValueEditorComponent } from '../extra-value-editor/extra-value-edi
             <div class="flex flex-col gap-1 p-2 rounded border border-surface-200 dark:border-surface-700">
               <label class="text-sm font-medium">
                 {{ def.nombre }}
-                @if (def.requerido) {
-                  <span class="text-red-500">*</span>
-                }
               </label>
               @if (def.descripcion) {
                 <small class="text-surface-500">{{ def.descripcion }}</small>

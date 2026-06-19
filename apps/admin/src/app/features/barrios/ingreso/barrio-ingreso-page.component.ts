@@ -25,6 +25,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TextareaModule } from 'primeng/textarea';
+import { TabsModule } from 'primeng/tabs';
 import { MessageService } from 'primeng/api';
 import {
   emptyUnidadForm,
@@ -37,12 +38,33 @@ import { IngresoPanelLateralComponent, type IngresoLateralTab } from './panel-ta
 import { IngresoGeoDialogComponent } from '../dialogs/geo/ingreso-geo-dialog.component';
 import { IngresoImagenesDialogComponent, type IngresoImagenesDraft } from '../dialogs/imagenes/ingreso-imagenes-dialog.component';
 import { IngresoPlantillaNombreDialogComponent } from '../dialogs/plantilla/ingreso-plantilla-nombre-dialog.component';
+import { ExtrasEditorComponent } from '../../../shared/components/extras-editor/extras-editor.component';
 
 const TIPO_OPTS: { label: string; value: TipoUnidadIngreso }[] = [
   { label: TIPO_UNIDAD_LABELS['lote_vacio'], value: 'lote_vacio' },
   { label: TIPO_UNIDAD_LABELS['casa_construida'], value: 'casa_construida' },
   { label: TIPO_UNIDAD_LABELS['casa_prefabricada'], value: 'casa_prefabricada' }
 ];
+
+type BarrioIngresoTab = 'basicos' | 'extras';
+
+const BARRIO_TABS: { value: BarrioIngresoTab; label: string }[] = [
+  { value: 'basicos', label: 'Datos básicos' },
+  { value: 'extras', label: 'Campos adicionales' }
+];
+
+const TIPO_EXTRA_KEYS: Record<TipoUnidadIngreso, readonly string[]> = {
+  lote_vacio: [],
+  casa_construida: [
+    'sup_cubierta',
+    'sup_semicubierta',
+    'dormitorios',
+    'banos',
+    'garage',
+    'anio_construccion'
+  ],
+  casa_prefabricada: ['fabricante', 'dormitorios']
+};
 
 @Component({
   selector: 'app-barrio-ingreso-page',
@@ -58,11 +80,13 @@ const TIPO_OPTS: { label: string; value: TipoUnidadIngreso }[] = [
     SelectModule,
     MultiSelectModule,
     TextareaModule,
+    TabsModule,
     IngresoFormPanelComponent,
     IngresoPanelLateralComponent,
     IngresoGeoDialogComponent,
     IngresoImagenesDialogComponent,
-    IngresoPlantillaNombreDialogComponent
+    IngresoPlantillaNombreDialogComponent,
+    ExtrasEditorComponent
   ],
   providers: [MessageService],
   templateUrl: './barrio-ingreso-page.component.html',
@@ -90,6 +114,9 @@ export class BarrioIngresoPageComponent {
   readonly savingUnidad = signal(false);
   readonly savingPlantilla = signal(false);
   readonly usandoPlantilla = signal(false);
+
+  readonly barrioTab = signal<BarrioIngresoTab>('basicos');
+  readonly barrioTabs = BARRIO_TABS;
 
   readonly formTab = model<TipoUnidadIngreso>('lote_vacio');
   readonly lateralTab = model<IngresoLateralTab>('listado');
@@ -126,6 +153,8 @@ export class BarrioIngresoPageComponent {
     lat: null,
     lng: null
   });
+
+  readonly barrioExtras = signal<Record<string, unknown>>({});
 
   readonly tipoOpts = TIPO_OPTS;
 
@@ -242,6 +271,7 @@ export class BarrioIngresoPageComponent {
         lat: full.lat ?? null,
         lng: full.lng ?? null
       });
+      this.barrioExtras.set(this.extrasRecordFromUnknown(full.extras));
 
       await this.reloadUnidades();
       await this.reloadPlantillas();
@@ -306,7 +336,8 @@ export class BarrioIngresoPageComponent {
       moneda: p.moneda ?? 'USD',
       estado_inicial: p.estado_inicial ?? 'disponible',
       web_visible: p.web_visible ?? true,
-      modelo: p.modelo
+      modelo: p.modelo,
+      extras: {}
     };
   }
 
@@ -342,7 +373,8 @@ export class BarrioIngresoPageComponent {
       dormitorios: (extras['dormitorios'] as number | undefined) ?? null,
       banos: (extras['banos'] as number | undefined) ?? null,
       garage: (extras['garage'] as number | undefined) ?? u.cocheras ?? null,
-      anio_construccion: (extras['anio_construccion'] as number | undefined) ?? null
+      anio_construccion: (extras['anio_construccion'] as number | undefined) ?? null,
+      extras: this.splitUnidadExtras(extras, u.tipo_unidad as TipoUnidadIngreso)
     });
   }
 
@@ -355,6 +387,10 @@ export class BarrioIngresoPageComponent {
     this.formTab.set(p.tipo_unidad as TipoUnidadIngreso);
     this.formMode.set('nuevo');
     this.unidadForm.set(this.formFromPlantilla(p, ''));
+  }
+
+  onBarrioExtrasChange(extras: Record<string, unknown>): void {
+    this.barrioExtras.set(extras);
   }
 
   onGeoConfirm(coords: { lat: number; lng: number }): void {
@@ -372,23 +408,64 @@ export class BarrioIngresoPageComponent {
   }
 
   private unidadExtras(form: IngresoUnidadForm, tipo: TipoUnidadIngreso): Record<string, unknown> | undefined {
+    const base: Record<string, unknown> = { ...(form.extras ?? {}) };
     if (tipo === 'casa_construida') {
-      return {
+      Object.assign(base, {
         sup_cubierta: form.sup_cubierta ?? undefined,
         sup_semicubierta: form.sup_semicubierta ?? undefined,
         dormitorios: form.dormitorios ?? undefined,
         banos: form.banos ?? undefined,
         garage: form.garage ?? undefined,
         anio_construccion: form.anio_construccion ?? undefined
-      };
-    }
-    if (tipo === 'casa_prefabricada') {
-      return {
+      });
+    } else if (tipo === 'casa_prefabricada') {
+      Object.assign(base, {
         fabricante: form.fabricante?.trim() || undefined,
         dormitorios: form.dormitorios ?? undefined
-      };
+      });
     }
-    return undefined;
+    return this.stripEmptyExtras(base);
+  }
+
+  private extrasRecordFromUnknown(input: unknown): Record<string, unknown> {
+    if (Array.isArray(input)) {
+      const out: Record<string, unknown> = {};
+      for (const x of input) {
+        if (x && typeof x === 'object' && 'code' in x) {
+          const row = x as { code?: string; valor?: unknown };
+          if (typeof row.code === 'string' && row.code) {
+            out[row.code] = row.valor ?? null;
+          }
+        }
+      }
+      return out;
+    }
+    if (input && typeof input === 'object') {
+      return { ...(input as Record<string, unknown>) };
+    }
+    return {};
+  }
+
+  private splitUnidadExtras(
+    extras: Record<string, unknown>,
+    tipo: TipoUnidadIngreso
+  ): Record<string, unknown> {
+    const known = new Set(TIPO_EXTRA_KEYS[tipo]);
+    const custom: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(extras)) {
+      if (!known.has(key)) custom[key] = value;
+    }
+    return custom;
+  }
+
+  private stripEmptyExtras(extras: Record<string, unknown>): Record<string, unknown> | undefined {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(extras)) {
+      if (value !== null && value !== undefined && value !== '') {
+        out[key] = value;
+      }
+    }
+    return Object.keys(out).length ? out : undefined;
   }
 
   async guardarBarrio(): Promise<void> {
@@ -409,7 +486,8 @@ export class BarrioIngresoPageComponent {
         tipos_unidad: v.tipos_unidad,
         descripcion: bd.descripcion.trim() || undefined,
         lat: bd.lat ?? undefined,
-        lng: bd.lng ?? undefined
+        lng: bd.lng ?? undefined,
+        extras: this.stripEmptyExtras(this.barrioExtras())
       };
       if (bd.planoFile) payload['plano_general'] = bd.planoFile;
       if (bd.imagenFile) payload['imagen_portada'] = bd.imagenFile;
@@ -417,11 +495,13 @@ export class BarrioIngresoPageComponent {
       if (wasNuevo) {
         const created = await this.barriosSvc.create(payload);
         this.barrio.set(created);
+        this.barrioExtras.set(this.extrasRecordFromUnknown(created.extras));
         this.routeId.set(created.id);
         void this.router.navigate(['/barrios', created.id], { replaceUrl: true });
       } else if (this.barrio()?.id) {
         const updated = await this.barriosSvc.update(this.barrio()!.id, payload);
         this.barrio.set(updated);
+        this.barrioExtras.set(this.extrasRecordFromUnknown(updated.extras));
         this.barrioDraft.update((d) => ({
           ...d,
           planoFile: null,

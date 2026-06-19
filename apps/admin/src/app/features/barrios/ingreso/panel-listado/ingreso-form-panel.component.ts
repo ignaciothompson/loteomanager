@@ -7,6 +7,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TabsModule } from 'primeng/tabs';
 import type { IngresoFormMode, IngresoUnidadForm } from '../../../unidades/dialogs/ingreso-unidades.types';
+import { ExtrasEditorComponent } from '../../../../shared/components/extras-editor/extras-editor.component';
 
 const FORM_TABS: { value: TipoUnidadIngreso; label: string }[] = [
   { value: 'lote_vacio', label: 'Lote' },
@@ -28,7 +29,8 @@ const ORIENTACION_OPTS: { label: string; value: UnidadesOrientacionOptions }[] =
     TabsModule,
     InputTextModule,
     InputNumberModule,
-    SelectModule
+    SelectModule,
+    ExtrasEditorComponent
   ],
   templateUrl: './ingreso-form-panel.component.html',
   styleUrl: './ingreso-form-panel.component.css'
@@ -60,5 +62,9 @@ export class IngresoFormPanelComponent {
 
   isEditMode(): boolean {
     return this.formMode() === 'editando';
+  }
+
+  onUnidadExtrasChange(extras: Record<string, unknown>): void {
+    this.unidadForm.update((f) => ({ ...f, extras }));
   }
 }

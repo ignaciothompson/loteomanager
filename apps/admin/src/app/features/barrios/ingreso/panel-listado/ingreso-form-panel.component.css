@@ -53,3 +53,18 @@
   color: var(--p-orange-500);
   border-color: color-mix(in srgb, var(--p-orange-500) 35%, transparent);
 }
+
+.extras-divider {
+  margin: 1rem 0 0.75rem;
+  border: none;
+  border-top: 1px solid var(--p-content-border-color);
+}
+
+.extras-section-label {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--p-surface-600);
+}

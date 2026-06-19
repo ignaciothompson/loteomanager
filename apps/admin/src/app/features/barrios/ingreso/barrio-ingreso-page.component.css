@@ -19,9 +19,33 @@
   overflow: visible;
 }
 
+.barrio-ingreso-c1-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.barrio-ingreso-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.barrio-ingreso-volver {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.barrio-ingreso-paso1-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
 .barrio-ingreso-paso1-form button.save-barrio {
   height: 30px;
-  margin-top: 1.2rem;
 }
 
 .ingreso-split {

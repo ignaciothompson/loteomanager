@@ -6,126 +6,149 @@
             <i class="pi pi-spin pi-spinner text-2xl" aria-hidden="true"></i>
         </div>
     } @else {
-                <!-- C1: datos del barrio -->
+        <!-- C1: datos del barrio -->
         <div class="card mb-4 ingreso-contenedor-1">
-            <div class="flex justify-between">
-                <h4 class="m-0 font-semibold">Datos del barrio</h4>
+            <div class="barrio-ingreso-c1-header">
+                <p-tabs [value]="barrioTab()" (valueChange)="barrioTab.set($any($event))" class="barrio-ingreso-tabs">
+                    <p-tablist>
+                        @for (tab of barrioTabs; track tab.value) {
+                            <p-tab [value]="tab.value">{{ tab.label }}</p-tab>
+                        }
+                    </p-tablist>
+                </p-tabs>
                 <button pButton
                         type="button"
                         icon="pi pi-arrow-left"
                         label="Volver a listado barrios"
-                        class="p-button-text mb-3"
+                        class="p-button-text barrio-ingreso-volver"
                         (click)="volver()"></button>
             </div>
-            <form [formGroup]="paso1Form" class="grid grid-cols-5 gap-4 barrio-ingreso-paso1-form">
-                <div class="lm-field">
-                    <label for="ingreso-nombre" class="lm-field-label">
-                        Nombre <span class="lm-required">*</span>
-                    </label>
-                    <input id="ingreso-nombre" type="text" pInputText class="w-full" formControlName="nombre" />
+
+            <form [formGroup]="paso1Form" class="barrio-ingreso-paso1-form">
+                @switch (barrioTab()) {
+                    @case ('basicos') {
+                        <div class="grid grid-cols-5 gap-4">
+                            <div class="lm-field">
+                                <label for="ingreso-nombre" class="lm-field-label">
+                                    Nombre <span class="lm-required">*</span>
+                                </label>
+                                <input id="ingreso-nombre" type="text" pInputText class="w-full" formControlName="nombre" />
+                            </div>
+                            <div class="lm-field">
+                                <label for="ingreso-slug" class="lm-field-label">
+                                    Slug <span class="lm-required">*</span>
+                                </label>
+                                <input id="ingreso-slug" type="text" pInputText class="w-full" formControlName="slug" />
+                            </div>
+                            <div class="lm-field">
+                                <label for="ingreso-depto" class="lm-field-label">
+                                    Departamento <span class="lm-required">*</span>
+                                </label>
+                                <p-select
+                                    inputId="ingreso-depto"
+                                    formControlName="departamento_id"
+                                    [options]="departamentoOpts()"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Seleccioná"
+                                    class="w-full"
+                                    appendTo="body"
+                                />
+                            </div>
+                            <div class="lm-field">
+                                <label for="ingreso-zona" class="lm-field-label">
+                                    Zona <span class="lm-required">*</span>
+                                </label>
+                                <p-select
+                                    inputId="ingreso-zona"
+                                    formControlName="zona_id"
+                                    [options]="zonaOpts()"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Seleccioná"
+                                    class="w-full"
+                                    appendTo="body"
+                                />
+                            </div>
+                            <div class="lm-field">
+                                <label for="ingreso-tipos" class="lm-field-label">
+                                    Tipos de unidad <span class="lm-required">*</span>
+                                </label>
+                                <p-multiSelect
+                                    inputId="ingreso-tipos"
+                                    formControlName="tipos_unidad"
+                                    [options]="tipoOpts"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Seleccioná tipos"
+                                    class="w-full"
+                                    appendTo="body"
+                                    display="chip"
+                                />
+                            </div>
+                            <div class="lm-field lg:col-span-2">
+                                <label for="ingreso-descripcion" class="lm-field-label">Descripción</label>
+                                <textarea
+                                    id="ingreso-descripcion"
+                                    pTextarea
+                                    class="w-full"
+                                    rows="3"
+                                    [ngModel]="barrioDraft().descripcion"
+                                    (ngModelChange)="barrioDraft.update((d) => ({ ...d, descripcion: $event }))"
+                                    [ngModelOptions]="{ standalone: true }"
+                                ></textarea>
+                            </div>
+                            <div class="lm-field">
+                                <label class="lm-field-label">Imágenes</label>
+                                <div class="flex flex-col gap-2">
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-images"
+                                        label="Gestionar imágenes"
+                                        class="p-button-outlined"
+                                        (click)="imagenesDialogVisible.set(true)"
+                                    ></button>
+                                    <span class="lm-hint">{{ imagenesCountLabel() }}</span>
+                                </div>
+                            </div>
+                            <div class="lm-field">
+                                <label class="lm-field-label">Geolocalización</label>
+                                <div class="flex flex-col gap-2">
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-map-marker"
+                                        label="Seleccionar en mapa"
+                                        class="p-button-outlined"
+                                        (click)="geoDialogVisible.set(true)"
+                                    ></button>
+                                    <span class="lm-hint">{{ geoLabel() }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @case ('extras') {
+                        <app-extras-editor
+                            entidad="barrios"
+                            [extras]="barrioExtras()"
+                            (extrasChange)="onBarrioExtrasChange($event)"
+                        />
+                    }
+                }
+
+                <div class="barrio-ingreso-paso1-form__actions">
+                    <button
+                        pButton
+                        type="button"
+                        label="Guardar barrio"
+                        icon="pi pi-check"
+                        class="save-barrio"
+                        [loading]="savingBarrio()"
+                        [disabled]="savingBarrio()"
+                        (click)="guardarBarrio()"
+                    ></button>
                 </div>
-                <div class="lm-field">
-                    <label for="ingreso-slug" class="lm-field-label">
-                        Slug <span class="lm-required">*</span>
-                    </label>
-                    <input id="ingreso-slug" type="text" pInputText class="w-full" formControlName="slug" />
-                </div>
-                <div class="lm-field">
-                    <label for="ingreso-depto" class="lm-field-label">
-                        Departamento <span class="lm-required">*</span>
-                    </label>
-                    <p-select
-                        inputId="ingreso-depto"
-                        formControlName="departamento_id"
-                        [options]="departamentoOpts()"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Seleccioná"
-                        class="w-full"
-                        appendTo="body"
-                    />
-                </div>
-                <div class="lm-field">
-                    <label for="ingreso-zona" class="lm-field-label">
-                        Zona <span class="lm-required">*</span>
-                    </label>
-                    <p-select
-                        inputId="ingreso-zona"
-                        formControlName="zona_id"
-                        [options]="zonaOpts()"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Seleccioná"
-                        class="w-full"
-                        appendTo="body"
-                    />
-                </div>
-                <div class="lm-field">
-                    <label for="ingreso-tipos" class="lm-field-label">
-                        Tipos de unidad <span class="lm-required">*</span>
-                    </label>
-                    <p-multiSelect
-                        inputId="ingreso-tipos"
-                        formControlName="tipos_unidad"
-                        [options]="tipoOpts"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Seleccioná tipos"
-                        class="w-full"
-                        appendTo="body"
-                        display="chip"
-                    />
-                </div>
-                <div class="lm-field lg:col-span-2">
-                    <label for="ingreso-descripcion" class="lm-field-label">Descripción</label>
-                    <textarea
-                        id="ingreso-descripcion"
-                        pTextarea
-                        class="w-full"
-                        rows="3"
-                        [ngModel]="barrioDraft().descripcion"
-                        (ngModelChange)="barrioDraft.update((d) => ({ ...d, descripcion: $event }))"
-                        [ngModelOptions]="{ standalone: true }"
-                    ></textarea>
-                </div>
-                <div class="lm-field">
-                    <label class="lm-field-label">Imágenes</label>
-                    <div class="flex flex-col gap-2">
-                        <button
-                            pButton
-                            type="button"
-                            icon="pi pi-images"
-                            label="Gestionar imágenes"
-                            class="p-button-outlined"
-                            (click)="imagenesDialogVisible.set(true)"
-                        ></button>
-                        <span class="lm-hint">{{ imagenesCountLabel() }}</span>
-                    </div>
-                </div>
-                <div class="lm-field">
-                    <label class="lm-field-label">Geolocalización</label>
-                    <div class="flex flex-col gap-2">
-                        <button
-                            pButton
-                            type="button"
-                            icon="pi pi-map-marker"
-                            label="Seleccionar en mapa"
-                            class="p-button-outlined"
-                            (click)="geoDialogVisible.set(true)"
-                        ></button>
-                        <span class="lm-hint">{{ geoLabel() }}</span>
-                    </div>
-                </div>
-                <button
-                    pButton
-                    type="button"
-                    label="Guardar barrio"
-                    icon="pi pi-check"
-                    class="save-barrio"
-                    [loading]="savingBarrio()"
-                    [disabled]="savingBarrio()"
-                    (click)="guardarBarrio()"
-                ></button>
             </form>
         </div>
 

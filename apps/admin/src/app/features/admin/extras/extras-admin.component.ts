@@ -72,7 +72,6 @@ export class ExtrasAdminComponent {
     this.currentExtra.set({
       entidad: 'barrios',
       tipo: 'texto',
-      requerido: false,
       visible_en_lista: false,
       visible_en_comparativa: false,
       activo: true,

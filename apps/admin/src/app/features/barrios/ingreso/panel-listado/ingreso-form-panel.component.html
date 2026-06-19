@@ -96,6 +96,14 @@
           />
         </div>
       </div>
+      <hr class="extras-divider" />
+      <p class="extras-section-label">Campos adicionales</p>
+      <app-extras-editor
+        entidad="unidades"
+        [extras]="unidadForm().extras ?? {}"
+        [disabled]="disabled()"
+        (extrasChange)="onUnidadExtrasChange($event)"
+      />
     }
     @case ('casa_construida') {
       <div class="grid xs:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
@@ -234,6 +242,14 @@
           />
         </div>
       </div>
+      <hr class="extras-divider" />
+      <p class="extras-section-label">Campos adicionales</p>
+      <app-extras-editor
+        entidad="unidades"
+        [extras]="unidadForm().extras ?? {}"
+        [disabled]="disabled()"
+        (extrasChange)="onUnidadExtrasChange($event)"
+      />
     }
     @case ('casa_prefabricada') {
       <div class="grid xs:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
@@ -351,6 +367,14 @@
           />
         </div>
       </div>
+      <hr class="extras-divider" />
+      <p class="extras-section-label">Campos adicionales</p>
+      <app-extras-editor
+        entidad="unidades"
+        [extras]="unidadForm().extras ?? {}"
+        [disabled]="disabled()"
+        (extrasChange)="onUnidadExtrasChange($event)"
+      />
     }
   }
   </div>

@@ -64,6 +64,8 @@ export type IngresoUnidadForm = {
   banos?: number | null;
   garage?: number | null;
   anio_construccion?: number | null;
+  /** Campos custom desde extras_definiciones (no incluye campos fijos del tipo). */
+  extras?: Record<string, unknown>;
 };
 
 /** @deprecated use IngresoUnidadForm */
@@ -76,7 +78,8 @@ export function emptyUnidadForm(): IngresoUnidadForm {
     patron_codigo: 'A-{n}',
     moneda: 'USD',
     estado_inicial: 'disponible',
-    web_visible: true
+    web_visible: true,
+    extras: {}
   };
 }
 
