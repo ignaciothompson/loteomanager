@@ -105,6 +105,37 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
     }));
   }
 
+  /** Elimina unidades, plantillas y asignaciones vendedor antes del barrio. */
+  async deleteConDependencias(barrioId: string): Promise<{ unidades: number; plantillas: number }> {
+    const [unidades, plantillas, asignaciones] = await Promise.all([
+      this.pb.collection('unidades').getFullList({
+        filter: `barrio_id="${barrioId}"`,
+        fields: 'id'
+      }),
+      this.pb.collection('plantillas_unidad').getFullList({
+        filter: `barrio_id="${barrioId}"`,
+        fields: 'id'
+      }),
+      this.pb.collection('vendedor_barrios').getFullList({
+        filter: `barrio_id="${barrioId}"`,
+        fields: 'id'
+      })
+    ]);
+
+    for (const u of unidades) {
+      await this.pb.collection('unidades').delete(u.id);
+    }
+    for (const p of plantillas) {
+      await this.pb.collection('plantillas_unidad').delete(p.id);
+    }
+    for (const a of asignaciones) {
+      await this.pb.collection('vendedor_barrios').delete(a.id);
+    }
+
+    await this.delete(barrioId);
+    return { unidades: unidades.length, plantillas: plantillas.length };
+  }
+
   private resolveExpandedZona(barrio: BarriosResponse): {
     departamento_id?: string;
     expand?: { departamento_id?: { id: string } };

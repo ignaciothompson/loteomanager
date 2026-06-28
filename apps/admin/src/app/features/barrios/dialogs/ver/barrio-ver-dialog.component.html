@@ -1,3 +1,5 @@
+<p-toast />
+<p-confirmDialog />
 <p-dialog
   [header]="barrio()?.nombre ?? 'Ver barrio'"
   [(visible)]="visible"
@@ -25,14 +27,27 @@
           <span><strong>Unidades:</strong> {{ unidades().length }}</span>
         </div>
       </div>
-      <button
-        pButton
-        type="button"
-        label="Editar/Ingresar nuevo"
-        icon="pi pi-external-link"
-        class="p-button-outlined shrink-0"
-        (click)="irAlIngreso()"
-      ></button>
+      <div class="barrio-ver-dialog__header-actions">
+        <button
+          pButton
+          type="button"
+          label="Eliminar barrio"
+          icon="pi pi-trash"
+          class="p-button-outlined p-button-danger shrink-0"
+          [loading]="deleting()"
+          [disabled]="deleting()"
+          (click)="confirmarEliminar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Editar/Ingresar nuevo"
+          icon="pi pi-external-link"
+          class="p-button-outlined shrink-0"
+          [disabled]="deleting()"
+          (click)="irAlIngreso()"
+        ></button>
+      </div>
     </header>
 
     <section class="barrio-ver-dialog__body">
@@ -88,6 +103,7 @@
                 <th>Estado</th>
                 <th>Precio</th>
                 <th class="barrio-ver-table__otros">Otros</th>
+                <th class="barrio-ver-table__actions"></th>
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-u>
@@ -98,7 +114,19 @@
                 <td><lib-estado-badge [code]="u.estado" entidad="unidades" /></td>
                 <td>{{ unidadPrecio(u) }}</td>
                 <td class="barrio-ver-table__otros">{{ unidadOtros(u) }}</td>
-              </tr>
+                <td class="barrio-ver-table__actions">
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-danger p-button-sm"
+                    [loading]="isDeletingUnidad(u.id)"
+                    [disabled]="deleting() || (!!deletingUnidadId() && !isDeletingUnidad(u.id))"
+                    (click)="confirmarEliminarUnidad(u)"
+                    pTooltip="Eliminar unidad"
+                    tooltipPosition="left"
+                  ></button>
+                </td>
             </ng-template>
           </p-table>
         } @else {
@@ -113,6 +141,7 @@
                   <th>Estado</th>
                   <th>Precio</th>
                   <th class="barrio-ver-table__otros">Otros</th>
+                  <th class="barrio-ver-table__actions"></th>
                 </tr>
               </thead>
             </table>
@@ -144,6 +173,19 @@
                           <td><lib-estado-badge [code]="u.estado" entidad="unidades" /></td>
                           <td>{{ unidadPrecio(u) }}</td>
                           <td class="barrio-ver-table__otros">{{ unidadOtros(u) }}</td>
+                          <td class="barrio-ver-table__actions">
+                            <button
+                              pButton
+                              type="button"
+                              icon="pi pi-trash"
+                              class="p-button-text p-button-danger p-button-sm"
+                              [loading]="isDeletingUnidad(u.id)"
+                              [disabled]="deleting() || (!!deletingUnidadId() && !isDeletingUnidad(u.id))"
+                              (click)="confirmarEliminarUnidad(u)"
+                              pTooltip="Eliminar unidad"
+                              tooltipPosition="left"
+                            ></button>
+                          </td>
                         </tr>
                       }
                     </tbody>
@@ -159,6 +201,13 @@
   }
 
   <ng-template pTemplate="footer">
-    <button pButton type="button" label="Cerrar" class="p-button-text" (click)="visible.set(false)"></button>
+    <button
+      pButton
+      type="button"
+      label="Cerrar"
+      class="p-button-text"
+      [disabled]="deleting()"
+      (click)="visible.set(false)"
+    ></button>
   </ng-template>
 </p-dialog>

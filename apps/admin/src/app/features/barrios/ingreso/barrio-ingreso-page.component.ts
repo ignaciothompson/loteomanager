@@ -21,12 +21,13 @@ import {
 import { TIPO_UNIDAD_LABELS, slugify } from '@loteomanager/shared-utils';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TextareaModule } from 'primeng/textarea';
 import { TabsModule } from 'primeng/tabs';
-import { MessageService } from 'primeng/api';
 import {
   emptyUnidadForm,
   type IngresoFormMode,
@@ -76,6 +77,7 @@ const TIPO_EXTRA_KEYS: Record<TipoUnidadIngreso, readonly string[]> = {
     RouterModule,
     ButtonModule,
     ToastModule,
+    ConfirmDialogModule,
     InputTextModule,
     SelectModule,
     MultiSelectModule,
@@ -88,7 +90,7 @@ const TIPO_EXTRA_KEYS: Record<TipoUnidadIngreso, readonly string[]> = {
     IngresoPlantillaNombreDialogComponent,
     ExtrasEditorComponent
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './barrio-ingreso-page.component.html',
   styleUrl: './barrio-ingreso-page.component.css'
 })
@@ -104,6 +106,7 @@ export class BarrioIngresoPageComponent {
   private estadosSvc = inject(EstadosDefinicionesService);
   private authSvc = inject(AuthService);
   private messages = inject(MessageService);
+  private confirmationSvc = inject(ConfirmationService);
 
   readonly routeId = signal('');
   readonly barrio = signal<BarriosResponse | null>(null);
@@ -113,6 +116,7 @@ export class BarrioIngresoPageComponent {
   readonly savingBarrio = signal(false);
   readonly savingUnidad = signal(false);
   readonly savingPlantilla = signal(false);
+  readonly deletingPlantilla = signal(false);
   readonly usandoPlantilla = signal(false);
 
   readonly barrioTab = signal<BarrioIngresoTab>('basicos');
@@ -468,38 +472,39 @@ export class BarrioIngresoPageComponent {
     return Object.keys(out).length ? out : undefined;
   }
 
-  async guardarBarrio(): Promise<void> {
-    if (this.savingBarrio()) return;
-    this.paso1Form.markAllAsTouched();
-    if (this.paso1Form.invalid) return;
+  onTiposMultiselectHide(): void {
+    (document.activeElement as HTMLElement | null)?.blur();
+  }
 
-    this.savingBarrio.set(true);
-    const wasNuevo = this.isNuevo();
-    try {
-      const v = this.paso1Form.getRawValue();
-      const bd = this.barrioDraft();
+  private buildBarrioPayload(): Record<string, unknown> {
+    const v = this.paso1Form.getRawValue();
+    const bd = this.barrioDraft();
+    const payload: Record<string, unknown> = {
+      nombre: v.nombre.trim(),
+      slug: v.slug.trim(),
+      zona_id: v.zona_id,
+      tipos_unidad: v.tipos_unidad,
+      descripcion: bd.descripcion.trim() || undefined,
+      lat: bd.lat ?? undefined,
+      lng: bd.lng ?? undefined,
+      extras: this.stripEmptyExtras(this.barrioExtras())
+    };
+    if (bd.planoFile) payload['plano_general'] = bd.planoFile;
+    if (bd.imagenFile) payload['imagen_portada'] = bd.imagenFile;
+    return payload;
+  }
 
-      const payload: Record<string, unknown> = {
-        nombre: v.nombre.trim(),
-        slug: v.slug.trim(),
-        zona_id: v.zona_id,
-        tipos_unidad: v.tipos_unidad,
-        descripcion: bd.descripcion.trim() || undefined,
-        lat: bd.lat ?? undefined,
-        lng: bd.lng ?? undefined,
-        extras: this.stripEmptyExtras(this.barrioExtras())
-      };
-      if (bd.planoFile) payload['plano_general'] = bd.planoFile;
-      if (bd.imagenFile) payload['imagen_portada'] = bd.imagenFile;
+  /** Persiste barrio nuevo o actualiza existente. Devuelve id o null si falla validación/guardado. */
+  private async persistirBarrio(opts?: { showToast?: boolean }): Promise<string | null> {
+    const existingId = this.barrio()?.id;
+    if (existingId) {
+      if (this.savingBarrio()) return existingId;
+      this.paso1Form.markAllAsTouched();
+      if (this.paso1Form.invalid) return null;
 
-      if (wasNuevo) {
-        const created = await this.barriosSvc.create(payload);
-        this.barrio.set(created);
-        this.barrioExtras.set(this.extrasRecordFromUnknown(created.extras));
-        this.routeId.set(created.id);
-        void this.router.navigate(['/barrios', created.id], { replaceUrl: true });
-      } else if (this.barrio()?.id) {
-        const updated = await this.barriosSvc.update(this.barrio()!.id, payload);
+      this.savingBarrio.set(true);
+      try {
+        const updated = await this.barriosSvc.update(existingId, this.buildBarrioPayload());
         this.barrio.set(updated);
         this.barrioExtras.set(this.extrasRecordFromUnknown(updated.extras));
         this.barrioDraft.update((d) => ({
@@ -509,19 +514,61 @@ export class BarrioIngresoPageComponent {
           planoNombre: updated.plano_general || d.planoNombre,
           imagenNombre: updated.imagen_portada || d.imagenNombre
         }));
+        if (opts?.showToast !== false) {
+          this.messages.add({ severity: 'success', summary: 'Éxito', detail: 'Barrio guardado' });
+        }
+        return existingId;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error al guardar barrio';
+        this.messages.add({ severity: 'error', summary: 'Error', detail: msg });
+        return null;
+      } finally {
+        this.savingBarrio.set(false);
       }
+    }
 
-      this.messages.add({
-        severity: 'success',
-        summary: 'Éxito',
-        detail: wasNuevo ? 'Barrio creado' : 'Barrio guardado'
-      });
+    if (this.savingBarrio()) return null;
+    this.paso1Form.markAllAsTouched();
+    if (this.paso1Form.invalid) return null;
+
+    this.savingBarrio.set(true);
+    try {
+      const created = await this.barriosSvc.create(this.buildBarrioPayload());
+      this.barrio.set(created);
+      this.barrioExtras.set(this.extrasRecordFromUnknown(created.extras));
+      this.routeId.set(created.id);
+      void this.router.navigate(['/barrios', created.id], { replaceUrl: true });
+      await this.reloadUnidades();
+      await this.reloadPlantillas();
+      if (opts?.showToast !== false) {
+        this.messages.add({ severity: 'success', summary: 'Éxito', detail: 'Barrio creado' });
+      }
+      return created.id;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al guardar barrio';
       this.messages.add({ severity: 'error', summary: 'Error', detail: msg });
+      return null;
     } finally {
       this.savingBarrio.set(false);
     }
+  }
+
+  private async ensureBarrioPersistido(): Promise<string | null> {
+    if (this.barrio()?.id) return this.barrio()!.id;
+    const id = await this.persistirBarrio({ showToast: false });
+    if (!id) {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Atención',
+        detail: 'Completá los datos del barrio antes de agregar unidades'
+      });
+    }
+    return id;
+  }
+
+  async guardarBarrio(): Promise<void> {
+    if (this.savingBarrio()) return;
+    await this.persistirBarrio({ showToast: true });
   }
 
   abrirDialogPlantilla(): void {
@@ -531,9 +578,11 @@ export class BarrioIngresoPageComponent {
   }
 
   async guardarComoPlantilla(nombre: string): Promise<void> {
-    const barrioId = this.barrio()?.id;
     const tipo = this.formTab();
-    if (!barrioId || this.savingPlantilla()) return;
+    if (this.savingPlantilla()) return;
+
+    const barrioId = await this.ensureBarrioPersistido();
+    if (!barrioId) return;
 
     const form = this.unidadForm();
     const nombreTrim = nombre.trim();
@@ -572,10 +621,47 @@ export class BarrioIngresoPageComponent {
     }
   }
 
+  confirmarEliminarPlantilla(): void {
+    const plantillaId = this.selectedPlantillaId();
+    const plantilla = this.plantillas().find((p) => p.id === plantillaId);
+    if (!plantilla || this.deletingPlantilla()) return;
+
+    this.confirmationSvc.confirm({
+      message: `¿Eliminar la plantilla "${plantilla.nombre}"? No se borran unidades ya creadas. Esta acción no se puede deshacer.`,
+      header: 'Eliminar plantilla',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => void this.ejecutarEliminarPlantilla(plantilla)
+    });
+  }
+
+  private async ejecutarEliminarPlantilla(plantilla: PlantillasUnidadResponse): Promise<void> {
+    if (this.deletingPlantilla()) return;
+    this.deletingPlantilla.set(true);
+    try {
+      await this.plantillasSvc.delete(plantilla.id);
+      await this.reloadPlantillas();
+      if (this.selectedPlantillaId() === plantilla.id) {
+        this.resetUnidadForm();
+      }
+      this.messages.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `Plantilla "${plantilla.nombre}" eliminada`
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'No se pudo eliminar la plantilla';
+      this.messages.add({ severity: 'error', summary: 'Error', detail: msg });
+    } finally {
+      this.deletingPlantilla.set(false);
+    }
+  }
+
   async guardarUnidad(): Promise<void> {
-    const barrioId = this.barrio()?.id;
     const tipo = this.formTab();
-    if (!barrioId || this.savingUnidad()) return;
+    if (this.savingUnidad()) return;
 
     const form = this.unidadForm();
     if (!form.codigo.trim()) {
@@ -586,6 +672,10 @@ export class BarrioIngresoPageComponent {
       this.messages.add({ severity: 'warn', summary: 'Atención', detail: 'Área y precio son obligatorios para lotes' });
       return;
     }
+
+    const barrioEraNuevo = !this.barrio()?.id;
+    const barrioId = await this.ensureBarrioPersistido();
+    if (!barrioId) return;
 
     const responsableId = this.authSvc.currentUser()?.['id'] as string | undefined;
     if (!responsableId) return;
@@ -642,7 +732,11 @@ export class BarrioIngresoPageComponent {
         }
       }
 
-      this.messages.add({ severity: 'success', summary: 'Éxito', detail: 'Unidad guardada' });
+      this.messages.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: barrioEraNuevo ? 'Barrio y unidad guardados' : 'Unidad guardada'
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al guardar unidad';
       this.messages.add({ severity: 'error', summary: 'Error', detail: msg });

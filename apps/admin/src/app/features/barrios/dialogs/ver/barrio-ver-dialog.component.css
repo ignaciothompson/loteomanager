@@ -29,6 +29,15 @@
   padding: 1rem 1.25rem;
 }
 
+.barrio-ver-dialog__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .barrio-ver-dialog__header-main {
   min-width: 0;
 }
@@ -116,6 +125,11 @@
 
 .barrio-ver-table__otros {
   min-width: 10rem;
+}
+
+.barrio-ver-table__actions {
+  width: 3rem;
+  text-align: center;
 }
 
 .barrio-ver-grupos__head,

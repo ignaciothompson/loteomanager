@@ -1,5 +1,6 @@
 <div class="default-height barrio-ingreso-page">
     <p-toast />
+    <p-confirmDialog />
 
     @if (loading()) {
         <div class="card flex justify-center py-8">
@@ -84,6 +85,9 @@
                                     class="w-full"
                                     appendTo="body"
                                     display="chip"
+                                    [autofocusFilter]="false"
+                                    [resetFilterOnHide]="true"
+                                    (onPanelHide)="onTiposMultiselectHide()"
                                 />
                             </div>
                             <div class="lm-field lg:col-span-2">
@@ -161,7 +165,6 @@
                     [usandoPlantilla]="usandoPlantilla()"
                     [(unidadForm)]="unidadForm"
                     [estadoOpts]="estadoOpts()"
-                    [disabled]="!barrioGuardado()"
                 >
                     <div formActions class="flex flex-wrap justify-end gap-2">
                         <button
@@ -170,7 +173,7 @@
                             [label]="usandoPlantilla() ? 'Limpiar' : 'Cancelar'"
                             [icon]="usandoPlantilla() ? 'pi pi-eraser' : 'pi pi-times'"
                             class="p-button-text"
-                            [disabled]="!barrioGuardado() || savingUnidad() || savingPlantilla()"
+                            [disabled]="savingUnidad() || savingPlantilla() || savingBarrio()"
                             (click)="cancelarForm()"
                         ></button>
                         @if (!usandoPlantilla()) {
@@ -181,8 +184,20 @@
                                 icon="pi pi-bookmark"
                                 class="p-button-outlined"
                                 [loading]="savingPlantilla()"
-                                [disabled]="!barrioGuardado() || savingPlantilla() || savingUnidad()"
+                                [disabled]="savingPlantilla() || savingUnidad() || deletingPlantilla() || savingBarrio()"
                                 (click)="abrirDialogPlantilla()"
+                            ></button>
+                        }
+                        @if (selectedPlantillaId()) {
+                            <button
+                                pButton
+                                type="button"
+                                label="Eliminar plantilla"
+                                icon="pi pi-trash"
+                                class="p-button-outlined p-button-danger"
+                                [loading]="deletingPlantilla()"
+                                [disabled]="savingUnidad() || savingPlantilla() || deletingPlantilla() || savingBarrio()"
+                                (click)="confirmarEliminarPlantilla()"
                             ></button>
                         }
                         <button
@@ -191,7 +206,7 @@
                             label="Guardar unidad"
                             icon="pi pi-check"
                             [loading]="savingUnidad()"
-                            [disabled]="!barrioGuardado() || savingUnidad() || savingPlantilla()"
+                            [disabled]="savingUnidad() || savingPlantilla() || savingBarrio()"
                             (click)="guardarUnidad()"
                         ></button>
                     </div>

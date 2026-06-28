@@ -141,6 +141,15 @@ export class BarriosComponent {
     this.verDialogVisible.set(true);
   }
 
+  onBarrioEliminado(): void {
+    this.verBarrioId.set(null);
+    void this.runSearch();
+  }
+
+  onBarrioUnidadesChanged(): void {
+    void this.runSearch();
+  }
+
   geoLabel(barrio: BarrioConUnidades): string {
     const expand = (barrio as BarrioConUnidades & {
       expand?: {

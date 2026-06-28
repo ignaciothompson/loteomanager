@@ -10,7 +10,9 @@
 
     <div class="ingreso-lateral__scroll">
       @if (!barrioGuardado()) {
-        <p class="ingreso-lateral__empty">Guardá el barrio para ver las unidades creadas.</p>
+        <p class="ingreso-lateral__empty">
+          Las unidades aparecerán acá al guardar. Si el barrio es nuevo, se crea automáticamente al guardar la primera unidad.
+        </p>
       } @else if (!unidadesFiltradas().length) {
         <p class="ingreso-lateral__empty">No hay unidades de este tipo. Completá el formulario y guardá una unidad.</p>
       } @else {
@@ -36,7 +38,9 @@
   } @else {
     <div class="ingreso-lateral__scroll">
       @if (!barrioGuardado()) {
-        <p class="ingreso-lateral__empty">Guardá el barrio para ver las plantillas.</p>
+        <p class="ingreso-lateral__empty">
+          Las plantillas aparecerán acá después de guardar el barrio (se crea automáticamente al guardar la primera unidad o plantilla).
+        </p>
       } @else if (!plantillas().length) {
         <p class="ingreso-lateral__empty">
           No hay plantillas guardadas. Completá el formulario y hacé clic en "Guardar como plantilla".
