@@ -50,11 +50,6 @@ export class AppMenu {
                         routerLink: ['/barrios']
                     },
                     {
-                        label: 'Unidades',
-                        icon: 'pi pi-fw pi-th-large',
-                        routerLink: ['/lotes']
-                    },
-                    {
                         label: 'Actualizacion Web',
                         icon: 'pi pi-fw pi-cloud-upload',
                         routerLink: ['/actualizacion-web']

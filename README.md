@@ -551,6 +551,20 @@ PocketBase queda solo accesible desde la red interna de Docker.
 
 Ver `docs/runbook-deploy.md` para el procedimiento completo.
 
+### Bootstrap automático del superuser
+
+El contenedor `pocketbase` ejecuta `docker/pocketbase-entrypoint.sh` en cada arranque:
+
+1. Levanta PocketBase y espera a que `/api/health` responda 200.
+2. Si `PB_SUPERUSER_EMAIL` y `PB_SUPERUSER_PASSWORD` están definidas, corre `superuser upsert` (crea en primer deploy, actualiza password en redeploys).
+3. Si faltan, loguea `[entrypoint] PB_SUPERUSER_EMAIL/PASSWORD no definidas, skip bootstrap` y sigue — el flujo de dev local sin `.env` no se rompe.
+
+**Rotar password:** cambiar `PB_SUPERUSER_PASSWORD` en Environment y redeployar. `upsert` es idempotente.
+
+**Dokploy:** las dos variables van en la pestaña **Environment** del servicio Compose (junto con el resto del `.env.example`).
+
+> **Seguridad:** la password del superuser queda en el entorno del contenedor. En producción, usar un gestor de secretos si aplica (secrets de Dokploy, Vault, Doppler, etc.). Nunca commitear `.env` con valores reales.
+
 ### Backups
 
 Los backups corren diariamente vía cron a Backblaze B2 (~$0.005/GB/mes). Se mantienen 30 días daily + 12 meses month-end. El comando `backup` nativo de PocketBase genera un zip de `pb_data/` que se sube a B2 con `b2-cli`.

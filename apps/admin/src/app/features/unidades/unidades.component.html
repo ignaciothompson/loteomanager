@@ -57,7 +57,10 @@
 
         <div class="default-height__header flex justify-between items-center mb-4">
             <h5 class="m-0">Gestión de Unidades / Lotes</h5>
-            <button pButton type="button" icon="pi pi-plus" label="Nueva Unidad" class="p-button-success" (click)="openNew()"></button>
+            <div class="flex gap-2">
+                <button pButton type="button" icon="pi pi-plus" label="Crear nuevo" class="p-button-success" (click)="openIngreso()"></button>
+                <button pButton type="button" icon="pi pi-file" label="Nueva unidad" class="p-button-outlined" (click)="openNew()"></button>
+            </div>
         </div>
 
         <div class="default-height__scroll">
@@ -70,20 +73,34 @@
             >
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Código Interno</th>
+                        <th>Código</th>
                         <th>Barrio</th>
                         <th>Tipo</th>
-                        <th class="!text-right">Precio</th>
+                        <th>Precio</th>
                         <th>Estado</th>
                         <th class="buttons-col"></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-unidad>
                     <tr>
-                        <td>{{ unidad.codigo_interno }}</td>
+                        <td>
+                            <div class="flex flex-col gap-1">
+                                <span>{{ codigoDisplay(unidad) }}</span>
+                                @if (unidad.pendiente_publicar) {
+                                    <p-tag severity="warn" value="Pendiente publicar" styleClass="text-xs" />
+                                }
+                            </div>
+                        </td>
                         <td>{{ getBarrioName(unidad) }}</td>
-                        <td class="capitalize">{{ unidad.tipo_unidad }}</td>
-                        <td class="!text-right">{{ unidad.precio | currency: unidad.moneda }}</td>
+                        <td>
+                            <span
+                                class="inline-block px-2 py-1 border-round text-xs font-medium"
+                                [class]="tipoBadge(unidad.tipo_unidad)"
+                            >
+                                {{ tipoLabel(unidad.tipo_unidad) }}
+                            </span>
+                        </td>
+                        <td>{{ unidad.precio != null ? (unidad.precio | currency: unidad.moneda) : '—' }}</td>
                         <td>
                             @if (!isEditingEstado(unidad.id)) {
                                 <div class="inline-flex cursor-pointer" role="button" tabindex="0" (click)="startEstadoInlineEdit(unidad.id)" (keydown.enter)="startEstadoInlineEdit(unidad.id)">
@@ -156,6 +173,12 @@
     (save)="onUnidadFormSave($event)"
     (cancel)="displayDialog.set(false)"
     (newBarrio)="openNewBarrio()"
+/>
+
+<app-unidad-ingreso-stepper
+    [visible]="displayIngresoDialog()"
+    (visibleChange)="displayIngresoDialog.set($event)"
+    (saved)="onIngresoSaved($event)"
 />
 
 <app-barrio-rapido-dialog

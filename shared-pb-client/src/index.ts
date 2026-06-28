@@ -14,6 +14,7 @@ export * from './lib/services/importacion-filas.service';
 export * from './lib/services/importaciones.service';
 export * from './lib/services/interesados.service';
 export * from './lib/services/unidades.service';
+export * from './lib/services/plantillas-unidad.service';
 export * from './lib/services/users.service';
 export * from './lib/services/vendedor-barrios.service';
 export * from './lib/services/extras-definiciones.service';

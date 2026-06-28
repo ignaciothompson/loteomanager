@@ -20,7 +20,11 @@ Este documento describe el procedimiento completo para desplegar LoteoManager po
 4. Conectar el repositorio Git:
    - URL: `https://github.com/<owner>/loteomanager.git`
    - Branch: `main` (o la rama que corresponda)
-   - Path del compose: `docker/docker-compose.yml`
+   - Path del compose: `docker/docker-compose-dokploy.yml`
+
+> **Nota:** `docker-compose.yml` es el compose base (dev/local con overlay `docker-compose.dev.yml`). En Dokploy usar siempre `docker-compose-dokploy.yml`, que expone puertos host `6101` (PocketBase), `6102` (admin) y `6103` (landing) para el Tunnel.
+
+5. Crear un segundo servicio en Dokploy (o contenedor aparte en el VPS) para **cloudflared** con imagen `cloudflare/cloudflared:latest`, comando `tunnel run` y la variable `TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}`. Debe estar en la misma red Docker que los contenedores del compose (`loteo_network`) para resolver `admin-web`, `landing-ssr` y `pocketbase` por nombre.
 
 ### 2. Configurar variables de entorno
 
@@ -81,7 +85,8 @@ Setear `POCKETBASE_PUBLIC_URL=http://<host>:6101`. **No recomendado** sin firewa
 
 1. En Dokploy, click en **Deploy**.
 2. Monitorear los logs de build de cada contenedor.
-3. Esperar a que los 4 servicios queden en estado `healthy`.
+3. Esperar a que los **3 servicios del compose** (`pocketbase`, `admin-web`, `landing-ssr`) queden en estado `healthy`.
+4. Verificar que **cloudflared** (contenedor aparte) conectó al Tunnel sin errores en sus logs.
 
 ### 5. Bootstrap automático del superuser de PocketBase
 

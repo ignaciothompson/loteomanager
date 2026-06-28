@@ -1,0 +1,62 @@
+<div class="ingreso-lateral">
+  <p-tabs [value]="lateralTab()" (valueChange)="lateralTab.set($any($event))" class="ingreso-lateral__tabs">
+    <p-tablist>
+      <p-tab value="listado">Listado</p-tab>
+      <p-tab value="plantillas">Plantillas</p-tab>
+    </p-tablist>
+  </p-tabs>
+
+  @if (lateralTab() === 'listado') {
+
+    <div class="ingreso-lateral__scroll">
+      @if (!barrioGuardado()) {
+        <p class="ingreso-lateral__empty">Guardá el barrio para ver las unidades creadas.</p>
+      } @else if (!unidadesFiltradas().length) {
+        <p class="ingreso-lateral__empty">No hay unidades de este tipo. Completá el formulario y guardá una unidad.</p>
+      } @else {
+        @for (u of unidadesFiltradas(); track u.id) {        
+        <button
+            type="button"
+            class="ingreso-lateral__item"
+            [class.ingreso-lateral__item--selected]="selectedUnidadId() === u.id"
+            (click)="selectUnidad.emit(u)"
+          >
+            <div class="ingreso-lateral__item-head">
+              <span class="ingreso-lateral__codigo">{{ codigo(u) }}</span>
+              <div class="flex gap-1 flex-wrap justify-end">
+                <span class="ingreso-lateral__tipo-badge">{{ tipoLabel(u.tipo_unidad) }}</span>
+                <lib-estado-badge [code]="u.estado" [entidad]="'unidades'" />
+              </div>
+            </div>
+            <span class="ingreso-lateral__meta">{{ unidadMeta(u) }}</span>
+          </button>
+        }
+      }
+    </div>
+  } @else {
+    <div class="ingreso-lateral__scroll">
+      @if (!barrioGuardado()) {
+        <p class="ingreso-lateral__empty">Guardá el barrio para ver las plantillas.</p>
+      } @else if (!plantillas().length) {
+        <p class="ingreso-lateral__empty">
+          No hay plantillas guardadas. Completá el formulario y hacé clic en "Guardar como plantilla".
+        </p>
+      } @else {
+        @for (p of plantillas(); track p.id) {
+          <button
+            type="button"
+            class="ingreso-lateral__item"
+            [class.ingreso-lateral__item--selected]="selectedPlantillaId() === p.id"
+            (click)="selectPlantilla.emit(p)"
+          >
+            <div class="ingreso-lateral__item-head">
+              <span class="ingreso-lateral__codigo">{{ p.nombre }}</span>
+              <span class="ingreso-lateral__tipo-badge">{{ tipoLabel(p.tipo_unidad) }}</span>
+            </div>
+            <span class="ingreso-lateral__meta">{{ plantillaMeta(p) }}</span>
+          </button>
+        }
+      }
+    </div>
+  }
+</div>

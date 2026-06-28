@@ -1,0 +1,120 @@
+:host {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.ingreso-lateral {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  border-radius: var(--p-content-border-radius);
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+  border-radius: var(--content-border-radius);
+}
+
+.ingreso-lateral__tabs {
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.ingreso-lateral__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.ingreso-lateral__title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--p-text-color);
+}
+
+.ingreso-lateral__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ingreso-lateral__empty {
+  margin: 0;
+  padding: 1rem 0.5rem;
+  text-align: center;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.ingreso-lateral__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-content-border-radius);
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.ingreso-lateral__item:hover {
+  border-color: var(--p-primary-color);
+  background: var(--p-content-hover-background);
+}
+
+.ingreso-lateral__item--selected {
+  border-color: var(--p-primary-color);
+  box-shadow: 0 0 0 1px var(--p-primary-color);
+  background: var(--p-highlight-background);
+  color: var(--p-highlight-color);
+}
+
+.ingreso-lateral__item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.ingreso-lateral__codigo {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: inherit;
+}
+
+.ingreso-lateral__tipo-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: var(--p-content-hover-background);
+  color: var(--p-text-muted-color);
+  border: 1px solid var(--p-content-border-color);
+  white-space: nowrap;
+}
+
+.ingreso-lateral__item--selected .ingreso-lateral__tipo-badge {
+  background: color-mix(in srgb, var(--p-primary-color) 18%, transparent);
+  color: var(--p-highlight-color);
+  border-color: color-mix(in srgb, var(--p-primary-color) 35%, transparent);
+}
+
+.ingreso-lateral__meta {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+}
+
+.ingreso-lateral__item--selected .ingreso-lateral__meta {
+  color: inherit;
+  opacity: 0.85;
+}

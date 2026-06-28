@@ -1,0 +1,385 @@
+<div class="ingreso-form-panel">
+  <p-tabs [value]="formTab()" (valueChange)="formTab.set($any($event))" class="mb-4">
+    <p-tablist>
+      @for (tab of formTabs; track tab.value) {
+        <p-tab [value]="tab.value">{{ tab.label }}</p-tab>
+      }
+    </p-tablist>
+  </p-tabs>
+
+  <div class="ingreso-form-panel__mode">
+    <span
+      class="ingreso-form-panel__mode-badge"
+      [class.ingreso-form-panel__mode-badge--edit]="isEditMode()"
+      [class.ingreso-form-panel__mode-badge--plantilla]="usandoPlantilla()"
+    >
+      {{ modeLabel() }}
+    </span>
+  </div>
+
+  <div class="ingreso-form-panel__body">
+  @switch (formTab()) {
+    @case ('lote_vacio') {
+      <div class="grid xs:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
+        <!-- Código -->
+        <div class="lm-field">
+          <label class="lm-field-label">Código <span class="lm-required">*</span></label>
+          <input type="text"
+                pInputText
+                class="w-full"
+                [ngModel]="unidadForm().codigo"
+                (ngModelChange)="unidadForm.update((f) => ({ ...f, codigo: $event }))"
+                [disabled]="disabled()" />
+        </div>
+        <!-- Área -->
+        <div class="lm-field">
+          <label class="lm-field-label">Área (m²) <span class="lm-required">*</span></label>
+          <p-inputNumber [ngModel]="unidadForm().area_m2"
+                        (ngModelChange)="unidadForm.update((f) => ({ ...f, area_m2: $event }))"
+                        [min]="0"
+                        class="w-full"
+                        [disabled]="disabled()"/>
+        </div>
+        <!-- Precio -->
+        <div class="lm-field">
+          <label class="lm-field-label">Precio <span class="lm-required">*</span></label>
+          <p-inputNumber
+            [ngModel]="unidadForm().precio"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, precio: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Moneda -->
+        <div class="lm-field">
+          <label class="lm-field-label">Moneda</label>
+          <p-select
+            [ngModel]="unidadForm().moneda"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, moneda: $event }))"
+            [options]="monedaOpts"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Estado -->
+        <div class="lm-field">
+          <label class="lm-field-label">Estado</label>
+          <p-select
+            [ngModel]="unidadForm().estado_inicial"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, estado_inicial: $event }))"
+            [options]="estadoOpts()"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Orientación -->
+        <div class="lm-field">
+          <label class="lm-field-label">Orientación</label>
+          <p-select
+            [ngModel]="unidadForm().orientacion"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, orientacion: $event }))"
+            [options]="orientacionOpts"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="—"
+            [showClear]="true"
+            class="w-full"
+            appendTo="body"
+            [disabled]="disabled()"
+          />
+        </div>
+      </div>
+      <hr class="extras-divider" />
+      <p class="extras-section-label">Campos adicionales</p>
+      <app-extras-editor
+        entidad="unidades"
+        [extras]="unidadForm().extras ?? {}"
+        [disabled]="disabled()"
+        (extrasChange)="onUnidadExtrasChange($event)"
+      />
+    }
+    @case ('casa_construida') {
+      <div class="grid xs:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
+        <!-- Código -->
+        <div class="lm-field">
+          <label class="lm-field-label">Código <span class="lm-required">*</span></label>
+          <input
+            type="text"
+            pInputText
+            class="w-full"
+            [ngModel]="unidadForm().codigo"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, codigo: $event }))"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Sup. cubierta -->
+        <div class="lm-field">
+          <label class="lm-field-label">Sup. cubierta (m²)</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().sup_cubierta"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, sup_cubierta: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Sup. semicubierta -->
+        <div class="lm-field">
+          <label class="lm-field-label">Sup. semicubierta (m²)</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().sup_semicubierta"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, sup_semicubierta: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Dormitorios -->
+        <div class="lm-field">
+          <label class="lm-field-label">Dormitorios</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().dormitorios"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, dormitorios: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Baños -->
+        <div class="lm-field">
+          <label class="lm-field-label">Baños</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().banos"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, banos: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Garage -->
+        <div class="lm-field">
+          <label class="lm-field-label">Garage</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().garage"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, garage: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Año construcción -->
+        <div class="lm-field">
+          <label class="lm-field-label">Año construcción</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().anio_construccion"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, anio_construccion: $event }))"
+            [min]="1900"
+            [max]="2100"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Precio -->
+        <div class="lm-field">
+          <label class="lm-field-label">Precio</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().precio"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, precio: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Moneda -->
+        <div class="lm-field">
+          <label class="lm-field-label">Moneda</label>
+          <p-select
+            [ngModel]="unidadForm().moneda"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, moneda: $event }))"
+            [options]="monedaOpts"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Estado -->
+        <div class="lm-field">
+          <label class="lm-field-label">Estado</label>
+          <p-select
+            [ngModel]="unidadForm().estado_inicial"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, estado_inicial: $event }))"
+            [options]="estadoOpts()"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Orientación -->
+        <div class="lm-field">
+          <label class="lm-field-label">Orientación</label>
+          <p-select
+            [ngModel]="unidadForm().orientacion"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, orientacion: $event }))"
+            [options]="orientacionOpts"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="—"
+            [showClear]="true"
+            class="w-full"
+            appendTo="body"
+            [disabled]="disabled()"
+          />
+        </div>
+      </div>
+      <hr class="extras-divider" />
+      <p class="extras-section-label">Campos adicionales</p>
+      <app-extras-editor
+        entidad="unidades"
+        [extras]="unidadForm().extras ?? {}"
+        [disabled]="disabled()"
+        (extrasChange)="onUnidadExtrasChange($event)"
+      />
+    }
+    @case ('casa_prefabricada') {
+      <div class="grid xs:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
+        <!-- Código -->
+        <div class="lm-field">
+          <label class="lm-field-label">Código <span class="lm-required">*</span></label>
+          <input
+            type="text"
+            pInputText
+            class="w-full"
+            [ngModel]="unidadForm().codigo"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, codigo: $event }))"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Modelo / Tipo -->
+        <div class="lm-field">
+          <label class="lm-field-label">Modelo / Tipo</label>
+          <input
+            type="text"
+            pInputText
+            class="w-full"
+            [ngModel]="unidadForm().modelo"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, modelo: $event }))"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Fabricante -->
+        <div class="lm-field">
+          <label class="lm-field-label">Fabricante</label>
+          <input
+            type="text"
+            pInputText
+            class="w-full"
+            [ngModel]="unidadForm().fabricante"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, fabricante: $event }))"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Superficie -->
+        <div class="lm-field">
+          <label class="lm-field-label">Superficie (m²)</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().area_m2"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, area_m2: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Dormitorios -->
+        <div class="lm-field">
+          <label class="lm-field-label">Dormitorios</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().dormitorios"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, dormitorios: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Precio -->
+        <div class="lm-field">
+          <label class="lm-field-label">Precio</label>
+          <p-inputNumber
+            [ngModel]="unidadForm().precio"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, precio: $event }))"
+            [min]="0"
+            class="w-full"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Moneda -->
+        <div class="lm-field">
+          <label class="lm-field-label">Moneda</label>
+          <p-select
+            [ngModel]="unidadForm().moneda"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, moneda: $event }))"
+            [options]="monedaOpts"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Estado -->
+        <div class="lm-field">
+          <label class="lm-field-label">Estado</label>
+          <p-select
+            [ngModel]="unidadForm().estado_inicial"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, estado_inicial: $event }))"
+            [options]="estadoOpts()"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+            [disabled]="disabled()"
+          />
+        </div>
+        <!-- Orientación -->
+        <div class="lm-field">
+          <label class="lm-field-label">Orientación</label>
+          <p-select
+            [ngModel]="unidadForm().orientacion"
+            (ngModelChange)="unidadForm.update((f) => ({ ...f, orientacion: $event }))"
+            [options]="orientacionOpts"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="—"
+            [showClear]="true"
+            class="w-full"
+            appendTo="body"
+            [disabled]="disabled()"
+          />
+        </div>
+      </div>
+      <hr class="extras-divider" />
+      <p class="extras-section-label">Campos adicionales</p>
+      <app-extras-editor
+        entidad="unidades"
+        [extras]="unidadForm().extras ?? {}"
+        [disabled]="disabled()"
+        (extrasChange)="onUnidadExtrasChange($event)"
+      />
+    }
+  }
+  </div>
+
+  <div class="ingreso-form-panel__actions">
+    <ng-content select="[formActions]" />
+  </div>
+</div>

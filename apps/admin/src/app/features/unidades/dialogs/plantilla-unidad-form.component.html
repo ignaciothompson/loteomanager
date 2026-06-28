@@ -1,0 +1,101 @@
+<section class="lm-section">
+  <header class="lm-section-header">
+    <span class="lm-section-header-title">
+      <i class="pi pi-clone" aria-hidden="true"></i>
+      Plantilla — {{ tipoLabel() }}
+    </span>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="lm-field lg:col-span-2">
+      <label class="lm-field-label">Nombre plantilla <span class="lm-required">*</span></label>
+      <input type="text" pInputText class="w-full" [(ngModel)]="draft.nombre" placeholder="Lotes frente al lago" />
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Cantidad <span class="lm-required">*</span></label>
+      <p-inputNumber [(ngModel)]="draft.cantidad" [min]="1" [max]="500" class="w-full" />
+    </div>
+    <div class="lm-field lg:col-span-2">
+      <label class="lm-field-label">Patrón código <span class="lm-required">*</span></label>
+      <input type="text" pInputText class="w-full" [(ngModel)]="draft.patron_codigo" placeholder="A-{n}" />
+      <span class="lm-hint">Preview: {{ preview() }}</span>
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Área m²</label>
+      <p-inputNumber [(ngModel)]="draft.area_m2" [min]="0" class="w-full" />
+    </div>
+    @if (showOrientacion()) {
+      <div class="lm-field">
+        <label class="lm-field-label">Orientación</label>
+        <p-select
+          [(ngModel)]="draft.orientacion"
+          [options]="orientacionOpts"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="—"
+          [showClear]="true"
+          class="w-full"
+          appendTo="body"
+        />
+      </div>
+    }
+    @if (showModelo()) {
+      <div class="lm-field">
+        <label class="lm-field-label">Modelo</label>
+        <input type="text" pInputText class="w-full" [(ngModel)]="draft.modelo" />
+      </div>
+    }
+    <div class="lm-field">
+      <label class="lm-field-label">Precio</label>
+      <p-inputNumber [(ngModel)]="draft.precio" [min]="0" class="w-full" />
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Moneda</label>
+      <p-select
+        [(ngModel)]="draft.moneda"
+        [options]="monedaOpts"
+        optionLabel="label"
+        optionValue="value"
+        class="w-full"
+        appendTo="body"
+      />
+    </div>
+    <div class="lm-field">
+      <label class="lm-field-label">Estado inicial</label>
+      <p-select
+        [(ngModel)]="draft.estado_inicial"
+        [options]="estadoOpts"
+        optionLabel="label"
+        optionValue="value"
+        class="w-full"
+        appendTo="body"
+      />
+    </div>
+    <div class="lm-field lm-toggle-row lg:col-span-3">
+      <label class="lm-field-label">Visible en web</label>
+      <p-toggleSwitch [(ngModel)]="draft.web_visible" />
+    </div>
+  </div>
+
+  <div class="flex justify-end mt-3">
+    <button pButton type="button" label="Agregar plantilla" icon="pi pi-plus" class="p-button-outlined" (click)="agregar()"></button>
+  </div>
+
+  @if (plantillas().length) {
+    <div class="flex flex-wrap gap-2 mt-4">
+      @for (p of plantillas(); track p.localId) {
+        <span class="inline-flex items-center gap-2 px-3 py-1 border-round surface-100 text-sm">
+          {{ p.nombre }} ({{ p.patron_codigo }} × {{ p.cantidad }})
+          <button
+            pButton
+            type="button"
+            icon="pi pi-times"
+            class="p-button-text p-button-sm p-button-danger"
+            [attr.aria-label]="'Quitar plantilla'"
+            (click)="quitar(p.localId)"
+          ></button>
+        </span>
+      }
+    </div>
+  }
+</section>

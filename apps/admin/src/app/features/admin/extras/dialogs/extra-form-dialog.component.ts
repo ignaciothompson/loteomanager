@@ -83,7 +83,6 @@ export class ExtraFormDialogComponent {
     descripcion: [''],
     tipo: ['texto' as ExtraTipo, Validators.required],
     grupo: [''],
-    requerido: [false],
     visible_en_lista: [false],
     visible_en_comparativa: [false],
     activo: [true]
@@ -111,7 +110,6 @@ export class ExtraFormDialogComponent {
         descripcion: row.descripcion ?? '',
         tipo: row.tipo ?? 'texto',
         grupo: row.grupo ?? '',
-        requerido: !!row.requerido,
         visible_en_lista: !!row.visible_en_lista,
         visible_en_comparativa: !!row.visible_en_comparativa,
         activo: row.activo !== false
@@ -151,7 +149,7 @@ export class ExtraFormDialogComponent {
       nombre: raw.nombre.trim(),
       descripcion: raw.descripcion || '',
       tipo: raw.tipo,
-      requerido: raw.requerido,
+      requerido: false,
       visible_en_lista: raw.visible_en_lista,
       visible_en_landing: false,
       visible_en_comparativa: raw.visible_en_comparativa,

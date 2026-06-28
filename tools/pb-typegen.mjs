@@ -41,3 +41,14 @@ if (result.status !== 0 && result.status !== null) {
 }
 
 console.log("=> Tipos generados:", out);
+
+const patch = join(root, "tools", "pb-typegen-patch.mjs");
+const patchResult = spawnSync(`node ${q(patch)}`, {
+  stdio: "inherit",
+  cwd: root,
+  shell: true,
+  env: process.env,
+});
+if (patchResult.status !== 0 && patchResult.status !== null) {
+  process.exit(patchResult.status);
+}

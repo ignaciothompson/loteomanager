@@ -25,6 +25,10 @@ import {
   type UnidadFormSavePayload
 } from './dialogs/unidad-form-dialog.component';
 import { BarrioRapidoDialogComponent } from './dialogs/barrio-rapido-dialog.component';
+import { UnidadIngresoStepperComponent } from './dialogs/unidad-ingreso-stepper.component';
+import { TIPO_UNIDAD_BADGE_CLASS, TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
+import type { TipoUnidadIngreso } from '@loteomanager/shared-types';
+import { TagModule } from 'primeng/tag';
 
 @Component({
   selector: 'app-unidades',
@@ -39,7 +43,9 @@ import { BarrioRapidoDialogComponent } from './dialogs/barrio-rapido-dialog.comp
     ToastModule,
     EstadoBadgeComponent,
     UnidadFormDialogComponent,
-    BarrioRapidoDialogComponent
+    BarrioRapidoDialogComponent,
+    UnidadIngresoStepperComponent,
+    TagModule
   ],
   providers: [MessageService],
   templateUrl: './unidades.component.html',
@@ -73,6 +79,7 @@ export class UnidadesComponent {
   }
 
   displayDialog = signal(false);
+  displayIngresoDialog = signal(false);
   isEdit = signal(false);
   /** Unidad id with inline estado editor open in the table row. */
   editingEstadoUnidadId = signal<string | null>(null);
@@ -116,10 +123,13 @@ export class UnidadesComponent {
   );
 
   tipos: { label: string; value: string }[] = [
-    { label: 'Lote', value: 'lote' },
-    { label: 'Casa', value: 'casa' },
-    { label: 'Departamento', value: 'departamento' }
+    { label: TIPO_UNIDAD_LABELS['lote_vacio'], value: 'lote_vacio' },
+    { label: TIPO_UNIDAD_LABELS['casa_construida'], value: 'casa_construida' },
+    { label: TIPO_UNIDAD_LABELS['casa_prefabricada'], value: 'casa_prefabricada' }
   ];
+
+  readonly tipoBadgeClass = TIPO_UNIDAD_BADGE_CLASS;
+  readonly tipoLabels = TIPO_UNIDAD_LABELS;
 
   monedas: { label: string; value: string }[] = [
     { label: 'USD', value: 'USD' },
@@ -199,9 +209,13 @@ export class UnidadesComponent {
     return [];
   }
 
+  openIngreso() {
+    this.displayIngresoDialog.set(true);
+  }
+
   openNew() {
     this.currentUnidad = {
-      tipo_unidad: 'lote',
+      tipo_unidad: 'lote_vacio',
       moneda: 'USD',
       estado: 'disponible',
       responsable_id: this.authService.currentUser()?.['id'] as string
@@ -209,6 +223,28 @@ export class UnidadesComponent {
     this.extrasModel.set([]);
     this.isEdit.set(false);
     this.displayDialog.set(true);
+  }
+
+  onIngresoSaved(_event: { barrioId: string }): void {
+    this.unidades.reload();
+    this.barrios.reload();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Barrio y unidades guardados'
+    });
+  }
+
+  tipoLabel(tipo: string): string {
+    return this.tipoLabels[tipo as TipoUnidadIngreso] ?? tipo;
+  }
+
+  tipoBadge(tipo: string): string {
+    return this.tipoBadgeClass[tipo as TipoUnidadIngreso] ?? 'surface-100';
+  }
+
+  codigoDisplay(unidad: UnidadesResponse): string {
+    return unidad.codigo || unidad.codigo_interno || '—';
   }
 
   editUnidad(unidad: UnidadesResponse) {
@@ -235,6 +271,7 @@ export class UnidadesComponent {
       const body = payload as Partial<UnidadesResponse>;
 
       if (this.isEdit()) {
+        body.pendiente_publicar = true;
         await this.unidadesService.update(this.currentId, body);
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Unidad actualizada' });
       } else {
@@ -251,7 +288,7 @@ export class UnidadesComponent {
   }
 
   async deleteUnidad(unidad: UnidadesResponse) {
-    if (confirm(`¿Estás seguro de eliminar la unidad ${unidad.codigo_interno}?`)) {
+    if (confirm(`¿Estás seguro de eliminar la unidad ${this.codigoDisplay(unidad)}?`)) {
       try {
         await this.unidadesService.delete(unidad.id);
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Unidad eliminada' });

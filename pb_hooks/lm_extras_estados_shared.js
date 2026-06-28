@@ -270,18 +270,6 @@ function lmValidateExtrasForEntidad(entidad, record, ev) {
     if (obj !== null) items.push(obj);
   }
 
-  var requiredDefs = [];
-  try {
-    var found = $app.findRecordsByFilter(
-      "extras_definiciones",
-      `entidad = "${entidad}" && activo = true && requerido = true`,
-      "orden_display",
-      500,
-      0,
-    );
-    if (found) requiredDefs.push.apply(requiredDefs, found);
-  } catch (_e2) {}
-
   var seenIds = {};
   var normalized = [];
 
@@ -303,18 +291,10 @@ function lmValidateExtrasForEntidad(entidad, record, ev) {
       // Definición inactiva → descartar silenciosamente
       continue;
     }
-    var req = !!def.get("requerido");
     var empty = item.valor === null || item.valor === undefined || item.valor === "" ||
       (typeof item.valor === "string" && item.valor.trim() === "");
-    if (req) {
-      if (empty) {
-        throw new BadRequestError("El extra '" + def.get("nombre") + "' es obligatorio.");
-      }
-      lmValidateExtraValor(def, item.valor);
-    } else {
-      if (empty) continue;
-      lmValidateExtraValor(def, item.valor);
-    }
+    if (empty) continue;
+    lmValidateExtraValor(def, item.valor);
 
     seenIds[eid] = true;
     normalized.push({
@@ -323,13 +303,6 @@ function lmValidateExtrasForEntidad(entidad, record, ev) {
       nombre: def.get("nombre"),
       valor: item.valor,
     });
-  }
-
-  for (let j = 0; j < requiredDefs.length; j++) {
-    const d = requiredDefs[j];
-    if (!seenIds[d.id]) {
-      throw new BadRequestError(`Falta el extra requerido: ${d.get("nombre")}.`);
-    }
   }
 
   record.set("extras", normalized);

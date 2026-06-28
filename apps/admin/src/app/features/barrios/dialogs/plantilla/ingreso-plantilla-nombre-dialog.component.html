@@ -1,0 +1,46 @@
+<p-dialog
+  header="Guardar como plantilla"
+  [(visible)]="visible"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  [draggable]="false"
+  [closable]="!saving()"
+  [closeOnEscape]="!saving()"
+  (onHide)="onHide()"
+>
+  <div class="lm-field">
+    <label for="plantilla-nombre" class="lm-field-label">
+      Nombre de plantilla <span class="lm-required">*</span>
+    </label>
+    <input
+      id="plantilla-nombre"
+      type="text"
+      pInputText
+      class="w-full"
+      placeholder="Ej. Lotes frente al lago"
+      [ngModel]="nombre()"
+      (ngModelChange)="nombre.set($event)"
+      [disabled]="saving()"
+      (keydown.enter)="aceptar(); $event.preventDefault()"
+    />
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      type="button"
+      label="Cancelar"
+      class="p-button-text"
+      [disabled]="saving()"
+      (click)="visible.set(false)"
+    ></button>
+    <button
+      pButton
+      type="button"
+      label="Guardar"
+      icon="pi pi-check"
+      [loading]="saving()"
+      [disabled]="saving() || !nombre().trim()"
+      (click)="aceptar()"
+    ></button>
+  </ng-template>
+</p-dialog>

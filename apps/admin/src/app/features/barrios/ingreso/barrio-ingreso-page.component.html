@@ -1,0 +1,240 @@
+<div class="default-height barrio-ingreso-page">
+    <p-toast />
+
+    @if (loading()) {
+        <div class="card flex justify-center py-8">
+            <i class="pi pi-spin pi-spinner text-2xl" aria-hidden="true"></i>
+        </div>
+    } @else {
+        <!-- C1: datos del barrio -->
+        <div class="card mb-4 ingreso-contenedor-1">
+            <div class="barrio-ingreso-c1-header">
+                <p-tabs [value]="barrioTab()" (valueChange)="barrioTab.set($any($event))" class="barrio-ingreso-tabs">
+                    <p-tablist>
+                        @for (tab of barrioTabs; track tab.value) {
+                            <p-tab [value]="tab.value">{{ tab.label }}</p-tab>
+                        }
+                    </p-tablist>
+                </p-tabs>
+                <button pButton
+                        type="button"
+                        icon="pi pi-arrow-left"
+                        label="Volver a listado barrios"
+                        class="p-button-text barrio-ingreso-volver"
+                        (click)="volver()"></button>
+            </div>
+
+            <form [formGroup]="paso1Form" class="barrio-ingreso-paso1-form">
+                @switch (barrioTab()) {
+                    @case ('basicos') {
+                        <div class="grid grid-cols-5 gap-4">
+                            <div class="lm-field">
+                                <label for="ingreso-nombre" class="lm-field-label">
+                                    Nombre <span class="lm-required">*</span>
+                                </label>
+                                <input id="ingreso-nombre" type="text" pInputText class="w-full" formControlName="nombre" />
+                            </div>
+                            <div class="lm-field">
+                                <label for="ingreso-slug" class="lm-field-label">
+                                    Slug <span class="lm-required">*</span>
+                                </label>
+                                <input id="ingreso-slug" type="text" pInputText class="w-full" formControlName="slug" />
+                            </div>
+                            <div class="lm-field">
+                                <label for="ingreso-depto" class="lm-field-label">
+                                    Departamento <span class="lm-required">*</span>
+                                </label>
+                                <p-select
+                                    inputId="ingreso-depto"
+                                    formControlName="departamento_id"
+                                    [options]="departamentoOpts()"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Seleccioná"
+                                    class="w-full"
+                                    appendTo="body"
+                                />
+                            </div>
+                            <div class="lm-field">
+                                <label for="ingreso-zona" class="lm-field-label">
+                                    Zona <span class="lm-required">*</span>
+                                </label>
+                                <p-select
+                                    inputId="ingreso-zona"
+                                    formControlName="zona_id"
+                                    [options]="zonaOpts()"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Seleccioná"
+                                    class="w-full"
+                                    appendTo="body"
+                                />
+                            </div>
+                            <div class="lm-field">
+                                <label for="ingreso-tipos" class="lm-field-label">
+                                    Tipos de unidad <span class="lm-required">*</span>
+                                </label>
+                                <p-multiSelect
+                                    inputId="ingreso-tipos"
+                                    formControlName="tipos_unidad"
+                                    [options]="tipoOpts"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Seleccioná tipos"
+                                    class="w-full"
+                                    appendTo="body"
+                                    display="chip"
+                                />
+                            </div>
+                            <div class="lm-field lg:col-span-2">
+                                <label for="ingreso-descripcion" class="lm-field-label">Descripción</label>
+                                <textarea
+                                    id="ingreso-descripcion"
+                                    pTextarea
+                                    class="w-full"
+                                    rows="3"
+                                    [ngModel]="barrioDraft().descripcion"
+                                    (ngModelChange)="barrioDraft.update((d) => ({ ...d, descripcion: $event }))"
+                                    [ngModelOptions]="{ standalone: true }"
+                                ></textarea>
+                            </div>
+                            <div class="lm-field">
+                                <label class="lm-field-label">Imágenes</label>
+                                <div class="flex flex-col gap-2">
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-images"
+                                        label="Gestionar imágenes"
+                                        class="p-button-outlined"
+                                        (click)="imagenesDialogVisible.set(true)"
+                                    ></button>
+                                    <span class="lm-hint">{{ imagenesCountLabel() }}</span>
+                                </div>
+                            </div>
+                            <div class="lm-field">
+                                <label class="lm-field-label">Geolocalización</label>
+                                <div class="flex flex-col gap-2">
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-map-marker"
+                                        label="Seleccionar en mapa"
+                                        class="p-button-outlined"
+                                        (click)="geoDialogVisible.set(true)"
+                                    ></button>
+                                    <span class="lm-hint">{{ geoLabel() }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @case ('extras') {
+                        <app-extras-editor
+                            entidad="barrios"
+                            [extras]="barrioExtras()"
+                            (extrasChange)="onBarrioExtrasChange($event)"
+                        />
+                    }
+                }
+
+                <div class="barrio-ingreso-paso1-form__actions">
+                    <button
+                        pButton
+                        type="button"
+                        label="Guardar barrio"
+                        icon="pi pi-check"
+                        class="save-barrio"
+                        [loading]="savingBarrio()"
+                        [disabled]="savingBarrio()"
+                        (click)="guardarBarrio()"
+                    ></button>
+                </div>
+            </form>
+        </div>
+
+        <!-- C2 + C3 -->
+        <div class="ingreso-split">
+            <div class="card ingreso-split__form">
+                <app-ingreso-form-panel
+                    [(formTab)]="formTab"
+                    [formMode]="formMode()"
+                    [usandoPlantilla]="usandoPlantilla()"
+                    [(unidadForm)]="unidadForm"
+                    [estadoOpts]="estadoOpts()"
+                    [disabled]="!barrioGuardado()"
+                >
+                    <div formActions class="flex flex-wrap justify-end gap-2">
+                        <button
+                            pButton
+                            type="button"
+                            [label]="usandoPlantilla() ? 'Limpiar' : 'Cancelar'"
+                            [icon]="usandoPlantilla() ? 'pi pi-eraser' : 'pi pi-times'"
+                            class="p-button-text"
+                            [disabled]="!barrioGuardado() || savingUnidad() || savingPlantilla()"
+                            (click)="cancelarForm()"
+                        ></button>
+                        @if (!usandoPlantilla()) {
+                            <button
+                                pButton
+                                type="button"
+                                label="Guardar como plantilla"
+                                icon="pi pi-bookmark"
+                                class="p-button-outlined"
+                                [loading]="savingPlantilla()"
+                                [disabled]="!barrioGuardado() || savingPlantilla() || savingUnidad()"
+                                (click)="abrirDialogPlantilla()"
+                            ></button>
+                        }
+                        <button
+                            pButton
+                            type="button"
+                            label="Guardar unidad"
+                            icon="pi pi-check"
+                            [loading]="savingUnidad()"
+                            [disabled]="!barrioGuardado() || savingUnidad() || savingPlantilla()"
+                            (click)="guardarUnidad()"
+                        ></button>
+                    </div>
+                </app-ingreso-form-panel>
+            </div>
+            <div class="ingreso-split__cards">
+                <app-ingreso-panel-lateral
+                    [(lateralTab)]="lateralTab"
+                    [tipoUnidad]="formTab()"
+                    [unidades]="unidades()"
+                    [plantillas]="plantillas()"
+                    [selectedUnidadId]="selectedUnidadId()"
+                    [selectedPlantillaId]="selectedPlantillaId()"
+                    [barrioGuardado]="barrioGuardado()"
+                    (selectUnidad)="selectUnidad($event)"
+                    (selectPlantilla)="selectPlantilla($event)"
+                    (nueva)="nuevaUnidad()"
+                />
+            </div>
+        </div>
+
+        <app-ingreso-geo-dialog
+            [(visible)]="geoDialogVisible"
+            [lat]="barrioDraft().lat ?? null"
+            [lng]="barrioDraft().lng ?? null"
+            (confirm)="onGeoConfirm($event)"
+        />
+        <app-ingreso-imagenes-dialog
+            [(visible)]="imagenesDialogVisible"
+            [barrio]="barrio()"
+            [draft]="{
+                planoFile: barrioDraft().planoFile,
+                imagenFile: barrioDraft().imagenFile,
+                planoNombre: barrioDraft().planoNombre,
+                imagenNombre: barrioDraft().imagenNombre
+            }"
+            (confirm)="onImagenesConfirm($event)"
+        />
+        <app-ingreso-plantilla-nombre-dialog
+            [(visible)]="plantillaDialogVisible"
+            [(nombre)]="plantillaNombreDraft"
+            [saving]="savingPlantilla()"
+            (confirm)="guardarComoPlantilla($event)"
+        />
+    }
+</div>

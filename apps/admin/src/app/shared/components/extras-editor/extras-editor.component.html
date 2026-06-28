@@ -1,0 +1,118 @@
+<div class="extras-editor">
+  <div class="extras-editor__toolbar">
+    <div class="extras-editor__search">
+      <label class="extras-editor__label">Campo</label>
+      <div class="extras-editor__search-wrap">
+        <input
+          type="text"
+          pInputText
+          class="w-full"
+          placeholder="Buscar campo…"
+          [ngModel]="filtro()"
+          (ngModelChange)="onFiltroChange($event)"
+          (focus)="onSearchFocus()"
+          (blur)="onSearchBlur()"
+          [disabled]="disabled()"
+        />
+        @if (showSuggestions() && sugerencias().length > 0) {
+          <ul class="extras-editor__suggestions">
+            @for (def of sugerencias(); track def.id) {
+              <li>
+                <button type="button" class="extras-editor__suggestion" (mousedown)="seleccionarDef(def)">
+                  {{ def.nombre }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+
+    <div class="extras-editor__valor">
+      <label class="extras-editor__label">Valor</label>
+      @if (selectedDef(); as def) {
+        <lib-extra-value-editor
+          [definicion]="def"
+          [valor]="draftValor()"
+          (valorChange)="onDraftValorChange($event)"
+        />
+      } @else {
+        <input
+          type="text"
+          pInputText
+          class="w-full"
+          [placeholder]="valorPlaceholder()"
+          disabled
+        />
+      }
+    </div>
+
+    <div class="extras-editor__actions">
+      <button
+        pButton
+        type="button"
+        [icon]="isEditing() ? 'pi pi-check' : 'pi pi-plus'"
+        [label]="isEditing() ? 'Actualizar' : 'Agregar'"
+        [disabled]="disabled() || !selectedDef()"
+        (click)="agregarOActualizar()"
+      ></button>
+      @if (isEditing() || selectedDef()) {
+        <button
+          pButton
+          type="button"
+          icon="pi pi-times"
+          label="Cancelar"
+          class="p-button-text"
+          [disabled]="disabled()"
+          (click)="limpiarEntrada()"
+        ></button>
+      }
+    </div>
+  </div>
+
+  <div class="extras-editor__table-wrap">
+    <table class="extras-editor__table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Valor</th>
+          <th class="extras-editor__th-actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (rows().length === 0) {
+          <tr>
+            <td colspan="3" class="extras-editor__empty">No hay campos adicionales</td>
+          </tr>
+        } @else {
+          @for (row of rows(); track row.def.id) {
+            <tr [class.extras-editor__row--active]="editingCode() === row.def.code">
+              <td>{{ row.def.nombre }}</td>
+              <td>{{ formatValor(row) }}</td>
+              <td class="extras-editor__td-actions">
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-sm"
+                  [disabled]="disabled()"
+                  (click)="editarFila(row)"
+                  aria-label="Editar {{ row.def.nombre }}"
+                ></button>
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-sm p-button-danger"
+                  [disabled]="disabled()"
+                  (click)="eliminarFila(row)"
+                  aria-label="Eliminar {{ row.def.nombre }}"
+                ></button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -7,7 +7,7 @@
 
 .card {
     background: var(--surface-card);
-    padding: 1.5rem;
+    padding: 1rem;
     margin-bottom: 1rem;
     border-radius: var(--content-border-radius);
 
@@ -91,4 +91,25 @@
 
 .button-input-label{
     padding: 0 !important;
+}
+
+.lm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.lm-field-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.lm-field .p-inputnumber,
+.lm-field .p-select,
+.lm-field .p-inputtext,
+.lm-field p-inputnumber,
+.lm-field p-select {
+    width: 100%;
+    min-width: 0;
 }

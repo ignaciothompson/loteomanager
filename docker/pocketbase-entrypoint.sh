@@ -50,7 +50,7 @@ fi
 
 if [ -n "${PB_SUPERUSER_EMAIL:-}" ] && [ -n "${PB_SUPERUSER_PASSWORD:-}" ]; then
   log "Bootstrapping superuser ${PB_SUPERUSER_EMAIL} (upsert)..."
-  if "$PB_BIN" superuser upsert "$PB_SUPERUSER_EMAIL" "$PB_SUPERUSER_PASSWORD"; then
+  if "$PB_BIN" --dir="$PB_DATA_DIR" superuser upsert "$PB_SUPERUSER_EMAIL" "$PB_SUPERUSER_PASSWORD"; then
     log "Superuser upsert OK."
   else
     rc=$?
