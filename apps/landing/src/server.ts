@@ -11,7 +11,7 @@ import { getPocketBaseClient } from './server/pocketbase.client';
 import { hashIp } from './server/ip-hash';
 import { verifyTurnstileToken } from './server/turnstile';
 import { buildSnapshot } from './server/snapshot-builder';
-import type { BarriosResponse, ComparativasResponse } from '@loteomanager/shared-types';
+import type { BarriosResponse, ComparativasResponse, ComparativaSnapshot } from '@loteomanager/shared-types';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -57,16 +57,16 @@ app.get('/api/comparativas/:token', async (req, res) => {
 
     // Use stored snapshot only if it's in the current format (has 'unidades[].codigoInterno').
     // Old snapshots use snake_case keys from a previous admin implementation — rebuild live.
-    const storedSnap = comp.contenido_snapshot as Record<string, unknown> | null;
+    const storedSnap = comp.contenido_snapshot as ComparativaSnapshot | null;
     const snapIsValid =
       storedSnap != null &&
-      Array.isArray((storedSnap as Record<string, unknown>)['unidades']) &&
-      ((storedSnap as Record<string, unknown>)['unidades'] as unknown[]).every(
-        (u): boolean => typeof (u as Record<string, unknown>)['codigoInterno'] !== 'undefined'
-      );
+      Array.isArray(storedSnap.unidades) &&
+      storedSnap.unidades.every(u => u.codigoInterno !== undefined);
 
-    let snapshot = snapIsValid ? storedSnap : null;
-    if (!snapshot) {
+    let snapshot: ComparativaSnapshot;
+    if (snapIsValid && storedSnap) {
+      snapshot = storedSnap;
+    } else {
       snapshot = await buildLiveSnapshot(comp, pb, pbUrl);
     }
 
@@ -259,7 +259,7 @@ async function buildLiveSnapshot(
   comp: ComparativasResponse,
   pb: Awaited<ReturnType<typeof getPocketBaseClient>>,
   pbUrl: string,
-) {
+): Promise<ComparativaSnapshot> {
   if (!comp.unidades_ids?.length) {
     return buildSnapshot(comp, [], new Map(), pbUrl);
   }
