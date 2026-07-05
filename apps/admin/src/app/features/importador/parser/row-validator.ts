@@ -1,33 +1,21 @@
-import { EstadoDefinicion } from '@loteomanager/shared-types';
-import { NormalizedBarrio, NormalizedUnidad } from './normalizer';
+import type { EstadoDefinicion } from '@loteomanager/shared-types';
 
-export function validateBarrio(
-  data: NormalizedBarrio,
-  erroresNormalizacion: string[]
-): string[] {
-  const msgs = [...erroresNormalizacion];
-  if (!data.nombre) msgs.push('El campo "nombre" es obligatorio.');
-  if (!data.slug) msgs.push('No se pudo generar el slug para este barrio.');
-  return msgs;
-}
-
-export function validateUnidad(
-  data: NormalizedUnidad,
-  erroresNormalizacion: string[],
-  estadosValidos: EstadoDefinicion[]
-): string[] {
-  const msgs = [...erroresNormalizacion];
-
-  if (data.estado) {
-    const estadosCodes = estadosValidos.map(e => e.code);
-    const hardcoded = ['disponible', 'bloqueado', 'reservado', 'sena', 'vendido', 'escriturado'];
-    const allValidos = [...new Set([...estadosCodes, ...hardcoded])];
-    if (!allValidos.includes(data.estado)) {
-      msgs.push(
-        `El estado "${data.estado}" no es válido. Estados permitidos: ${allValidos.join(', ')}.`
-      );
-    }
+export function validateEstadoUnidad(
+  estado: string,
+  estadosValidos: EstadoDefinicion[],
+  numeroFila: number
+): string | null {
+  const codes = new Set([
+    ...estadosValidos.map((e) => e.code),
+    'disponible',
+    'bloqueado',
+    'reservado',
+    'sena',
+    'vendido',
+    'escriturado',
+  ]);
+  if (!codes.has(estado)) {
+    return `Fila ${numeroFila}: estado "${estado}" no válido.`;
   }
-
-  return msgs;
+  return null;
 }

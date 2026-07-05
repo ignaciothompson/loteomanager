@@ -7,6 +7,7 @@ export type BarrioListFilters = {
   departamentoId?: string | null;
   zonaId?: string | null;
   nombre?: string;
+  soloPublicados?: boolean;
 };
 
 export type BarrioConUnidades = BarriosResponse & { unidadesCount: number };
@@ -66,6 +67,10 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
       parts.push(`nombre ~ "${escaped}"`);
     }
 
+    if (filters.soloPublicados) {
+      parts.push('publicado = true');
+    }
+
     const expand = options?.expand ?? 'zona_id,zona_id.departamento_id';
     let rows = await this.listAsync(parts.length ? parts.join(' && ') : undefined, {
       ...options,
@@ -82,6 +87,38 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
     }
 
     return rows;
+  }
+
+  async getBySlug(slug: string): Promise<BarriosResponse | null> {
+    const escaped = slug.replace(/"/g, '\\"');
+    try {
+      return await this.pb.collection('barrios').getFirstListItem(`slug = "${escaped}"`);
+    } catch (err: unknown) {
+      const code = (err as { status?: number })?.status;
+      if (code === 404) return null;
+      throw err;
+    }
+  }
+
+  async attachUnidadesDisponiblesWebCount(barrios: BarriosResponse[]): Promise<BarrioConUnidades[]> {
+    if (!barrios.length) return [];
+
+    const ids = barrios.map((b) => b.id);
+    const unidades = await this.pb.collection('unidades').getFullList({
+      filter: `(${ids.map((id) => `barrio_id="${id}"`).join(' || ')}) && web_visible = true && estado = "disponible"`,
+      fields: 'id,barrio_id'
+    });
+
+    const counts: Record<string, number> = {};
+    for (const u of unidades) {
+      const bid = u['barrio_id'] as string;
+      counts[bid] = (counts[bid] ?? 0) + 1;
+    }
+
+    return barrios.map((b) => ({
+      ...b,
+      unidadesCount: counts[b.id] ?? 0
+    }));
   }
 
   async attachUnidadesCount(barrios: BarriosResponse[]): Promise<BarrioConUnidades[]> {

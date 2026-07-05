@@ -148,6 +148,8 @@ export type BarriosRecord<Textras = unknown> = {
 	lng?: number
 	nombre: string
 	plano_general?: FileNameString
+	publicado?: boolean
+	publicado_at?: IsoDateString
 	slug: string
 	tipos_unidad?: TipoUnidadIngreso[]
 	ubicacion_texto?: string

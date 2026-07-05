@@ -7,6 +7,7 @@ import {
   BarriosService,
   DepartamentosService,
   EstadosDefinicionesService,
+  PermisosService,
   PlantillasUnidadService,
   UnidadesService,
   ZonasService
@@ -28,6 +29,7 @@ import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TextareaModule } from 'primeng/textarea';
 import { TabsModule } from 'primeng/tabs';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import {
   emptyUnidadForm,
   type IngresoFormMode,
@@ -83,6 +85,7 @@ const TIPO_EXTRA_KEYS: Record<TipoUnidadIngreso, readonly string[]> = {
     MultiSelectModule,
     TextareaModule,
     TabsModule,
+    ToggleSwitchModule,
     IngresoFormPanelComponent,
     IngresoPanelLateralComponent,
     IngresoGeoDialogComponent,
@@ -105,6 +108,7 @@ export class BarrioIngresoPageComponent {
   private zonasSvc = inject(ZonasService);
   private estadosSvc = inject(EstadosDefinicionesService);
   private authSvc = inject(AuthService);
+  private permisosSvc = inject(PermisosService);
   private messages = inject(MessageService);
   private confirmationSvc = inject(ConfirmationService);
 
@@ -159,6 +163,10 @@ export class BarrioIngresoPageComponent {
   });
 
   readonly barrioExtras = signal<Record<string, unknown>>({});
+
+  readonly publicadoWeb = signal(false);
+  readonly puedePublicarWeb = computed(() => this.permisosSvc.can('web.publish'));
+  private previousPublicado = false;
 
   readonly tipoOpts = TIPO_OPTS;
 
@@ -276,6 +284,8 @@ export class BarrioIngresoPageComponent {
         lng: full.lng ?? null
       });
       this.barrioExtras.set(this.extrasRecordFromUnknown(full.extras));
+      this.publicadoWeb.set(full.publicado ?? false);
+      this.previousPublicado = full.publicado ?? false;
 
       await this.reloadUnidades();
       await this.reloadPlantillas();
@@ -491,6 +501,13 @@ export class BarrioIngresoPageComponent {
     };
     if (bd.planoFile) payload['plano_general'] = bd.planoFile;
     if (bd.imagenFile) payload['imagen_portada'] = bd.imagenFile;
+    if (this.puedePublicarWeb()) {
+      const publicado = this.publicadoWeb();
+      payload['publicado'] = publicado;
+      if (publicado && !this.previousPublicado) {
+        payload['publicado_at'] = new Date().toISOString();
+      }
+    }
     return payload;
   }
 
@@ -506,6 +523,8 @@ export class BarrioIngresoPageComponent {
       try {
         const updated = await this.barriosSvc.update(existingId, this.buildBarrioPayload());
         this.barrio.set(updated);
+        this.previousPublicado = updated.publicado ?? false;
+        this.publicadoWeb.set(updated.publicado ?? false);
         this.barrioExtras.set(this.extrasRecordFromUnknown(updated.extras));
         this.barrioDraft.update((d) => ({
           ...d,

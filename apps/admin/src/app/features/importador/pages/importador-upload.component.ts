@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ImportadorService } from '../services/importador.service';
-import { PlantillaGeneratorService } from '../services/plantilla-generator.service';
+import { PlantillaService } from '../services/plantilla.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ButtonModule } from 'primeng/button';
@@ -17,7 +17,7 @@ import { TooltipModule } from 'primeng/tooltip';
 })
 export class ImportadorUploadComponent {
   private importadorService = inject(ImportadorService);
-  private plantillaService = inject(PlantillaGeneratorService);
+  private plantillaService = inject(PlantillaService);
   private messageService = inject(MessageService);
   private router = inject(Router);
 
@@ -82,8 +82,11 @@ export class ImportadorUploadComponent {
     this.progreso.set('Analizando archivo…');
     try {
       const id = await this.importadorService.analizarExcel(file);
-      this.messageService.add({ severity: 'success', summary: 'Análisis completado', detail: 'Redirigiendo a revisión…' });
-      void this.router.navigate(['/importador', id, 'revision']);
+      this.limpiarArchivo();
+      const navigated = await this.router.navigate(['/importador', id, 'revision']);
+      if (!navigated) {
+        await this.router.navigateByUrl(`/importador/${id}/revision`, { replaceUrl: true });
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al analizar el archivo.';
       this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
