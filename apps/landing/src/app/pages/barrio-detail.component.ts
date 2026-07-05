@@ -9,6 +9,7 @@ import { LandingFooterComponent } from '../layout/landing-footer/landing-footer.
 import { LandingMapaComponent } from '../components/landing-mapa/landing-mapa.component';
 import { SanitizeHtmlPipe } from '../pipes/sanitize-html.pipe';
 import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
+import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
 
 type UnidadGrupo = {
   tipo: TipoUnidadIngreso;
@@ -29,102 +30,140 @@ type UnidadGrupo = {
     PrecioFormatPipe,
   ],
   template: `
-    <div class="min-h-screen bg-surface-50 dark:bg-surface-900">
+    <div class="min-h-screen bg-surface-warm dark:bg-surface-900">
       <landing-topbar />
 
       @if (loading()) {
-        <div class="flex justify-center py-24">
+        <div class="flex justify-center py-32">
           <i class="pi pi-spin pi-spinner text-3xl text-surface-400"></i>
         </div>
       } @else if (barrio()) {
-        <main class="max-w-5xl mx-auto px-4 lg:px-0 py-8">
-          <!-- Hero -->
-          <section class="relative h-[40vh] min-h-[280px] rounded-2xl overflow-hidden mb-8">
-            @if (portadaUrl()) {
-              <img [src]="portadaUrl()!" [alt]="barrio()!.nombre"
-                   class="w-full h-full object-cover" />
-            } @else {
-              <div class="w-full h-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center">
-                <i class="pi pi-image text-6xl text-surface-400"></i>
-              </div>
-            }
-            <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-            <div class="absolute bottom-0 left-0 right-0 p-6 lg:p-8 text-white">
-              <h1 class="text-3xl lg:text-4xl font-semibold m-0">{{ barrio()!.nombre }}</h1>
-              @if (barrio()!.ubicacion_texto) {
-                <p class="mt-2 opacity-90 flex items-center gap-2 m-0">
-                  <i class="pi pi-map-marker"></i>{{ barrio()!.ubicacion_texto }}
-                </p>
-              }
-            </div>
-          </section>
+        <main class="pt-20 max-w-7xl mx-auto px-5 py-8">
+          <a routerLink="/"
+             class="inline-flex items-center gap-2 text-primary font-bold mb-6 hover:-translate-x-1 transition-transform">
+            <i class="pi pi-arrow-left"></i> Volver al catálogo
+          </a>
 
-          <!-- Descripción -->
-          @if (barrio()!.descripcion) {
-            <section class="mb-8 lg:mb-12">
-              <h2 class="text-2xl font-semibold mb-4">Descripción</h2>
-              <div class="prose max-w-none text-surface-700 dark:text-surface-200"
-                   [innerHTML]="barrio()!.descripcion | sanitizeHtml"></div>
-            </section>
-          }
-
-          <!-- Mapa -->
-          @if (barrio()!.lat != null && barrio()!.lng != null) {
-            <section class="mb-8 lg:mb-12">
-              <h2 class="text-2xl font-semibold mb-6">Ubicación</h2>
-              <div class="rounded-2xl overflow-hidden h-[400px] border border-surface-200">
-                @defer (on viewport) {
-                  <landing-mapa [lat]="barrio()!.lat!" [lng]="barrio()!.lng!"
-                                [titulo]="barrio()!.nombre" />
-                } @placeholder {
-                  <div class="w-full h-full bg-surface-100 flex items-center justify-center">
-                    <i class="pi pi-map text-4xl text-surface-300"></i>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12">
+            <!-- Imagen + mapa -->
+            <div class="space-y-6">
+              <div class="rounded-3xl overflow-hidden shadow-soft-lg h-[320px] lg:h-[420px]">
+                @if (portadaUrl()) {
+                  <img [src]="portadaUrl()!" [alt]="barrio()!.nombre"
+                       class="w-full h-full object-cover" />
+                } @else {
+                  <div class="w-full h-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center">
+                    <i class="pi pi-image text-6xl text-surface-400"></i>
                   </div>
                 }
               </div>
-            </section>
-          }
+              @if (barrio()!.lat != null && barrio()!.lng != null) {
+                <div class="rounded-2xl overflow-hidden h-[280px] border border-surface-200 dark:border-surface-700">
+                  @defer (on viewport) {
+                    <landing-mapa [lat]="barrio()!.lat!" [lng]="barrio()!.lng!"
+                                  [titulo]="barrio()!.nombre" />
+                  } @placeholder {
+                    <div class="w-full h-full bg-surface-100 flex items-center justify-center">
+                      <i class="pi pi-map text-4xl text-surface-300"></i>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
 
-          <!-- Plano general -->
-          @if (planoUrl()) {
-            <section class="mb-8 lg:mb-12">
-              <h2 class="text-2xl font-semibold mb-6">Plano general</h2>
-              <div class="rounded-2xl overflow-hidden border border-surface-200 bg-surface-50 p-4">
-                <img [src]="planoUrl()!" class="w-full h-auto" alt="Plano general del barrio"
-                     loading="lazy" />
+            <!-- Info -->
+            <div class="flex flex-col">
+              <span class="text-primary font-bold text-[11px] uppercase tracking-widest">Barrio</span>
+              <h1 class="text-4xl font-extrabold text-surface-900 dark:text-surface-0 mt-1 mb-4">
+                {{ barrio()!.nombre }}
+              </h1>
+
+              @if (barrio()!.ubicacion_texto) {
+                <p class="text-surface-600 dark:text-surface-300 flex items-center gap-2 mb-6">
+                  <i class="pi pi-map-marker text-primary"></i>{{ barrio()!.ubicacion_texto }}
+                </p>
+              }
+
+              <!-- Stats rangos -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+                @if (stats().precioDesde != null) {
+                  <div class="bg-surface-100 dark:bg-surface-800 px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700">
+                    <span class="text-[10px] text-surface-500 uppercase font-bold block">Desde</span>
+                    <span class="font-bold text-primary text-lg">
+                      {{ formatPrecioDesde(stats().precioDesde, stats().moneda)?.replace('+', '') }}
+                    </span>
+                  </div>
+                }
+                <div class="bg-surface-100 dark:bg-surface-800 px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700">
+                  <span class="text-[10px] text-surface-500 uppercase font-bold block">Tamaño</span>
+                  <span class="font-bold text-surface-900 dark:text-surface-0">{{ areaRango() }}</span>
+                </div>
+                <div class="bg-surface-100 dark:bg-surface-800 px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700">
+                  <span class="text-[10px] text-surface-500 uppercase font-bold block">Disponibles</span>
+                  <span class="font-bold text-surface-900 dark:text-surface-0">{{ stats().unidadesCount }}</span>
+                </div>
               </div>
-            </section>
-          }
 
-          <!-- Unidades por tipo -->
+              @if (barrio()!.descripcion) {
+                <div class="text-surface-600 dark:text-surface-300 leading-relaxed mb-8 prose max-w-none"
+                     [innerHTML]="barrio()!.descripcion | sanitizeHtml"></div>
+              }
+
+              @if (planoUrl()) {
+                <div class="mb-8 rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-700 p-3 bg-surface-0 dark:bg-surface-800">
+                  <img [src]="planoUrl()!" alt="Plano general" class="w-full h-auto rounded-xl" loading="lazy" />
+                </div>
+              }
+
+              <div class="bg-surface-100 dark:bg-surface-800 p-6 rounded-[32px] flex flex-col sm:flex-row
+                          items-center justify-between gap-4 mt-auto border border-surface-200 dark:border-surface-700">
+                <div>
+                  <span class="text-surface-500 text-xs uppercase font-bold block mb-1">Precios desde</span>
+                  @if (stats().precioDesde; as precioDesde) {
+                    <span class="text-2xl font-extrabold text-primary">
+                      {{ precioDesde | precioFormat: (stats().moneda ?? 'USD') }}
+                    </span>
+                  } @else {
+                    <span class="text-surface-500">Consultar</span>
+                  }
+                </div>
+                <a routerLink="/mapa" [queryParams]="{ barrio: barrio()!.slug }"
+                   class="bg-primary hover:bg-primary-600 text-white px-8 py-3 rounded-full font-bold
+                          shadow-soft transition-all active:scale-95 w-full sm:w-auto text-center">
+                  Ver en mapa
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Unidades -->
           @for (grupo of grupos(); track grupo.tipo) {
-            <section class="mb-8 lg:mb-12">
-              <h2 class="text-2xl font-semibold mb-6">{{ grupo.label }}</h2>
+            <section class="mt-14">
+              <h2 class="text-2xl font-bold mb-6 text-surface-900 dark:text-surface-0">{{ grupo.label }}</h2>
               @if (grupo.unidades.length === 0) {
-                <p class="text-muted-color">No hay unidades visibles en la web.</p>
+                <p class="text-surface-500">Sin unidades visibles.</p>
               } @else {
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   @for (u of grupo.unidades; track u.id) {
                     <a [routerLink]="['/lotes', u.id]"
-                       class="bg-surface-0 dark:bg-surface-800 rounded-xl border border-surface-200
-                              dark:border-surface-700 p-5 hover:shadow-lg transition-shadow block">
-                      <div class="flex justify-between items-start gap-2 mb-2">
-                        <span class="font-bold text-lg text-surface-900 dark:text-surface-0">
+                       class="bg-surface-0 dark:bg-surface-800 rounded-2xl border border-surface-200
+                              dark:border-surface-700 p-5 shadow-soft hover:shadow-soft-lg transition-all block">
+                      <div class="flex justify-between gap-2 mb-2">
+                        <span class="font-bold text-surface-900 dark:text-surface-0">
                           {{ u.codigo_interno || u.codigo }}
                         </span>
                         @if (u.precio != null) {
-                          <span class="font-bold text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                          <span class="font-bold text-primary whitespace-nowrap">
                             {{ u.precio | precioFormat: u.moneda }}
                           </span>
                         }
                       </div>
-                      <div class="flex flex-wrap gap-3 text-sm text-surface-600 dark:text-surface-300">
+                      <div class="flex gap-3 text-sm text-surface-600 dark:text-surface-400">
                         @if (u.metros_cuadrados || u.area_m2) {
                           <span><i class="pi pi-arrows-alt mr-1"></i>{{ u.metros_cuadrados ?? u.area_m2 }} m²</span>
                         }
-                        @if (u.orientacion) {
-                          <span><i class="pi pi-compass mr-1"></i>{{ u.orientacion }}</span>
-                        }
+                        <span class="bg-sage-50 text-sage-700 dark:bg-sage-900/30 dark:text-sage-200
+                                     px-2 py-0.5 rounded-full text-[10px] font-bold">Disponible</span>
                       </div>
                     </a>
                   }
@@ -132,8 +171,6 @@ type UnidadGrupo = {
               }
             </section>
           }
-
-          <div class="h-16"></div>
         </main>
       }
 
@@ -152,6 +189,30 @@ export class BarrioDetailComponent implements OnInit {
   readonly barrio = signal<BarriosResponse | null>(null);
   readonly unidades = signal<UnidadesResponse[]>([]);
 
+  readonly stats = computed(() => {
+    const units = this.unidades();
+    let precioDesde: number | null = null;
+    let moneda: string | null = null;
+    let areaMin: number | null = null;
+    let areaMax: number | null = null;
+
+    for (const u of units) {
+      if (u.precio != null && (precioDesde == null || u.precio < precioDesde)) {
+        precioDesde = u.precio;
+        moneda = u.moneda;
+      }
+      const area = u.metros_cuadrados ?? u.area_m2;
+      if (area != null) {
+        areaMin = areaMin == null ? area : Math.min(areaMin, area);
+        areaMax = areaMax == null ? area : Math.max(areaMax, area);
+      }
+    }
+
+    return { unidadesCount: units.length, precioDesde, moneda, areaMin, areaMax };
+  });
+
+  readonly areaRango = computed(() => formatAreaRange(this.stats().areaMin, this.stats().areaMax));
+
   readonly grupos = computed((): UnidadGrupo[] => {
     const b = this.barrio();
     const units = this.unidades();
@@ -168,6 +229,8 @@ export class BarrioDetailComponent implements OnInit {
     }));
   });
 
+  readonly formatPrecioDesde = formatPrecioDesde;
+
   ngOnInit(): void {
     void this.load();
   }
@@ -175,13 +238,13 @@ export class BarrioDetailComponent implements OnInit {
   portadaUrl(): string | null {
     const b = this.barrio();
     if (!b?.imagen_portada) return null;
-    return this.pb.files.getUrl(b, b.imagen_portada);
+    return this.pb.files.getURL(b, b.imagen_portada);
   }
 
   planoUrl(): string | null {
     const b = this.barrio();
     if (!b?.plano_general) return null;
-    return this.pb.files.getUrl(b, b.plano_general);
+    return this.pb.files.getURL(b, b.plano_general);
   }
 
   private async load(): Promise<void> {

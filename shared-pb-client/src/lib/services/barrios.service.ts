@@ -12,6 +12,16 @@ export type BarrioListFilters = {
 
 export type BarrioConUnidades = BarriosResponse & { unidadesCount: number };
 
+export type BarrioCatalogStats = {
+  unidadesCount: number;
+  precioDesde: number | null;
+  moneda: string | null;
+  areaMin: number | null;
+  areaMax: number | null;
+};
+
+export type BarrioConCatalogo = BarriosResponse & BarrioCatalogStats;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -101,23 +111,52 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
   }
 
   async attachUnidadesDisponiblesWebCount(barrios: BarriosResponse[]): Promise<BarrioConUnidades[]> {
+    const rows = await this.attachCatalogStats(barrios);
+    return rows.map(({ unidadesCount, ...b }) => ({ ...b, unidadesCount }));
+  }
+
+  async attachCatalogStats(barrios: BarriosResponse[]): Promise<BarrioConCatalogo[]> {
     if (!barrios.length) return [];
 
     const ids = barrios.map((b) => b.id);
     const unidades = await this.pb.collection('unidades').getFullList({
       filter: `(${ids.map((id) => `barrio_id="${id}"`).join(' || ')}) && web_visible = true && estado = "disponible"`,
-      fields: 'id,barrio_id'
+      fields: 'barrio_id,precio,moneda,metros_cuadrados,area_m2',
     });
 
-    const counts: Record<string, number> = {};
+    const stats: Record<string, BarrioCatalogStats> = {};
+    for (const id of ids) {
+      stats[id] = {
+        unidadesCount: 0,
+        precioDesde: null,
+        moneda: null,
+        areaMin: null,
+        areaMax: null,
+      };
+    }
+
     for (const u of unidades) {
       const bid = u['barrio_id'] as string;
-      counts[bid] = (counts[bid] ?? 0) + 1;
+      const s = stats[bid];
+      if (!s) continue;
+
+      s.unidadesCount++;
+      const precio = u['precio'] as number | undefined;
+      const moneda = u['moneda'] as string | undefined;
+      if (precio != null && (s.precioDesde == null || precio < s.precioDesde)) {
+        s.precioDesde = precio;
+        s.moneda = moneda ?? s.moneda ?? 'USD';
+      }
+      const area = (u['metros_cuadrados'] as number | undefined) ?? (u['area_m2'] as number | undefined);
+      if (area != null) {
+        s.areaMin = s.areaMin == null ? area : Math.min(s.areaMin, area);
+        s.areaMax = s.areaMax == null ? area : Math.max(s.areaMax, area);
+      }
     }
 
     return barrios.map((b) => ({
       ...b,
-      unidadesCount: counts[b.id] ?? 0
+      ...stats[b.id],
     }));
   }
 

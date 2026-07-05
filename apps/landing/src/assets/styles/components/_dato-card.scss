@@ -1,0 +1,6 @@
+.dato-card {
+  @apply flex flex-col items-start p-4 bg-surface-50 rounded-xl border border-surface-200 transition-colors;
+  &:hover {
+    @apply border-primary/30;
+  }
+}

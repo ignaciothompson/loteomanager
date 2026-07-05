@@ -4,12 +4,17 @@ export const appRoutes: Route[] = [
   {
     path: '',
     loadComponent: () =>
-      import('./pages/home.component').then(m => m.HomeComponent),
+      import('./pages/barrios.component').then(m => m.BarriosComponent),
   },
   {
     path: 'barrios',
+    redirectTo: '',
+    pathMatch: 'full',
+  },
+  {
+    path: 'mapa',
     loadComponent: () =>
-      import('./pages/barrios.component').then(m => m.BarriosComponent),
+      import('./pages/barrios-mapa.component').then(m => m.BarriosMapaComponent),
   },
   {
     path: 'barrios/:slug',

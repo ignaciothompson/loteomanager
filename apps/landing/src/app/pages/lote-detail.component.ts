@@ -28,7 +28,7 @@ import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
     PrecioFormatPipe,
   ],
   template: `
-    <div class="min-h-screen bg-surface-50 dark:bg-surface-900">
+    <div class="min-h-screen bg-surface-warm dark:bg-surface-900">
       <landing-topbar />
 
       @if (loading()) {
@@ -209,20 +209,20 @@ export class LoteDetailComponent implements OnInit {
   imagenHero(): string | null {
     const u = this.unidad();
     if (!u?.galeria?.length) return null;
-    return this.pb.files.getUrl(u, u.galeria[0]);
+    return this.pb.files.getURL(u, u.galeria[0]);
   }
 
   galeriaUrls(): string[] {
     const u = this.unidad();
     if (!u?.galeria?.length) return [];
-    const urls = u.galeria.map((f) => this.pb.files.getUrl(u, f));
+    const urls = u.galeria.map((f) => this.pb.files.getURL(u, f));
     return urls.length > 1 ? urls.slice(1) : [];
   }
 
   planoUrl(): string | null {
     const u = this.unidad();
     if (!u?.plano_unidad) return null;
-    return this.pb.files.getUrl(u, u.plano_unidad);
+    return this.pb.files.getURL(u, u.plano_unidad);
   }
 
   mapLat(): number | null {

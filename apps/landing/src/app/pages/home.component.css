@@ -11,11 +11,11 @@
     left: 0;
     right: 0;
     height: 100px;
-    background: var(--surface-50);
+    background: var(--color-surface-warm, #fff8f4);
     transform: skewY(-2deg);
     z-index: 1;
 }
 
 :host-context(.dark) .hero::after {
-    background: var(--surface-900);
+    background: var(--p-surface-900, #211a11);
 }

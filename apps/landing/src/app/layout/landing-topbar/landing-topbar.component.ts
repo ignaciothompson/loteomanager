@@ -1,49 +1,49 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
 import { ConfigPublicaService } from '../../services/config-publica.service';
-import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'landing-topbar',
   standalone: true,
-  imports: [CommonModule, ButtonModule],
+  imports: [CommonModule, RouterModule],
   template: `
-    <header class="sticky top-0 z-40 flex items-center justify-between
-                   px-4 lg:px-8 py-3
-                   bg-surface-0/90 backdrop-blur
-                   border-b border-surface-200 dark:border-transparent
-                   transition-colors">
-      <!-- Logo + nombre -->
-      <div class="flex items-center gap-3">
-        @if (config().logoUrl) {
-          <img [src]="config().logoUrl" [alt]="config().nombreInmobiliaria"
-               class="h-8 w-auto object-contain" />
-        } @else {
-          <span class="flex items-center justify-center w-8 h-8 rounded-lg
-                       bg-primary text-primary-contrast text-sm font-bold">
-            {{ config().nombreInmobiliaria.charAt(0) }}
-          </span>
-        }
-        <span class="font-semibold text-base hidden sm:inline">
-          {{ config().nombreInmobiliaria }}
-        </span>
+    <header class="fixed top-0 z-40 w-full bg-surface-warm/90 dark:bg-surface-900/90 backdrop-blur-md
+                   border-b border-surface-200 dark:border-surface-700 shadow-soft">
+      <div class="max-w-7xl mx-auto flex items-center justify-between px-5 py-3">
+        <div class="flex items-center gap-8">
+          <a routerLink="/" class="font-extrabold text-xl text-primary tracking-tight">
+            {{ config().nombreInmobiliaria }}
+          </a>
+          <nav class="hidden md:flex items-center gap-6">
+            <a routerLink="/"
+               routerLinkActive="text-primary border-primary"
+               [routerLinkActiveOptions]="{ exact: true }"
+               class="text-sm font-medium text-surface-600 dark:text-surface-300 hover:text-primary
+                      transition-colors pb-0.5 border-b-2 border-transparent">
+              Explorar
+            </a>
+            <a routerLink="/mapa"
+               routerLinkActive="text-primary border-primary"
+               class="text-sm font-medium text-surface-600 dark:text-surface-300 hover:text-primary
+                      transition-colors pb-0.5 border-b-2 border-transparent">
+              Mapa
+            </a>
+          </nav>
+        </div>
+        <button (click)="theme.toggle()"
+                class="theme-toggle flex items-center justify-center w-9 h-9 rounded-full
+                       bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700
+                       text-surface-700 dark:text-surface-200 transition-colors"
+                [attr.aria-label]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'">
+          @if (theme.isDark()) {
+            <i class="pi pi-sun"></i>
+          } @else {
+            <i class="pi pi-moon"></i>
+          }
+        </button>
       </div>
-
-      <!-- Theme toggle -->
-      <button (click)="theme.toggle()"
-              class="theme-toggle flex items-center justify-center
-                     w-9 h-9 rounded-full
-                     bg-surface-100 hover:bg-surface-200
-                     text-surface-700
-                     transition-colors"
-              [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
-        @if (theme.isDark()) {
-          <i class="pi pi-sun text-base"></i>
-        } @else {
-          <i class="pi pi-moon text-base"></i>
-        }
-      </button>
     </header>
   `,
 })

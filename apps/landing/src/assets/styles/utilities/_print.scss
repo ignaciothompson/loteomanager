@@ -1,0 +1,16 @@
+.pdf-mode {
+  .contactar-fab,
+  .descargar-pdf-fab,
+  .theme-toggle {
+    display: none !important;
+  }
+
+  .border-surface-200 {
+    border-color: #cbd5e1 !important;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 15mm;
+}

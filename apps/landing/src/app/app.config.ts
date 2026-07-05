@@ -10,6 +10,8 @@ import {
 } from '@angular/platform-browser';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { POCKETBASE_URL } from '@loteomanager/shared-pb-client';
+import { providePrimeNG } from 'primeng/config';
+import { LandingWarmPreset } from './theme/landing-theme';
 
 declare global {
   interface Window {
@@ -29,5 +31,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideHttpClient(withFetch()),
     { provide: POCKETBASE_URL, useFactory: resolvePocketbaseUrl },
+    providePrimeNG({
+      theme: {
+        preset: LandingWarmPreset,
+        options: { darkModeSelector: '.dark' },
+      },
+    }),
   ],
 };
