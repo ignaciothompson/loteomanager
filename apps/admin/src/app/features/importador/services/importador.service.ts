@@ -1,8 +1,7 @@
-import { Injectable, Signal, inject, signal } from '@angular/core';
+import { Injectable, Signal, inject } from '@angular/core';
 import {
   BarriosService,
   UnidadesService,
-  UsersService,
   ImportacionesService,
   ImportacionFilasService,
   DefinicionesCacheService,
@@ -10,55 +9,29 @@ import {
   POCKETBASE,
 } from '@loteomanager/shared-pb-client';
 import { toSlug } from '@loteomanager/shared-utils';
-import {
+import type {
   BarriosResponse,
   UnidadesResponse,
   ImportacionesResponse,
   ImportacionFilasResponse,
+  UnidadesOrientacionOptions,
 } from '@loteomanager/shared-types';
-import type { FilaExtendida, ImportacionExtendida } from '../importador-types';
-import { parseExcelFile, RawRow } from '../parser/excel-parser';
+import type {
+  BarrioNormalizado,
+  UnidadNormalizado,
+  ResultadoCommit,
+  EstadoFila,
+  DecisionUsuario,
+} from '../parser/types';
+import { parseExcelFile } from '../parser/excel-parser';
 import { normalizeBarrioRow, normalizeUnidadRow } from '../parser/normalizer';
-import { validateBarrio, validateUnidad } from '../parser/row-validator';
-import { checkBarrioDuplicate, checkUnidadDuplicate } from '../parser/duplicate-detector';
-import { AnalisisColumnas, MapeoColumnas, MapeoExtras, ResultadoCommit } from '../parser/types';
+import { validateEstadoUnidad } from '../parser/row-validator';
+import {
+  checkBarrioDuplicate,
+  checkUnidadDuplicate,
+} from '../parser/duplicate-detector';
+import type { FilaExtendida } from '../importador-types';
 import PocketBase from 'pocketbase';
-
-// Payload shape stored in datos_normalizados for each tipo_fila
-interface BarrioDatosNormalizados {
-  nombre: string;
-  slug: string;
-  descripcion?: string;
-  ubicacion_texto?: string;
-  lat?: number;
-  lng?: number;
-  zona?: string;
-  extras?: unknown; // ExtraPersistido[]
-}
-
-interface UnidadDatosNormalizados {
-  tipo_unidad: 'lote' | 'casa' | 'departamento';
-  codigo_interno: string;
-  barrio_id?: string;
-  numero_unidad?: string;
-  direccion_propia?: string;
-  metros_cuadrados: number;
-  metros_construidos?: number;
-  ambientes?: number;
-  antiguedad_anios?: number;
-  cocheras?: number;
-  precio: number;
-  moneda: 'USD' | 'ARS';
-  estado: string;
-  oferta?: boolean;
-  precio_oferta?: number;
-  destacado?: boolean;
-  responsable_id?: string;
-  descripcion?: string;
-  extras?: unknown; // ExtraPersistido[]
-}
-
-type EstadoFila = 'ok' | 'duplicado' | 'error' | 'advertencia';
 
 @Injectable({ providedIn: 'root' })
 export class ImportadorService {
@@ -66,35 +39,36 @@ export class ImportadorService {
   private definicionesCacheSvc = inject(DefinicionesCacheService);
   private barriosService = inject(BarriosService);
   private unidadesService = inject(UnidadesService);
-  private usersService = inject(UsersService);
   private importacionesService = inject(ImportacionesService);
   private filasService = inject(ImportacionFilasService);
   private zonasService = inject(ZonasService);
 
-  // ── Public read-only signals ────────────────────────────────────────────
-
   listarImportaciones(): Signal<ImportacionesResponse[]> {
-    return this.importacionesService.list();
+    return this.importacionesService.list(undefined, { sort: '-created' });
   }
 
   obtenerImportacion(id: string): Signal<ImportacionesResponse | null> {
     return this.importacionesService.get(id);
   }
 
-  listarFilas(importacionId: string): Signal<ImportacionFilasResponse[]> {
-    return this.filasService.list(`importacion_id='${importacionId}'`);
+  async obtenerImportacionAsync(id: string): Promise<ImportacionesResponse> {
+    return this.importacionesService.getAsync(id);
   }
 
-  // ── Main analysis entry point ───────────────────────────────────────────
+  listarFilas(importacionId: string): Signal<ImportacionFilasResponse[]> {
+    return this.filasService.list(pbFilterImportacion(importacionId), { sort: 'numero_fila' });
+  }
+
+  async listarFilasAsync(importacionId: string): Promise<FilaExtendida[]> {
+    return this.filasService.listAsync(pbFilterImportacion(importacionId), {
+      sort: 'numero_fila',
+    }) as Promise<FilaExtendida[]>;
+  }
 
   async analizarExcel(file: File): Promise<string> {
-    const extras = this.definicionesCacheSvc.extras();
+    const { rows } = await parseExcelFile(file);
     const estadosUnidades = this.definicionesCacheSvc.estadosActivosPara('unidades');
 
-    // Step 1: Parse file (includes 10 MB check)
-    const { rows, analisis } = await parseExcelFile(file, extras);
-
-    // Step 2: Create importacion record with file upload
     const formData = new FormData();
     formData.append('archivo_origen', file);
     formData.append('tipo', 'barrios_con_unidades');
@@ -103,772 +77,385 @@ export class ImportadorService {
     formData.append('nombre_archivo', file.name);
     formData.append('creado_por', this.pb.authStore.model?.['id'] ?? '');
 
-    const importacion = await this.pb
-      .collection('importaciones')
-      .create<ImportacionExtendida>(formData);
-
+    const importacion = await this.pb.collection('importaciones').create<ImportacionesResponse>(formData);
     const importacionId = importacion.id;
-    console.info(`[ImportadorService] Importación creada: ${importacionId} para archivo "${file.name}"`);
 
-    // Step 3: Save mapeo_columnas and mapeo_extras
-    const mapeoColumnas: MapeoColumnas = {};
-    for (const [header, field] of analisis.columnasConocidas.entries()) {
-      mapeoColumnas[header] = field;
-    }
-    for (const h of analisis.columnasDesconocidas) {
-      mapeoColumnas[h] = null;
-    }
-
-    const mapeoExtras: MapeoExtras = {};
-    for (const [header, extraId] of analisis.columnasExtras.entries()) {
-      mapeoExtras[header] = extraId;
-    }
-
-    await this.pb.collection('importaciones').update(importacionId, {
-      mapeo_columnas: mapeoColumnas,
-      mapeo_extras: mapeoExtras,
-    });
-
-    // Step 4: Fetch existing barrios and unidades for duplicate detection
     const [existingBarrios, existingUnidades] = await Promise.all([
       this.barriosService.listAsync() as Promise<BarriosResponse[]>,
       this.unidadesService.listAsync() as Promise<UnidadesResponse[]>,
     ]);
 
-    // Step 5 & 6: Process rows
-    const barrioRows = rows.filter(r => String(r.data['tipo'] ?? '').toLowerCase().trim() === 'barrio');
-    const unidadRows = rows.filter(r => String(r.data['tipo'] ?? '').toLowerCase().trim() === 'unidad');
+    const barrioRows = rows.filter((r) => strTipo(r.data) === 'barrio');
+    const unidadRows = rows.filter((r) => strTipo(r.data) === 'unidad');
+
+    const barrioCodigos = new Map<string, { slug: string; barrioId?: string }>();
+    const seenBarrioCodigo = new Map<string, number>();
+    const seenUnidadKey = new Map<string, number>();
 
     let filasOk = 0;
     let filasDuplicado = 0;
     let filasError = 0;
-    let filasAdvertencia = 0;
 
-    // Track barrios from this import (slug → fila datos_normalizados) for cross-referencing
-    const barriosDeLaImportacion = new Map<string, BarrioDatosNormalizados>();
-    // Track seen slugs/codigos within this batch for intra-Excel duplicate detection
-    const seenBarrioSlugs = new Map<string, number>(); // slug → first numero_fila
-    const seenUnidadCodigos = new Map<string, number>(); // codigo_interno → first numero_fila
-
-    // Process barrio rows
     for (const row of barrioRows) {
-      const { data, errores, advertencias } = normalizeBarrioRow(row.data, analisis, extras);
-      const msgs = validateBarrio(data, errores);
-      const allMessages = [...msgs, ...advertencias];
+      const { data, errores, ref_barrio } = normalizeBarrioRow(row.data, row.numero_fila);
+      const mensajes = [...errores];
 
-      let estadoFila: EstadoFila;
-      let registroExistenteId: string | undefined;
+      if (ref_barrio && seenBarrioCodigo.has(ref_barrio)) {
+        mensajes.push(
+          `Fila ${row.numero_fila}: codigo "${ref_barrio}" duplicado en el archivo (primera aparición fila ${seenBarrioCodigo.get(ref_barrio)}).`
+        );
+      } else if (ref_barrio) {
+        seenBarrioCodigo.set(ref_barrio, row.numero_fila);
+      }
 
-      if (msgs.length > 0) {
-        estadoFila = 'error';
-      } else {
-        // Check intra-Excel duplicate first
-        const seenAtFila = seenBarrioSlugs.get(data.slug);
-        if (seenAtFila !== undefined) {
-          estadoFila = 'duplicado';
-          allMessages.push(`Duplicado dentro del archivo: el barrio con código "${data.slug}" ya aparece en la fila ${seenAtFila}.`);
+      let estado: EstadoFila = mensajes.length ? 'error' : 'ok';
+      let registro_existente_id: string | undefined;
+      let decision: DecisionUsuario = 'pendiente';
+
+      if (!mensajes.length) {
+        const dup = checkBarrioDuplicate(data.slug, existingBarrios);
+        if (dup.isDuplicate && dup.existingId) {
+          estado = 'duplicado';
+          registro_existente_id = dup.existingId;
+          mensajes.push(
+            `Barrio "${data.nombre}" ya existe — se usará el existente para sus unidades.`
+          );
+          barrioCodigos.set(ref_barrio, { slug: data.slug, barrioId: dup.existingId });
         } else {
-          seenBarrioSlugs.set(data.slug, row.numero_fila);
-          const dupResult = checkBarrioDuplicate(data.slug, existingBarrios);
-          if (dupResult.isDuplicate) {
-            estadoFila = 'duplicado';
-            registroExistenteId = dupResult.existingId;
-            allMessages.push(`El barrio con slug "${data.slug}" ya existe en el sistema (ID: ${dupResult.existingId}).`);
-          } else if (advertencias.length > 0) {
-            estadoFila = 'advertencia';
-          } else {
-            estadoFila = 'ok';
-          }
+          barrioCodigos.set(ref_barrio, { slug: data.slug });
         }
       }
 
-      const barrioDatos: BarrioDatosNormalizados = {
-        nombre: data.nombre,
-        slug: data.slug,
-        descripcion: data.descripcion,
-        ubicacion_texto: data.ubicacion_texto,
-        lat: data.lat,
-        lng: data.lng,
-        zona: data.zona,
-        extras: data.extras,
-      };
-
-      if (estadoFila !== 'error') {
-        barriosDeLaImportacion.set(data.codigo_interno_ref, barrioDatos);
-      }
+      if (estado === 'ok') filasOk++;
+      else if (estado === 'duplicado') filasDuplicado++;
+      else filasError++;
 
       await this.crearFila({
         importacionId,
         numeroFila: row.numero_fila,
         tipoFila: 'barrio',
         datosOriginales: row.data,
-        datosNormalizados: barrioDatos,
-        estadoFila,
-        mensajes: allMessages,
-        registroExistenteId,
+        datosNormalizados: data,
+        estadoFila: estado,
+        mensajes,
+        decisionUsuario: decision,
+        registroExistenteId: registro_existente_id,
+        refBarrio: ref_barrio,
       });
-
-      if (estadoFila === 'ok') filasOk++;
-      else if (estadoFila === 'duplicado') filasDuplicado++;
-      else if (estadoFila === 'error') filasError++;
-      else filasAdvertencia++;
     }
 
-    // Process unidad rows
     for (const row of unidadRows) {
-      const { data, errores, advertencias } = normalizeUnidadRow(row.data, analisis, extras);
-      const msgs = validateUnidad(data, errores, estadosUnidades);
-      const allMessages = [...msgs, ...advertencias];
+      const { data, errores, ref_barrio } = normalizeUnidadRow(row.data, row.numero_fila);
+      const mensajes = [...errores];
 
-      // Resolve barrio_id from existing DB or this import's barrio rows
-      let resolvedBarrioId: string | undefined;
-      if (data.barrio_codigo_interno_ref) {
-        const dbBarrio = existingBarrios.find(b => b.slug === data.barrio_codigo_interno_ref);
-        if (dbBarrio) {
-          resolvedBarrioId = dbBarrio.id;
-        } else {
-          // May be created by this import – not resolved yet; will be resolved at commit time
-          const importBarrio = barriosDeLaImportacion.get(data.barrio_codigo_interno_ref);
-          if (!importBarrio) {
-            allMessages.push(
-              `No se encontró barrio con codigo_interno "${data.barrio_codigo_interno_ref}" en la base de datos ni en el archivo.`
-            );
-          }
+      const estadoErr = validateEstadoUnidad(data.estado, estadosUnidades, row.numero_fila);
+      if (estadoErr) mensajes.push(estadoErr);
+
+      if (ref_barrio && !barrioCodigos.has(ref_barrio)) {
+        mensajes.push(
+          `Fila ${row.numero_fila}: codigo_barrio "${ref_barrio}" no corresponde a ningún barrio del archivo.`
+        );
+      }
+
+      const unidadKey = `${ref_barrio}::${data.codigo}`;
+      if (ref_barrio && data.codigo && seenUnidadKey.has(unidadKey)) {
+        mensajes.push(
+          `Fila ${row.numero_fila}: lote "${data.codigo}" duplicado en el archivo para barrio "${ref_barrio}".`
+        );
+      } else if (ref_barrio && data.codigo) {
+        seenUnidadKey.set(unidadKey, row.numero_fila);
+      }
+
+      let estado: EstadoFila = mensajes.length ? 'error' : 'ok';
+      let registro_existente_id: string | undefined;
+      let decision: DecisionUsuario = 'pendiente';
+
+      if (!mensajes.length && ref_barrio) {
+        const barrioInfo = barrioCodigos.get(ref_barrio);
+        const barrioId = barrioInfo?.barrioId;
+        const dup = checkUnidadDuplicate(data.codigo, barrioId, existingUnidades);
+        if (dup.isDuplicate && dup.existingId) {
+          estado = 'duplicado';
+          registro_existente_id = dup.existingId;
+          decision = 'omitir';
+          mensajes.push(
+            `Lote "${data.codigo}" ya existe en el barrio — se saltea por defecto.`
+          );
         }
       }
 
-      // Resolve responsable_id from email
-      let resolvedResponsableId: string | undefined;
-      if (data.responsable_email) {
-        try {
-          const safeEmail = data.responsable_email.replace(/'/g, "\\'");
-          const users = await this.usersService.listAsync(`email='${safeEmail}'`);
-          if (users.length > 0) {
-            resolvedResponsableId = users[0].id;
-          } else {
-            allMessages.push(
-              `No se encontró un usuario con email "${data.responsable_email}". Se usará el usuario actual como responsable.`
-            );
-          }
-        } catch (err) {
-          console.error('[ImportadorService] Error buscando responsable:', err);
-          allMessages.push(`Error al buscar responsable "${data.responsable_email}".`);
-        }
-      }
-
-      const unidadDatos: UnidadDatosNormalizados = {
-        tipo_unidad: data.tipo_unidad,
-        codigo_interno: data.codigo_interno,
-        barrio_id: resolvedBarrioId,
-        numero_unidad: data.numero_unidad,
-        direccion_propia: data.direccion_propia,
-        metros_cuadrados: data.metros_cuadrados,
-        metros_construidos: data.metros_construidos,
-        ambientes: data.ambientes,
-        antiguedad_anios: data.antiguedad_anios,
-        cocheras: data.cocheras,
-        precio: data.precio,
-        moneda: data.moneda,
-        estado: data.estado,
-        oferta: data.oferta,
-        precio_oferta: data.precio_oferta,
-        destacado: data.destacado,
-        responsable_id: resolvedResponsableId,
-        descripcion: data.descripcion,
-        extras: data.extras,
-      };
-
-      let estadoFila: EstadoFila;
-      let registroExistenteId: string | undefined;
-
-      if (msgs.length > 0) {
-        estadoFila = 'error';
-      } else {
-        // Check intra-Excel duplicate first
-        const seenAtFila = seenUnidadCodigos.get(data.codigo_interno);
-        if (seenAtFila !== undefined) {
-          estadoFila = 'duplicado';
-          allMessages.push(`Duplicado dentro del archivo: la unidad con código "${data.codigo_interno}" ya aparece en la fila ${seenAtFila}.`);
-        } else {
-          seenUnidadCodigos.set(data.codigo_interno, row.numero_fila);
-          const dupResult = checkUnidadDuplicate(data.codigo_interno, existingUnidades);
-          if (dupResult.isDuplicate) {
-            estadoFila = 'duplicado';
-            registroExistenteId = dupResult.existingId;
-            allMessages.push(
-              `La unidad con codigo_interno "${data.codigo_interno}" ya existe en el sistema (ID: ${dupResult.existingId}).`
-            );
-          } else if (advertencias.length > 0) {
-            estadoFila = 'advertencia';
-          } else {
-            estadoFila = 'ok';
-          }
-        }
-      }
+      if (estado === 'ok') filasOk++;
+      else if (estado === 'duplicado') filasDuplicado++;
+      else filasError++;
 
       await this.crearFila({
         importacionId,
         numeroFila: row.numero_fila,
         tipoFila: 'unidad',
         datosOriginales: row.data,
-        datosNormalizados: unidadDatos,
-        estadoFila,
-        mensajes: allMessages,
-        registroExistenteId,
+        datosNormalizados: data,
+        estadoFila: estado,
+        mensajes,
+        decisionUsuario: decision,
+        registroExistenteId: registro_existente_id,
+        refBarrio: ref_barrio,
       });
-
-      if (estadoFila === 'ok') filasOk++;
-      else if (estadoFila === 'duplicado') filasDuplicado++;
-      else if (estadoFila === 'error') filasError++;
-      else filasAdvertencia++;
     }
 
-    // Step 7: Determine final importacion estado and update stats
-    const totalFilas = barrioRows.length + unidadRows.length;
-    const estadoFinal: string =
-      filasError > 0 && filasOk === 0 && filasAdvertencia === 0 && filasDuplicado === 0
-        ? 'con_errores'
-        : 'listo_para_confirmar';
-
+    const total = filasOk + filasDuplicado + filasError;
     await this.pb.collection('importaciones').update(importacionId, {
-      total_filas: totalFilas,
+      estado: 'listo_para_confirmar',
+      total_filas: total,
       filas_ok: filasOk,
       filas_duplicado: filasDuplicado,
       filas_error: filasError,
-      filas_advertencia: filasAdvertencia,
-      estado: estadoFinal,
+      filas_advertencia: 0,
     });
-
-    console.info(
-      `[ImportadorService] Análisis completado: ${totalFilas} filas (ok=${filasOk}, dup=${filasDuplicado}, err=${filasError}, adv=${filasAdvertencia})`
-    );
 
     return importacionId;
   }
 
-  // ── Mapeo management ────────────────────────────────────────────────────
-
-  async guardarMapeoColumnas(importacionId: string, mapeo: MapeoColumnas): Promise<void> {
-    await this.pb.collection('importaciones').update(importacionId, {
-      mapeo_columnas: mapeo,
-    });
-    console.info(`[ImportadorService] mapeo_columnas guardado para importacion ${importacionId}`);
-  }
-
-  async guardarMapeoExtras(importacionId: string, mapeo: MapeoExtras): Promise<void> {
-    await this.pb.collection('importaciones').update(importacionId, {
-      mapeo_extras: mapeo,
-    });
-    console.info(`[ImportadorService] mapeo_extras guardado para importacion ${importacionId}`);
-  }
-
-  /**
-   * Re-downloads the original file from PocketBase and re-processes all rows
-   * using the current mapeo_columnas and mapeo_extras stored on the importacion.
-   * Deletes all existing filas before re-creating them.
-   */
-  async reAnalizarConMapeo(importacionId: string): Promise<void> {
-    const importacion = (await this.importacionesService.getAsync(
-      importacionId
-    )) as ImportacionExtendida;
-
-    if (!importacion.archivo_origen) {
-      throw new Error('La importación no tiene un archivo asociado.');
-    }
-
-    // Build authenticated file URL
-    const fileUrl = this.pb.files.getURL(
-      importacion as Parameters<typeof this.pb.files.getURL>[0],
-      importacion.archivo_origen
-    );
-    const response = await fetch(fileUrl, {
-      headers: { Authorization: this.pb.authStore.token ?? '' },
-    });
-    if (!response.ok) {
-      throw new Error(`Error al descargar el archivo original: HTTP ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    const file = new File([blob], importacion.nombre_archivo ?? importacion.archivo_origen, {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-
-    // Delete existing filas
-    const filasExistentes = await this.pb
-      .collection('importacion_filas')
-      .getFullList<ImportacionFilasResponse>({
-        filter: `importacion_id='${importacionId}'`,
-      });
-
-    await Promise.all(
-      filasExistentes.map(f => this.pb.collection('importacion_filas').delete(f.id))
-    );
-
-    console.info(
-      `[ImportadorService] Eliminadas ${filasExistentes.length} filas para re-análisis de ${importacionId}`
-    );
-
-    // Re-parse with saved mapeo
-    const extras = this.definicionesCacheSvc.extras();
+  async editarFila(
+    filaId: string,
+    datosNormalizados: BarrioNormalizado | UnidadNormalizado
+  ): Promise<void> {
+    const fila = await this.pb.collection('importacion_filas').getOne<FilaExtendida>(filaId);
     const estadosUnidades = this.definicionesCacheSvc.estadosActivosPara('unidades');
-    const mapeoColumnas = importacion.mapeo_columnas ?? {};
-    const mapeoExtras = importacion.mapeo_extras ?? {};
-
-    const { rows, analisis } = await parseExcelFile(file, extras, mapeoColumnas, mapeoExtras);
-
     const [existingBarrios, existingUnidades] = await Promise.all([
       this.barriosService.listAsync() as Promise<BarriosResponse[]>,
       this.unidadesService.listAsync() as Promise<UnidadesResponse[]>,
     ]);
 
-    const barrioRows = rows.filter(
-      r => String(r.data['tipo'] ?? '').toLowerCase().trim() === 'barrio'
-    );
-    const unidadRows = rows.filter(
-      r => String(r.data['tipo'] ?? '').toLowerCase().trim() === 'unidad'
-    );
-
-    let filasOk = 0;
-    let filasDuplicado = 0;
-    let filasError = 0;
-    let filasAdvertencia = 0;
-
-    const barriosDeLaImportacion = new Map<string, BarrioDatosNormalizados>();
-    const seenBarrioSlugsR = new Map<string, number>();
-    const seenUnidadCodigosR = new Map<string, number>();
-
-    for (const row of barrioRows) {
-      const { data, errores, advertencias } = normalizeBarrioRow(row.data, analisis, extras);
-      const msgs = validateBarrio(data, errores);
-      const allMessages = [...msgs, ...advertencias];
-
-      let estadoFila: EstadoFila;
-      let registroExistenteId: string | undefined;
-
-      if (msgs.length > 0) {
-        estadoFila = 'error';
-      } else {
-        const seenAtFilaB = seenBarrioSlugsR.get(data.slug);
-        if (seenAtFilaB !== undefined) {
-          estadoFila = 'duplicado';
-          allMessages.push(`Duplicado dentro del archivo: el barrio con código "${data.slug}" ya aparece en la fila ${seenAtFilaB}.`);
-        } else {
-          seenBarrioSlugsR.set(data.slug, row.numero_fila);
-          const dupResult = checkBarrioDuplicate(data.slug, existingBarrios);
-          if (dupResult.isDuplicate) {
-            estadoFila = 'duplicado';
-            registroExistenteId = dupResult.existingId;
-            allMessages.push(
-              `El barrio con slug "${data.slug}" ya existe en el sistema (ID: ${dupResult.existingId}).`
-            );
-          } else if (advertencias.length > 0) {
-            estadoFila = 'advertencia';
-          } else {
-            estadoFila = 'ok';
-          }
-        }
-      }
-
-      const barrioDatos: BarrioDatosNormalizados = {
-        nombre: data.nombre,
-        slug: data.slug,
-        descripcion: data.descripcion,
-        ubicacion_texto: data.ubicacion_texto,
-        lat: data.lat,
-        lng: data.lng,
-        zona: data.zona,
-        extras: data.extras,
-      };
-
-      if (estadoFila !== 'error') barriosDeLaImportacion.set(data.codigo_interno_ref, barrioDatos);
-
-      await this.crearFila({
-        importacionId,
-        numeroFila: row.numero_fila,
-        tipoFila: 'barrio',
-        datosOriginales: row.data,
-        datosNormalizados: barrioDatos,
-        estadoFila,
-        mensajes: allMessages,
-        registroExistenteId,
-      });
-
-      if (estadoFila === 'ok') filasOk++;
-      else if (estadoFila === 'duplicado') filasDuplicado++;
-      else if (estadoFila === 'error') filasError++;
-      else filasAdvertencia++;
-    }
-
-    for (const row of unidadRows) {
-      const { data, errores, advertencias } = normalizeUnidadRow(row.data, analisis, extras);
-      const msgs = validateUnidad(data, errores, estadosUnidades);
-      const allMessages = [...msgs, ...advertencias];
-
-      let resolvedBarrioId: string | undefined;
-      if (data.barrio_codigo_interno_ref) {
-        const dbBarrio = existingBarrios.find(b => b.slug === data.barrio_codigo_interno_ref);
-        if (dbBarrio) {
-          resolvedBarrioId = dbBarrio.id;
-        } else if (!barriosDeLaImportacion.has(data.barrio_codigo_interno_ref)) {
-          allMessages.push(
-            `No se encontró barrio con codigo_interno "${data.barrio_codigo_interno_ref}".`
-          );
-        }
-      }
-
-      let resolvedResponsableId: string | undefined;
-      if (data.responsable_email) {
-        try {
-          const safeEmail = data.responsable_email.replace(/'/g, "\\'");
-          const users = await this.usersService.listAsync(`email='${safeEmail}'`);
-          if (users.length > 0) {
-            resolvedResponsableId = users[0].id;
-          } else {
-            allMessages.push(
-              `No se encontró usuario con email "${data.responsable_email}". Se usará el usuario actual.`
-            );
-          }
-        } catch (err) {
-          console.error('[ImportadorService] Error buscando responsable:', err);
-        }
-      }
-
-      const unidadDatos: UnidadDatosNormalizados = {
-        tipo_unidad: data.tipo_unidad,
-        codigo_interno: data.codigo_interno,
-        barrio_id: resolvedBarrioId,
-        numero_unidad: data.numero_unidad,
-        direccion_propia: data.direccion_propia,
-        metros_cuadrados: data.metros_cuadrados,
-        metros_construidos: data.metros_construidos,
-        ambientes: data.ambientes,
-        antiguedad_anios: data.antiguedad_anios,
-        cocheras: data.cocheras,
-        precio: data.precio,
-        moneda: data.moneda,
-        estado: data.estado,
-        oferta: data.oferta,
-        precio_oferta: data.precio_oferta,
-        destacado: data.destacado,
-        responsable_id: resolvedResponsableId,
-        descripcion: data.descripcion,
-        extras: data.extras,
-      };
-
-      let estadoFila: EstadoFila;
-      let registroExistenteId: string | undefined;
-
-      if (msgs.length > 0) {
-        estadoFila = 'error';
-      } else {
-        const seenAtFilaR = seenUnidadCodigosR.get(data.codigo_interno);
-        if (seenAtFilaR !== undefined) {
-          estadoFila = 'duplicado';
-          allMessages.push(`Duplicado dentro del archivo: la unidad con código "${data.codigo_interno}" ya aparece en la fila ${seenAtFilaR}.`);
-        } else {
-          seenUnidadCodigosR.set(data.codigo_interno, row.numero_fila);
-          const dupResult = checkUnidadDuplicate(data.codigo_interno, existingUnidades);
-          if (dupResult.isDuplicate) {
-            estadoFila = 'duplicado';
-            registroExistenteId = dupResult.existingId;
-            allMessages.push(
-              `La unidad "${data.codigo_interno}" ya existe en el sistema (ID: ${dupResult.existingId}).`
-            );
-          } else if (advertencias.length > 0) {
-            estadoFila = 'advertencia';
-          } else {
-            estadoFila = 'ok';
-          }
-        }
-      }
-
-      await this.crearFila({
-        importacionId,
-        numeroFila: row.numero_fila,
-        tipoFila: 'unidad',
-        datosOriginales: row.data,
-        datosNormalizados: unidadDatos,
-        estadoFila,
-        mensajes: allMessages,
-        registroExistenteId,
-      });
-
-      if (estadoFila === 'ok') filasOk++;
-      else if (estadoFila === 'duplicado') filasDuplicado++;
-      else if (estadoFila === 'error') filasError++;
-      else filasAdvertencia++;
-    }
-
-    const totalFilas = barrioRows.length + unidadRows.length;
-    const estadoFinal: string =
-      filasError > 0 && filasOk === 0 && filasAdvertencia === 0 && filasDuplicado === 0
-        ? 'con_errores'
-        : 'listo_para_confirmar';
-
-    await this.pb.collection('importaciones').update(importacionId, {
-      total_filas: totalFilas,
-      filas_ok: filasOk,
-      filas_duplicado: filasDuplicado,
-      filas_error: filasError,
-      filas_advertencia: filasAdvertencia,
-      estado: estadoFinal,
-    });
-
-    console.info(`[ImportadorService] Re-análisis completado para ${importacionId}`);
-  }
-
-  // ── Row editing ─────────────────────────────────────────────────────────
-
-  async editarFila(
-    filaId: string,
-    datosNormalizados: Record<string, unknown>
-  ): Promise<void> {
-    const fila = (await this.filasService.getAsync(filaId)) as FilaExtendida;
-    const extras = this.definicionesCacheSvc.extras();
-    const estadosUnidades = this.definicionesCacheSvc.estadosActivosPara('unidades');
-
-    let nuevoEstado: EstadoFila = 'ok';
-    let mensajes: string[] = [];
+    const mensajes: string[] = [];
+    let estado: EstadoFila = 'ok';
+    let registro_existente_id: string | undefined = fila.registro_existente_id;
+    let decision: DecisionUsuario = fila.decision_usuario ?? 'pendiente';
 
     if (fila.tipo_fila === 'barrio') {
-      const rawBarrio = datosNormalizados as unknown as BarrioDatosNormalizados;
-      const errores: string[] = [];
-      if (!rawBarrio.nombre) errores.push('El campo "nombre" es obligatorio.');
-      if (!rawBarrio.slug) errores.push('No se puede generar el slug.');
-      mensajes = errores;
-      nuevoEstado = errores.length > 0 ? 'error' : 'ok';
+      const data = datosNormalizados as BarrioNormalizado;
+      if (!data.nombre) mensajes.push('El nombre es obligatorio.');
+      if (!data.slug) mensajes.push('El slug es obligatorio.');
+      const dup = checkBarrioDuplicate(data.slug, existingBarrios);
+      if (dup.isDuplicate && dup.existingId) {
+        estado = 'duplicado';
+        registro_existente_id = dup.existingId;
+        mensajes.push(`Barrio "${data.nombre}" ya existe — se reutilizará.`);
+        decision = 'pendiente';
+      }
     } else {
-      const rawUnidad = datosNormalizados as unknown as UnidadDatosNormalizados;
-      const errores: string[] = [];
-      if (!rawUnidad.codigo_interno) errores.push('El campo "codigo_interno" es obligatorio.');
-      if (!rawUnidad.metros_cuadrados) errores.push('El campo "metros_cuadrados" es obligatorio.');
-      if (!rawUnidad.precio && rawUnidad.precio !== 0) errores.push('El campo "precio" es obligatorio.');
-      if (rawUnidad.estado) {
-        const codesValidos = estadosUnidades.map(e => e.code);
-        const hardcoded = ['disponible', 'bloqueado', 'reservado', 'sena', 'vendido', 'escriturado'];
-        const allValidos = [...new Set([...codesValidos, ...hardcoded])];
-        if (!allValidos.includes(rawUnidad.estado)) {
-          errores.push(
-            `El estado "${rawUnidad.estado}" no es válido. Permitidos: ${allValidos.join(', ')}.`
-          );
+      const data = datosNormalizados as UnidadNormalizado;
+      if (!data.codigo) mensajes.push('El número de lote es obligatorio.');
+      if (data.metros_cuadrados <= 0) mensajes.push('metros_cuadrados debe ser mayor a 0.');
+      if (data.precio <= 0) mensajes.push('precio debe ser mayor a 0.');
+      const estErr = validateEstadoUnidad(data.estado, estadosUnidades, fila.numero_fila);
+      if (estErr) mensajes.push(estErr);
+
+      const ref = fila.ref_barrio;
+      let barrioId: string | undefined;
+      if (ref) {
+        const barrioFilas = await this.pb.collection('importacion_filas').getFullList<FilaExtendida>({
+          filter: `${pbFilterImportacion(fila.importacion_id)} && tipo_fila = 'barrio' && ref_barrio = '${ref.replace(/'/g, "''")}'`,
+        });
+        const barrioFila = barrioFilas[0];
+        barrioId = barrioFila?.barrio_resuelto_id ?? barrioFila?.registro_existente_id;
+        if (!barrioId && barrioFila?.datos_normalizados) {
+          const slug = (barrioFila.datos_normalizados as BarrioNormalizado).slug;
+          barrioId = existingBarrios.find((b) => b.slug === slug)?.id;
         }
       }
-      mensajes = errores;
-      nuevoEstado = errores.length > 0 ? 'error' : 'ok';
+
+      const dup = checkUnidadDuplicate(data.codigo, barrioId, existingUnidades);
+      if (dup.isDuplicate && dup.existingId && decision !== 'crear') {
+        estado = 'duplicado';
+        registro_existente_id = dup.existingId;
+        mensajes.push(`Lote "${data.codigo}" ya existe — se saltea por defecto.`);
+        if (decision === 'pendiente') decision = 'omitir';
+      } else if (mensajes.length) {
+        estado = 'error';
+      } else {
+        estado = 'ok';
+        decision = decision === 'omitir' && !dup.isDuplicate ? 'pendiente' : decision;
+      }
     }
+
+    if (mensajes.length && estado !== 'duplicado') estado = 'error';
 
     await this.pb.collection('importacion_filas').update(filaId, {
       datos_normalizados: datosNormalizados,
-      estado_fila: nuevoEstado,
       mensajes,
+      mensaje: mensajes.join(' '),
+      estado_fila: estado,
+      registro_existente_id: registro_existente_id ?? null,
+      decision_usuario: decision,
     });
 
-    console.info(`[ImportadorService] Fila ${filaId} editada → estado ${nuevoEstado}`);
+    await this.recalcularContadores(fila.importacion_id);
   }
 
-  // ── Commit ──────────────────────────────────────────────────────────────
+  async actualizarDecision(filaId: string, decision: DecisionUsuario): Promise<void> {
+    const fila = await this.pb.collection('importacion_filas').update<FilaExtendida>(filaId, {
+      decision_usuario: decision,
+    });
+    await this.recalcularContadores(fila.importacion_id);
+  }
 
   async commitImportacion(importacionId: string): Promise<ResultadoCommit> {
-    const todasLasFilas = await this.pb
-      .collection('importacion_filas')
-      .getFullList<ImportacionFilasResponse>({
-        filter: `importacion_id='${importacionId}' && aplicada=false && decision_usuario!='omitir'`,
-      });
+    const currentUserId = this.pb.authStore.model?.['id'] as string | undefined;
+    if (!currentUserId) throw new Error('Usuario no autenticado.');
 
-    const filas = todasLasFilas as FilaExtendida[];
-
-    // Sort: barrio filas first, then unidad filas
-    filas.sort((a, b) => {
-      if (a.tipo_fila === 'barrio' && b.tipo_fila !== 'barrio') return -1;
-      if (a.tipo_fila !== 'barrio' && b.tipo_fila === 'barrio') return 1;
-      return a.numero_fila - b.numero_fila;
+    const filas = await this.pb.collection('importacion_filas').getFullList<FilaExtendida>({
+      filter: pbFilterImportacion(importacionId),
+      sort: 'numero_fila',
     });
 
-    const currentUserId = this.pb.authStore.model?.['id'] ?? '';
-    let filasAplicadas = 0;
-    let filasFallidas = 0;
-    let filasOmitidas = 0;
-    const errores: Array<{ numero_fila: number; error: string }> = [];
+    const refToBarrioId = new Map<string, string>();
+    let aplicadas = 0;
+    let fallidas = 0;
+    let omitidas = 0;
 
-    // Tracks barrios created in this commit: codigo_interno → new PB id
-    const barriosCreados = new Map<string, string>();
+    const barrioFilas = filas.filter((f) => f.tipo_fila === 'barrio' && !f.aplicada);
+    const unidadFilas = filas.filter((f) => f.tipo_fila === 'unidad' && !f.aplicada);
 
-    // Fetch existing barrios for barrio_id resolution
-    const existingBarrios = (await this.barriosService.listAsync()) as BarriosResponse[];
-
-    for (const fila of filas) {
-      const decision = fila.decision_usuario;
-      const estadoFila = fila.estado_fila;
-
-      // Skip error rows that have no explicit 'crear' decision
-      if (estadoFila === 'error' && decision !== 'crear' && decision !== 'actualizar') {
-        filasFallidas++;
-        errores.push({
-          numero_fila: fila.numero_fila,
-          error: `Fila con errores de validación omitida. Mensajes: ${(fila.mensajes ?? []).join('; ')}`,
-        });
-        continue;
-      }
-
-      // Determine action
-      const shouldCreate =
-        decision === 'crear' ||
-        (decision === 'pendiente' && (estadoFila === 'ok' || estadoFila === 'advertencia'));
-      const shouldUpdate = decision === 'actualizar';
-
-      if (!shouldCreate && !shouldUpdate) {
-        filasOmitidas++;
+    for (const fila of barrioFilas) {
+      if (fila.estado_fila === 'error' && !fila.error_aplicacion) {
+        omitidas++;
         continue;
       }
 
       try {
-        if (fila.tipo_fila === 'barrio') {
-          await this.commitBarrioFila(
-            fila,
-            shouldCreate,
-            shouldUpdate,
-            currentUserId,
-            barriosCreados
-          );
-          filasAplicadas++;
-        } else {
-          await this.commitUnidadFila(
-            fila,
-            shouldCreate,
-            shouldUpdate,
-            currentUserId,
-            existingBarrios,
-            barriosCreados
-          );
-          filasAplicadas++;
-        }
-      } catch (err) {
-        filasFallidas++;
-        const errorMsg = err instanceof Error ? err.message : String(err);
-        errores.push({ numero_fila: fila.numero_fila, error: errorMsg });
-        console.error(`[ImportadorService] Error aplicando fila ${fila.numero_fila}:`, err);
+        const datos = fila.datos_normalizados as BarrioNormalizado;
+        const ref = refBarrioDesdeFilaBarrio(fila);
 
+        if (fila.estado_fila === 'duplicado' && fila.registro_existente_id) {
+          const id = fila.registro_existente_id;
+          await this.pb.collection('importacion_filas').update(fila.id, {
+            barrio_resuelto_id: id,
+            aplicada: true,
+          });
+          if (ref) refToBarrioId.set(ref, id);
+          aplicadas++;
+          continue;
+        }
+
+        if (fila.estado_fila === 'ok') {
+          const zona_id = await this.resolveZonaId(datos.zona);
+          const created = await this.pb.collection('barrios').create<BarriosResponse>({
+            nombre: datos.nombre,
+            slug: datos.slug,
+            zona_id,
+            tipos_unidad: datos.tipos_unidad,
+            descripcion: datos.descripcion ?? null,
+          });
+          await this.pb.collection('importacion_filas').update(fila.id, {
+            barrio_resuelto_id: created.id,
+            registro_creado_id: created.id,
+            aplicada: true,
+          });
+          if (ref) refToBarrioId.set(ref, created.id);
+          aplicadas++;
+        }
+      } catch (err: unknown) {
+        fallidas++;
+        const msg = err instanceof Error ? err.message : 'Error al crear barrio';
         await this.pb.collection('importacion_filas').update(fila.id, {
-          error_aplicacion: errorMsg,
+          error_aplicacion: msg,
         });
       }
     }
 
-    // Update importacion to 'confirmada'
+    // Fallback: barrios duplicados / ref_barrio no persistido en PB sin migración
+    for (const f of filas.filter((x) => x.tipo_fila === 'barrio')) {
+      const ref = refBarrioDesdeFilaBarrio(f);
+      if (!ref || refToBarrioId.has(ref)) continue;
+      const id =
+        f.barrio_resuelto_id ??
+        f.registro_creado_id ??
+        f.registro_existente_id ??
+        undefined;
+      if (id) refToBarrioId.set(ref, id);
+    }
+
+    for (const fila of unidadFilas) {
+      if (fila.aplicada) continue;
+
+      const skipDup =
+        fila.estado_fila === 'duplicado' &&
+        (fila.decision_usuario === 'omitir' || fila.decision_usuario === 'pendiente');
+      if (skipDup) {
+        omitidas++;
+        continue;
+      }
+      if (fila.estado_fila === 'error' && !fila.error_aplicacion) {
+        omitidas++;
+        continue;
+      }
+      if (fila.decision_usuario === 'omitir') {
+        omitidas++;
+        continue;
+      }
+
+      try {
+        const datos = fila.datos_normalizados as UnidadNormalizado;
+        const ref = refBarrioDesdeFilaUnidad(fila);
+        const barrio_id = refToBarrioId.get(ref);
+        if (!barrio_id) {
+          throw new Error(
+            `No se pudo resolver barrio para codigo_barrio "${ref}". Verificá que exista la fila barrio en el Excel.`
+          );
+        }
+
+        const orientacion = orientacionValida(datos.orientacion);
+
+        const created = await this.unidadesService.crearIndividual(
+          {
+            barrio_id,
+            tipo_unidad: 'lote_vacio',
+            codigo: datos.codigo,
+            area_m2: datos.area_m2,
+            metros_cuadrados: datos.metros_cuadrados,
+            precio: datos.precio,
+            moneda: datos.moneda,
+            estado: datos.estado as UnidadesResponse['estado'],
+            ...(orientacion ? { orientacion } : {}),
+            web_visible: true,
+          },
+          currentUserId
+        );
+
+        await this.pb.collection('importacion_filas').update(fila.id, {
+          barrio_resuelto_id: barrio_id,
+          registro_creado_id: created.id,
+          aplicada: true,
+          error_aplicacion: null,
+        });
+        aplicadas++;
+      } catch (err: unknown) {
+        fallidas++;
+        const msg = err instanceof Error ? err.message : 'Error al crear unidad';
+        await this.pb.collection('importacion_filas').update(fila.id, {
+          error_aplicacion: msg,
+        });
+      }
+    }
+
     await this.pb.collection('importaciones').update(importacionId, {
-      estado: 'confirmada',
+      estado: fallidas > 0 ? 'con_errores' : 'confirmada',
       confirmada_en: new Date().toISOString(),
     });
 
-    // Write audit log directly (AuditLogService throws on create)
-    try {
-      await this.pb.collection('audit_log').create({
-        action: 'create',
-        collection_name: 'importaciones',
-        record_id: importacionId,
-        user_id: currentUserId,
-        after: { filas_aplicadas: filasAplicadas, filas_fallidas: filasFallidas },
-      });
-    } catch (auditErr) {
-      console.error('[ImportadorService] Error escribiendo audit_log:', auditErr);
-    }
-
-    const resultado: ResultadoCommit = {
-      importacion_id: importacionId,
-      filas_aplicadas: filasAplicadas,
-      filas_fallidas: filasFallidas,
-      filas_omitidas: filasOmitidas,
-      errores,
-    };
-
-    console.info(
-      `[ImportadorService] Commit completado: aplicadas=${filasAplicadas}, fallidas=${filasFallidas}, omitidas=${filasOmitidas}`
-    );
-
-    return resultado;
+    return { filas_aplicadas: aplicadas, filas_fallidas: fallidas, filas_omitidas: omitidas };
   }
 
   async descartarImportacion(importacionId: string): Promise<void> {
-    await this.pb.collection('importaciones').update(importacionId, {
-      estado: 'descartada',
-    });
-    console.info(`[ImportadorService] Importación ${importacionId} descartada.`);
+    await this.pb.collection('importaciones').update(importacionId, { estado: 'descartada' });
   }
 
-  // ── Private helpers ─────────────────────────────────────────────────────
-
-  private async crearFila(params: {
-    importacionId: string;
-    numeroFila: number;
-    tipoFila: 'barrio' | 'unidad';
-    datosOriginales: Record<string, unknown>;
-    datosNormalizados: BarrioDatosNormalizados | UnidadDatosNormalizados;
-    estadoFila: EstadoFila;
-    mensajes: string[];
-    registroExistenteId?: string;
-  }): Promise<void> {
-    await this.pb.collection('importacion_filas').create({
-      importacion_id: params.importacionId,
-      numero_fila: params.numeroFila,
-      tipo_fila: params.tipoFila,
-      datos_originales: params.datosOriginales,
-      datos_normalizados: params.datosNormalizados,
-      estado_fila: params.estadoFila,
-      mensajes: params.mensajes,
-      decision_usuario: 'pendiente',
-      registro_existente_id: params.registroExistenteId ?? null,
-      aplicada: false,
-    });
-  }
-
-  private async commitBarrioFila(
-    fila: FilaExtendida,
-    shouldCreate: boolean,
-    shouldUpdate: boolean,
-    currentUserId: string,
-    barriosCreados: Map<string, string>
-  ): Promise<void> {
-    const datos = fila.datos_normalizados as BarrioDatosNormalizados;
-    const zona_id = await this.resolveZonaId(datos.zona);
-
-    const payload: Record<string, unknown> = {
-      nombre: datos.nombre,
-      slug: datos.slug,
-      descripcion: datos.descripcion ?? null,
-      ubicacion_texto: datos.ubicacion_texto ?? null,
-      lat: datos.lat ?? null,
-      lng: datos.lng ?? null,
-      zona_id,
-      extras: datos.extras ?? null,
-    };
-
-    if (shouldCreate) {
-      const created = await this.pb.collection('barrios').create<BarriosResponse>(payload);
-
-      // Track for cross-referencing with unidades
-      const datosOriginais = fila.datos_originales as Record<string, unknown>;
-      const codigoInterno =
-        String(datosOriginais['codigo_interno'] ?? datos.slug ?? '').trim();
-      if (codigoInterno) barriosCreados.set(codigoInterno, created.id);
-
-      await this.pb.collection('importacion_filas').update(fila.id, {
-        aplicada: true,
-        registro_creado_id: created.id,
-      });
-    } else if (shouldUpdate && fila.registro_existente_id) {
-      await this.pb.collection('barrios').update(fila.registro_existente_id, payload);
-      await this.pb.collection('importacion_filas').update(fila.id, { aplicada: true });
-    }
-  }
-
-  /** Resuelve texto de columna "zona" del Excel → zona_id en PB. Crea zona bajo depto Todo si no existe. */
   private async resolveZonaId(zonaText?: string | null): Promise<string> {
     const trimmed = zonaText?.trim();
     if (!trimmed) {
       const todo = await this.pb.collection('zonas').getFirstListItem('slug="todo"');
       return todo.id;
     }
-
     const slug = toSlug(trimmed);
     try {
       const existing = await this.pb.collection('zonas').getFirstListItem(`slug="${slug}"`);
@@ -883,70 +470,96 @@ export class ImportadorService {
     }
   }
 
-  private async commitUnidadFila(
-    fila: FilaExtendida,
-    shouldCreate: boolean,
-    shouldUpdate: boolean,
-    currentUserId: string,
-    existingBarrios: BarriosResponse[],
-    barriosCreados: Map<string, string>
-  ): Promise<void> {
-    const datos = fila.datos_normalizados as UnidadDatosNormalizados;
-    const datosOriginais = fila.datos_originales as Record<string, unknown>;
-
-    // Resolve barrio_id if not already set in datos_normalizados
-    let barrio_id = datos.barrio_id;
-    if (!barrio_id) {
-      const codigoInternoBarrio = String(
-        datosOriginais['barrio_codigo_interno'] ?? ''
-      ).trim();
-      if (codigoInternoBarrio) {
-        // Check newly created barrios in this commit first
-        const createdId = barriosCreados.get(codigoInternoBarrio);
-        if (createdId) {
-          barrio_id = createdId;
-        } else {
-          // Fall back to existing DB barrios (by slug = codigo_interno convention)
-          const dbBarrio = existingBarrios.find(b => b.slug === codigoInternoBarrio);
-          if (dbBarrio) barrio_id = dbBarrio.id;
-        }
-      }
-    }
-
-    // Fallback responsable_id to current user
-    const responsable_id = datos.responsable_id || currentUserId;
-
-    const payload: Record<string, unknown> = {
-      tipo_unidad: datos.tipo_unidad,
-      codigo_interno: datos.codigo_interno,
-      barrio_id: barrio_id ?? null,
-      numero_unidad: datos.numero_unidad ?? null,
-      direccion_propia: datos.direccion_propia ?? null,
-      metros_cuadrados: datos.metros_cuadrados,
-      metros_construidos: datos.metros_construidos ?? null,
-      ambientes: datos.ambientes ?? null,
-      antiguedad_anios: datos.antiguedad_anios ?? null,
-      cocheras: datos.cocheras ?? null,
-      precio: datos.precio,
-      moneda: datos.moneda,
-      estado: datos.estado,
-      oferta: datos.oferta ?? false,
-      precio_oferta: datos.precio_oferta ?? null,
-      destacado: datos.destacado ?? false,
-      responsable_id,
-      descripcion: datos.descripcion ?? null,
-      extras: datos.extras ?? null,
-    };
-
-    if (shouldCreate) {
-      const created = await this.pb.collection('unidades').create<UnidadesResponse>(payload);
-      await this.pb.collection('importacion_filas').update(fila.id, {
-        aplicada: true,
-        registro_creado_id: created.id,
-      });
-    } else if (shouldUpdate && fila.registro_existente_id) {
-      await this.pb.collection('unidades').update(fila.registro_existente_id, payload);
-      await this.pb.collection('importacion_filas').update(fila.id, { aplicada: true });
-    }
+  private async crearFila(params: {
+    importacionId: string;
+    numeroFila: number;
+    tipoFila: 'barrio' | 'unidad';
+    datosOriginales: Record<string, unknown>;
+    datosNormalizados: BarrioNormalizado | UnidadNormalizado;
+    estadoFila: EstadoFila;
+    mensajes: string[];
+    decisionUsuario: DecisionUsuario;
+    registroExistenteId?: string;
+    refBarrio?: string;
+  }): Promise<void> {
+    await this.pb.collection('importacion_filas').create({
+      importacion_id: params.importacionId,
+      numero_fila: params.numeroFila,
+      tipo_fila: params.tipoFila,
+      datos_originales: params.datosOriginales,
+      datos_normalizados: params.datosNormalizados,
+      estado_fila: params.estadoFila,
+      mensajes: params.mensajes,
+      mensaje: params.mensajes.join(' '),
+      decision_usuario: params.decisionUsuario,
+      registro_existente_id: params.registroExistenteId ?? null,
+      ref_barrio: params.refBarrio ?? null,
+      aplicada: false,
+    });
   }
+
+  private async recalcularContadores(importacionId: string): Promise<void> {
+    const filas = await this.pb.collection('importacion_filas').getFullList<ImportacionFilasResponse>({
+      filter: pbFilterImportacion(importacionId),
+    });
+    let ok = 0;
+    let dup = 0;
+    let err = 0;
+    for (const f of filas) {
+      if (f.estado_fila === 'ok') ok++;
+      else if (f.estado_fila === 'duplicado') dup++;
+      else if (f.estado_fila === 'error') err++;
+    }
+    await this.pb.collection('importaciones').update(importacionId, {
+      total_filas: filas.length,
+      filas_ok: ok,
+      filas_duplicado: dup,
+      filas_error: err,
+    });
+  }
+}
+
+function pbFilterImportacion(importacionId: string): string {
+  const safe = importacionId.replace(/'/g, "''");
+  return `importacion_id = '${safe}'`;
+}
+
+function origenFila(fila: FilaExtendida): Record<string, unknown> {
+  return (fila.datos_originales ?? {}) as Record<string, unknown>;
+}
+
+/** ref_barrio en PB puede faltar sin migración — leer codigo del Excel */
+function refBarrioDesdeFilaBarrio(fila: FilaExtendida): string {
+  const fromPb = fila.ref_barrio?.trim();
+  if (fromPb) return fromPb;
+  const orig = origenFila(fila);
+  return String(orig['codigo'] ?? '').trim();
+}
+
+function refBarrioDesdeFilaUnidad(fila: FilaExtendida): string {
+  const fromPb = fila.ref_barrio?.trim();
+  if (fromPb) return fromPb;
+  const orig = origenFila(fila);
+  return String(orig['codigo_barrio'] ?? '').trim();
+}
+
+const ORIENTACIONES_VALIDAS = new Set<string>([
+  'Norte',
+  'Sur',
+  'Este',
+  'Oeste',
+  'Noreste',
+  'Noroeste',
+  'Sureste',
+  'Suroeste',
+]);
+
+function orientacionValida(value?: string): UnidadesOrientacionOptions | undefined {
+  const t = value?.trim();
+  if (!t || !ORIENTACIONES_VALIDAS.has(t)) return undefined;
+  return t as UnidadesOrientacionOptions;
+}
+
+function strTipo(data: Record<string, unknown>): string {
+  return String(data['tipo'] ?? '').toLowerCase().trim();
 }

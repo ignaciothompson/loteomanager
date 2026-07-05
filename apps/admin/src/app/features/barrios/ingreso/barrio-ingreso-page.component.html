@@ -130,6 +130,17 @@
                                     <span class="lm-hint">{{ geoLabel() }}</span>
                                 </div>
                             </div>
+                            @if (puedePublicarWeb()) {
+                                <div class="lm-field">
+                                    <label for="ingreso-publicado" class="lm-field-label">Publicado en la web</label>
+                                    <p-toggleswitch
+                                        inputId="ingreso-publicado"
+                                        [ngModel]="publicadoWeb()"
+                                        (ngModelChange)="publicadoWeb.set($event)"
+                                        [ngModelOptions]="{ standalone: true }"
+                                    />
+                                </div>
+                            }
                         </div>
                     }
                     @case ('extras') {

@@ -1,0 +1,95 @@
+<div>
+  <div class="flex flex-wrap align-items-center gap-2 mb-3">
+    @for (op of filtroTipoOpciones; track op.value) {
+      <p-button
+        [label]="op.label"
+        [severity]="filtroTipo() === op.value ? 'primary' : 'secondary'"
+        [outlined]="filtroTipo() !== op.value"
+        size="small"
+        (click)="filtroTipo.set(op.value)"
+      />
+    }
+    <span class="mx-2 text-400">|</span>
+    @for (op of filtroEstadoOpciones; track op.value) {
+      <p-button
+        [label]="op.label"
+        [severity]="filtroEstado() === op.value ? 'primary' : 'secondary'"
+        [outlined]="filtroEstado() !== op.value"
+        size="small"
+        (click)="filtroEstado.set(op.value)"
+      />
+    }
+    <span class="ml-auto text-sm text-500">{{ filasFiltradas().length }} filas</span>
+  </div>
+
+  <p-table
+    [value]="filasFiltradas()"
+    [paginator]="true"
+    [rows]="25"
+    [rowHover]="true"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>#</th>
+        <th>Tipo</th>
+        <th>Código</th>
+        <th>Nombre / Nro lote</th>
+        <th>Estado</th>
+        <th>Mensaje</th>
+        <th>Decisión</th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-fila>
+      <tr [class.opacity-60]="fila.aplicada">
+        <td class="font-mono text-sm">{{ fila.numero_fila }}</td>
+        <td class="text-sm capitalize">{{ fila.tipo_fila }}</td>
+        <td class="font-mono text-sm">{{ getCodigo(fila) }}</td>
+        <td class="text-sm">{{ getNombre(fila) }}</td>
+        <td>
+          <p-tag [value]="fila.estado_fila" [severity]="getEstadoSeverity(fila.estado_fila)" />
+        </td>
+        <td>
+          @if (getMensaje(fila)) {
+            <span class="text-sm" [class.text-red-600]="mensajeEsError(fila)">{{ getMensaje(fila) }}</span>
+          } @else {
+            <span class="text-500">—</span>
+          }
+        </td>
+        <td>
+          @if (showBarrioDuplicadoChip(fila)) {
+            <p-tag value="Barrio existente — se reutiliza" severity="warn" />
+          } @else if (showDecisionDropdown(fila)) {
+            <p-select
+              [options]="decisionUnidadDuplicada"
+              [ngModel]="fila.decision_usuario ?? 'omitir'"
+              (ngModelChange)="cambiarDecision(fila, $event)"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+              styleClass="w-full"
+            />
+          } @else {
+            <span class="text-500 text-sm">—</span>
+          }
+        </td>
+        <td>
+          <p-button
+            icon="pi pi-pencil"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            pTooltip="Ver / editar"
+            (click)="filaClick.emit(fila)"
+          />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="8" class="text-center text-500 py-4">Sin filas para el filtro seleccionado.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

@@ -1,16 +1,11 @@
-import type {
-  ImportacionFilasRecord,
-  ImportacionesRecord,
-} from '@loteomanager/shared-types';
+import type { ImportacionFilasResponse, ImportacionesResponse } from '@loteomanager/shared-types';
 
-/** Evita `Required<>` de Response types al extender filas/importaciones del importador. */
-export type FilaExtendida = ImportacionFilasRecord<
-  unknown,
-  Record<string, unknown>,
-  string[]
->;
+export type FilaExtendida = Omit<ImportacionFilasResponse, 'mensajes'> & {
+  ref_barrio?: string;
+  barrio_resuelto_id?: string;
+  mensajes?: string[];
+};
 
-export type ImportacionExtendida = ImportacionesRecord<
-  Record<string, string | null>,
-  Record<string, string | null>
->;
+export type ImportacionExtendida = ImportacionesResponse & {
+  nombre_archivo?: string;
+};
