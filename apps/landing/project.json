@@ -20,7 +20,10 @@
             "input": "apps/landing/public"
           }
         ],
-        "styles": ["apps/landing/src/assets/styles/styles.scss"],
+        "styles": [
+          "apps/landing/src/assets/styles/styles.scss",
+          "node_modules/leaflet/dist/leaflet.css"
+        ],
         "server": "apps/landing/src/main.server.ts",
         "ssr": {
           "entry": "apps/landing/src/server.ts"

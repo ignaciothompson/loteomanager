@@ -11,13 +11,13 @@ import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
   standalone: true,
   imports: [CommonModule, RouterModule, LandingTopbarComponent, LandingMapaComponent],
   template: `
-    <div class="min-h-screen bg-surface-warm dark:bg-surface-900 flex flex-col">
+    <div class="h-dvh overflow-hidden bg-surface-warm dark:bg-surface-900 flex flex-col">
       <landing-topbar />
 
-      <div class="pt-16 flex flex-1 min-h-0 flex-col md:flex-row">
+      <div class="mt-16 flex h-[calc(100dvh-4rem)] min-h-0 flex-col md:flex-row">
         <!-- Sidebar -->
         <aside class="w-full md:w-96 shrink-0 border-r border-surface-200 dark:border-surface-700
-                       bg-surface-0 dark:bg-surface-900 overflow-y-auto max-h-[40vh] md:max-h-none">
+                       bg-surface-0 dark:bg-surface-900 overflow-y-auto max-h-[40vh] md:max-h-none md:h-full">
           <div class="p-5">
             <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 mb-1">Barrios en mapa</h2>
             <p class="text-xs text-surface-500 mb-4">{{ conUbicacion().length }} con ubicación</p>
@@ -65,9 +65,14 @@ import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
         </aside>
 
         <!-- Mapa -->
-        <div class="flex-1 relative min-h-[50vh] md:min-h-0 bg-surface-100 dark:bg-surface-800">
+        <div class="flex-1 min-h-0 relative bg-surface-100 dark:bg-surface-800">
           @if (marcadores().length) {
-            <landing-mapa [marcadores]="marcadores()" />
+            <landing-mapa
+              class="absolute inset-0"
+              [marcadores]="marcadores()"
+              [focusLat]="seleccionado()?.lat"
+              [focusLng]="seleccionado()?.lng"
+            />
           } @else if (!loading()) {
             <div class="absolute inset-0 flex items-center justify-center p-8">
               <div class="text-center max-w-sm bg-surface-0/80 dark:bg-surface-900/80 backdrop-blur-md
