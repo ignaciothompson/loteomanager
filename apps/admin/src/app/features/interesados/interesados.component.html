@@ -60,6 +60,7 @@
                         <th>Nombre</th>
                         <th>Email</th>
                         <th>Teléfono</th>
+                        <th>Contexto</th>
                         <th>Estado</th>
                         <th class="!text-right"></th>
                     </tr>
@@ -69,6 +70,9 @@
                         <td>{{ interesado.nombre }}</td>
                         <td>{{ interesado.email || '-' }}</td>
                         <td>{{ interesado.telefono || '-' }}</td>
+                        <td>
+                            <span class="text-sm text-surface-600">{{ contextoLabel(interesado) }}</span>
+                        </td>
                         <td>
                             <lib-estado-badge [code]="interesado.estado" [entidad]="'interesados'" />
                         </td>
@@ -105,7 +109,7 @@
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="5">
+                        <td colspan="6">
                             @if (hasActiveFilters()) {
                                 No hay leads que coincidan con los filtros.
                             } @else {

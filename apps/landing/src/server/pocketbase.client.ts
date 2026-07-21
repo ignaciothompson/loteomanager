@@ -13,10 +13,12 @@ export async function getPocketBaseClient(): Promise<TypedPocketBase> {
     return _pb;
   }
 
+  // Local default 8090: matches apps/landing/public/env.js and PB_HOST_PORT
+  // (8080 often taken — e.g. NVIDIA Broadcast on this host).
   const url =
     process.env['PB_INTERNAL_URL'] ??
     process.env['POCKETBASE_URL'] ??
-    'http://localhost:8080';
+    'http://localhost:8090';
 
   _pb = new PocketBase(url) as TypedPocketBase;
 

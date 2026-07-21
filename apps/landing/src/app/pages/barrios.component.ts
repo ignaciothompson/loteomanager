@@ -5,6 +5,7 @@ import { BarriosService, POCKETBASE, type BarrioConCatalogo, attachCatalogStatsF
 import { LandingTopbarComponent } from '../layout/landing-topbar/landing-topbar.component';
 import { LandingFooterComponent } from '../layout/landing-footer/landing-footer.component';
 import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
+import { PLACEHOLDER_BARRIO_URL } from '../utils/placeholder-images';
 
 @Component({
   selector: 'app-barrios',
@@ -64,15 +65,9 @@ import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
                           border border-surface-200 dark:border-surface-700 shadow-soft
                           hover:shadow-soft-lg transition-all duration-300 block">
                   <div class="relative h-56 overflow-hidden">
-                    @if (portadaUrl(barrio)) {
-                      <img [src]="portadaUrl(barrio)!" [alt]="barrio.nombre"
-                           class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                           loading="lazy" />
-                    } @else {
-                      <div class="w-full h-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center">
-                        <i class="pi pi-image text-4xl text-surface-400"></i>
-                      </div>
-                    }
+                    <img [src]="portadaUrl(barrio)" [alt]="barrio.nombre"
+                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                         loading="lazy" />
                     @if (barrio.unidadesCount > 0) {
                       <span class="absolute top-4 left-4 bg-sage-50 text-sage-700 dark:bg-sage-900/40 dark:text-sage-200
                                    px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
@@ -160,8 +155,8 @@ export class BarriosComponent implements OnInit {
     void this.load();
   }
 
-  portadaUrl(barrio: BarrioConCatalogo): string | null {
-    if (!barrio.imagen_portada) return null;
+  portadaUrl(barrio: BarrioConCatalogo): string {
+    if (!barrio.imagen_portada) return PLACEHOLDER_BARRIO_URL;
     return this.pb.files.getURL(barrio, barrio.imagen_portada);
   }
 

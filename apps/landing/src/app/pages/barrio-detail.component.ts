@@ -10,6 +10,7 @@ import { LandingMapaComponent } from '../components/landing-mapa/landing-mapa.co
 import { SanitizeHtmlPipe } from '../pipes/sanitize-html.pipe';
 import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
 import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
+import { ContactoFabComponent } from '../components/contacto-fab/contacto-fab.component';
 
 type UnidadGrupo = {
   tipo: TipoUnidadIngreso;
@@ -28,6 +29,7 @@ type UnidadGrupo = {
     LandingMapaComponent,
     SanitizeHtmlPipe,
     PrecioFormatPipe,
+    ContactoFabComponent,
   ],
   template: `
     <div class="min-h-screen bg-surface-warm dark:bg-surface-900">
@@ -172,6 +174,10 @@ type UnidadGrupo = {
             </section>
           }
         </main>
+      }
+
+      @if (barrio()) {
+        <contacto-fab [barrioId]="barrio()!.id" />
       }
 
       <landing-footer />

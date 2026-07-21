@@ -30,6 +30,12 @@ import { ConfigPublicaService } from '../../services/config-publica.service';
                       transition-colors pb-0.5 border-b-2 border-transparent">
               Mapa
             </a>
+            <a routerLink="/contacto"
+               routerLinkActive="text-primary border-primary"
+               class="text-sm font-medium text-surface-600 dark:text-surface-300 hover:text-primary
+                      transition-colors pb-0.5 border-b-2 border-transparent">
+              Contacto
+            </a>
           </nav>
         </div>
         <button (click)="theme.toggle()"

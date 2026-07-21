@@ -9,8 +9,12 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getPocketBaseClient } from './server/pocketbase.client';
 import { hashIp } from './server/ip-hash';
-import { verifyTurnstileToken } from './server/turnstile';
 import { buildSnapshot } from './server/snapshot-builder';
+import {
+  postLeads,
+  postLeadsFromComparativa,
+  postLeadsFromUnidad,
+} from './server/leads';
 import type { BarriosResponse, ComparativasResponse, ComparativaSnapshot } from '@loteomanager/shared-types';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
@@ -30,7 +34,22 @@ app.get('/api/config-publica', async (_req, res) => {
     nombreInmobiliaria: process.env['INMOBILIARIA_NOMBRE'] ?? 'LoteoManager',
     logoUrl: process.env['INMOBILIARIA_LOGO_URL'] ?? null,
     mensajeBienvenida: null,
+    turnstileSiteKey: process.env['TURNSTILE_SITE_KEY'] ?? null,
   });
+});
+
+// Inyecta site key pública en runtime (Docker / SSR con env).
+app.get('/env.js', (_req, res) => {
+  const pbUrl =
+    process.env['POCKETBASE_PUBLIC_URL'] ??
+    process.env['POCKETBASE_URL'] ??
+    'http://localhost:8090';
+  const turnstile = process.env['TURNSTILE_SITE_KEY'] ?? '';
+  res.type('application/javascript');
+  res.send(`window.__env = window.__env || {};
+window.__env.POCKETBASE_URL = window.__env.POCKETBASE_URL || ${JSON.stringify(pbUrl)};
+window.__env.TURNSTILE_SITE_KEY = window.__env.TURNSTILE_SITE_KEY || ${JSON.stringify(turnstile)};
+`);
 });
 
 // ── /api/comparativas/:token ─────────────────────────────────────────────────
@@ -44,7 +63,7 @@ app.get('/api/comparativas/:token', async (req, res) => {
     process.env['POCKETBASE_PUBLIC_URL'] ??
     process.env['PB_INTERNAL_URL'] ??
     process.env['POCKETBASE_URL'] ??
-    'http://localhost:8080';
+    'http://localhost:8090';
 
   try {
     const comp = await pb.collection('comparativas').getFirstListItem(
@@ -81,114 +100,10 @@ app.get('/api/comparativas/:token', async (req, res) => {
   }
 });
 
-// ── /api/leads/from-comparativa ─────────────────────────────────────────────
-app.post('/api/leads/from-comparativa', async (req, res) => {
-  const {
-    nombre,
-    email,
-    telefono,
-    mensaje,
-    comparativa_id,
-    'cf-turnstile-response': turnstileToken,
-    website,
-  } = req.body ?? {};
-
-  // Honeypot
-  if (website && String(website).length > 0) {
-    return res.json({ ok: true });
-  }
-
-  // Turnstile
-  if (!turnstileToken || !(await verifyTurnstileToken(String(turnstileToken)))) {
-    return res.status(400).json({ error: 'Validación fallida' });
-  }
-
-  // Required fields
-  if (!nombre || !email || !comparativa_id) {
-    return res.status(400).json({ error: 'Faltan campos requeridos' });
-  }
-
-  const pb = await getPocketBaseClient();
-
-  try {
-    const comp = await pb.collection('comparativas').getOne(comparativa_id) as ComparativasResponse;
-    if (comp.expira_en && new Date(comp.expira_en) < new Date()) {
-      return res.status(410).json({ error: 'Comparativa expirada' });
-    }
-
-    await pb.collection('interesados').create({
-      nombre: String(nombre),
-      email: String(email),
-      telefono: telefono ? String(telefono) : undefined,
-      mensaje: mensaje ? String(mensaje) : undefined,
-      comparativa_id,
-      unidad_id: comp.unidades_ids?.length === 1 ? comp.unidades_ids[0] : undefined,
-      origen: 'web',
-      estado: 'nuevo',
-      sync_status: 'pending',
-    });
-
-    return res.json({ ok: true, message: 'Gracias, te contactaremos pronto.' });
-  } catch (err) {
-    console.error('[api/leads/from-comparativa]', err);
-    return res.status(500).json({ error: 'Error interno' });
-  }
-});
-
-// ── /api/leads/from-unidad ────────────────────────────────────────────────────
-app.post('/api/leads/from-unidad', async (req, res) => {
-  const {
-    nombre,
-    email,
-    telefono,
-    mensaje,
-    unidad_id,
-    'cf-turnstile-response': turnstileToken,
-    website,
-  } = req.body ?? {};
-
-  if (website && String(website).length > 0) {
-    return res.json({ ok: true });
-  }
-  if (!turnstileToken || !(await verifyTurnstileToken(String(turnstileToken)))) {
-    return res.status(400).json({ error: 'Validación fallida' });
-  }
-  if (!nombre || !email || !unidad_id) {
-    return res.status(400).json({ error: 'Faltan campos requeridos' });
-  }
-
-  const pb = await getPocketBaseClient();
-  try {
-    const unidad = await pb.collection('unidades').getOne(unidad_id);
-    if (!unidad || unidad['web_visible'] === false) {
-      return res.status(404).json({ error: 'not_found' });
-    }
-
-    const barrioId = unidad['barrio_id'] as string | undefined;
-    if (barrioId) {
-      const barrio = await pb.collection('barrios').getOne(barrioId);
-      if (!barrio || barrio['publicado'] !== true) {
-        return res.status(404).json({ error: 'not_found' });
-      }
-    }
-
-    await pb.collection('interesados').create({
-      nombre: String(nombre),
-      email: String(email),
-      telefono: telefono ? String(telefono) : undefined,
-      mensaje: mensaje ? String(mensaje) : undefined,
-      unidad_id,
-      origen: 'web',
-      estado: 'nuevo',
-      sync_status: 'pending',
-    });
-
-    return res.json({ ok: true, message: 'Gracias, te contactaremos pronto.' });
-  } catch (err) {
-    console.error('[api/leads/from-unidad]', err);
-    return res.status(500).json({ error: 'Error interno' });
-  }
-});
+// ── /api/leads (genérico) + alias retrocompatibles ───────────────────────────
+app.post('/api/leads', postLeads);
+app.post('/api/leads/from-comparativa', postLeadsFromComparativa);
+app.post('/api/leads/from-unidad', postLeadsFromUnidad);
 
 // ── /api/comparativas/:token/pdf ─────────────────────────────────────────────
 app.get('/api/comparativas/:token/pdf', async (req, res) => {
@@ -211,7 +126,7 @@ app.get('/api/comparativas/:token/pdf', async (req, res) => {
         process.env['PB_INTERNAL_URL'] ??
         process.env['POCKETBASE_PUBLIC_URL'] ??
         process.env['POCKETBASE_URL'] ??
-        'http://localhost:8080';
+        'http://localhost:8090';
       const pdfUrl = `${pbUrl}/api/files/comparativas/${comp.id}/${comp.pdf_generado}`;
       const cached = await fetch(pdfUrl);
       if (cached.ok) {
@@ -302,6 +217,11 @@ app.get('/sitemap.xml', async (_req, res) => {
     <loc>${base}/</loc>
     <lastmod>${now}</lastmod>
     <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${base}/contacto</loc>
+    <lastmod>${now}</lastmod>
+    <priority>0.7</priority>
   </url>
 ${barrioUrls}
 ${loteUrls}
