@@ -1,8 +1,8 @@
 import { Component, inject, signal, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BarriosService, POCKETBASE, UnidadesService } from '@loteomanager/shared-pb-client';
-import { TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
+import { BarriosService, POCKETBASE, PublicacionService, barrioFromSnapshot, parseBarrioWebSnapshot, snapUnidadToUnidadesResponse } from '@loteomanager/shared-pb-client';
+import { isInUruguay, TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
 import type { BarriosResponse, UnidadesResponse } from '@loteomanager/shared-types';
 import { LandingTopbarComponent } from '../layout/landing-topbar/landing-topbar.component';
 import { LandingFooterComponent } from '../layout/landing-footer/landing-footer.component';
@@ -109,7 +109,7 @@ import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
           </section>
 
           <!-- Mapa -->
-          @if (mapLat() != null && mapLng() != null) {
+          @if (tieneMapa()) {
             <section class="mt-8 lg:mt-12">
               <h2 class="text-2xl font-semibold mb-6">Ubicación</h2>
               @if (barrio()!.ubicacion_texto) {
@@ -169,8 +169,8 @@ import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
 export class LoteDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private unidadesSvc = inject(UnidadesService);
   private barriosSvc = inject(BarriosService);
+  private publicacionSvc = inject(PublicacionService);
   private pb = inject(POCKETBASE);
 
   @ViewChild('lightbox') lightboxRef!: LightboxGaleriaComponent;
@@ -233,6 +233,12 @@ export class LoteDetailComponent implements OnInit {
     return this.barrio()?.lng ?? null;
   }
 
+  tieneMapa(): boolean {
+    const lat = this.mapLat();
+    const lng = this.mapLng();
+    return lat != null && lng != null && isInUruguay(lat, lng);
+  }
+
   extraStr(key: string): string | null {
     const extras = this.unidad()?.extras;
     if (!extras || typeof extras !== 'object') return null;
@@ -250,30 +256,27 @@ export class LoteDetailComponent implements OnInit {
 
     this.loading.set(true);
     try {
-      const u = await this.unidadesSvc.getAsync(id);
-      if (u.web_visible === false) {
+      const barrioId = await this.publicacionSvc.getBarrioIdOfUnidad(id);
+      if (!barrioId) {
         void this.router.navigate(['/404']);
         return;
       }
 
-      this.unidad.set(u);
-
-      if (!u.barrio_id) {
+      const b = await this.barriosSvc.getAsync(barrioId);
+      const snap = parseBarrioWebSnapshot(b.snapshot);
+      if (!b.publicado || !snap) {
         void this.router.navigate(['/404']);
         return;
       }
 
-      try {
-        const b = await this.barriosSvc.getAsync(u.barrio_id);
-        if (!b.publicado) {
-          void this.router.navigate(['/404']);
-          return;
-        }
-        this.barrio.set(b);
-      } catch {
+      const snapUnidad = snap.unidades.find((u) => u.id === id);
+      if (!snapUnidad) {
         void this.router.navigate(['/404']);
         return;
       }
+
+      this.barrio.set(barrioFromSnapshot(b, snap));
+      this.unidad.set(snapUnidadToUnidadesResponse(snapUnidad, barrioId));
     } catch {
       void this.router.navigate(['/404']);
     } finally {

@@ -41,6 +41,7 @@ export type IngresoPaso2BarrioDraft = {
   imagenFile: File | null;
   lat?: number | null;
   lng?: number | null;
+  ubicacion_texto?: string;
 };
 
 export type IngresoFormMode = 'nuevo' | 'editando' | 'desde_plantilla';

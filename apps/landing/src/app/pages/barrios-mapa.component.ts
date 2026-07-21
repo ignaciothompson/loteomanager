@@ -1,9 +1,10 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { BarriosService, POCKETBASE, type BarrioConCatalogo } from '@loteomanager/shared-pb-client';
+import { BarriosService, POCKETBASE, type BarrioConCatalogo, attachCatalogStatsFromSnapshots, isBarrioWebReady } from '@loteomanager/shared-pb-client';
 import { LandingTopbarComponent } from '../layout/landing-topbar/landing-topbar.component';
 import { LandingMapaComponent, type MapaMarcador } from '../components/landing-mapa/landing-mapa.component';
+import { isInUruguay } from '@loteomanager/shared-utils';
 import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
 
 @Component({
@@ -98,7 +99,7 @@ export class BarriosMapaComponent implements OnInit {
   readonly seleccionado = signal<BarrioConCatalogo | null>(null);
 
   readonly conUbicacion = computed(() =>
-    this.barrios().filter((b) => b.lat != null && b.lng != null),
+    this.barrios().filter((b) => isInUruguay(b.lat, b.lng)),
   );
 
   readonly marcadores = computed((): MapaMarcador[] =>
@@ -136,7 +137,7 @@ export class BarriosMapaComponent implements OnInit {
       const rows = await this.barriosSvc.listFiltered({ soloPublicados: true }, null, {
         sort: 'nombre',
       });
-      const withStats = await this.barriosSvc.attachCatalogStats(rows);
+      const withStats = attachCatalogStatsFromSnapshots(rows.filter(isBarrioWebReady));
       this.barrios.set(withStats);
 
       const slug = this.route.snapshot.queryParamMap.get('barrio');

@@ -1,0 +1,33 @@
+<div class="ingreso-geo-picker flex flex-col gap-2">
+  <label class="lm-field-label" for="ingreso-geo-search">Buscar dirección</label>
+  <p-autoComplete
+    inputId="ingreso-geo-search"
+    [ngModel]="query()"
+    (ngModelChange)="onQueryChange($event)"
+    [suggestions]="suggestions()"
+    (completeMethod)="onSearch($event)"
+    (onSelect)="onSelect($event)"
+    field="label"
+    [dropdown]="false"
+    [forceSelection]="false"
+    [minLength]="3"
+    placeholder="Ej. La Barra, Maldonado"
+    styleClass="w-full"
+    inputStyleClass="w-full"
+    [showEmptyMessage]="true"
+    emptyMessage="Sin resultados en Uruguay"
+  />
+  <p class="m-0 text-sm text-muted-color">
+    Escribí una dirección o hacé clic / arrastrá el marcador en el mapa (solo Uruguay).
+  </p>
+
+  <div #mapEl class="ingreso-geo-picker__map rounded-border"></div>
+
+  @if (pickedLat() != null && pickedLng() != null) {
+    <p class="m-0 text-sm">
+      {{ pickedLat()! | number: '1.4-6' }}, {{ pickedLng()! | number: '1.4-6' }}
+    </p>
+  } @else {
+    <p class="m-0 text-sm text-muted-color">Sin ubicación seleccionada</p>
+  }
+</div>

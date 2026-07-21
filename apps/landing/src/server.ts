@@ -267,9 +267,10 @@ app.get('/sitemap.xml', async (_req, res) => {
     const pb = await getPocketBaseClient();
     const barrios = await pb.collection('barrios').getFullList({
       filter: 'publicado = true',
-      fields: 'id,slug,updated',
+      fields: 'id,slug,updated,snapshot',
     });
-    barrioUrls = barrios
+    const withSnap = barrios.filter((b) => b['snapshot'] != null);
+    barrioUrls = withSnap
       .map((b) => `  <url>
     <loc>${base}/barrios/${b['slug']}</loc>
     <lastmod>${now}</lastmod>
@@ -277,21 +278,19 @@ app.get('/sitemap.xml', async (_req, res) => {
   </url>`)
       .join('\n');
 
-    const barrioIds = barrios.map((b) => b.id);
-    if (barrioIds.length) {
-      const barrioFilter = barrioIds.map((id) => `barrio_id="${id}"`).join(' || ');
-      const unidades = await pb.collection('unidades').getFullList({
-        filter: `(${barrioFilter}) && web_visible = true`,
-        fields: 'id,updated',
-      });
-      loteUrls = unidades
-        .map((u) => `  <url>
+    const loteLocs: string[] = [];
+    for (const b of withSnap) {
+      const snap = b['snapshot'] as { unidades?: Array<{ id: string }> } | null;
+      for (const u of snap?.unidades ?? []) {
+        if (!u?.id) continue;
+        loteLocs.push(`  <url>
     <loc>${base}/lotes/${u.id}</loc>
     <lastmod>${now}</lastmod>
     <priority>0.6</priority>
-  </url>`)
-        .join('\n');
+  </url>`);
+      }
     }
+    loteUrls = loteLocs.join('\n');
   } catch (err) {
     console.error('[sitemap.xml]', err);
   }
