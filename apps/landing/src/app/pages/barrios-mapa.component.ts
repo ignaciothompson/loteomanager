@@ -6,6 +6,7 @@ import { LandingTopbarComponent } from '../layout/landing-topbar/landing-topbar.
 import { LandingMapaComponent, type MapaMarcador } from '../components/landing-mapa/landing-mapa.component';
 import { isInUruguay } from '@loteomanager/shared-utils';
 import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
+import { PLACEHOLDER_BARRIO_URL } from '../utils/placeholder-images';
 
 @Component({
   selector: 'app-barrios-mapa',
@@ -40,14 +41,8 @@ import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
                      [class.dark:border-surface-700]="seleccionado()?.id !== b.id"
                      [class.hover:shadow-soft]="seleccionado()?.id !== b.id"
                      (mouseenter)="hoverBarrio(b)">
-                    @if (thumbUrl(b); as thumb) {
-                      <img [src]="thumb" [alt]="b.nombre"
-                           class="w-16 h-16 rounded-xl object-cover shrink-0" loading="lazy" />
-                    } @else {
-                      <div class="w-16 h-16 rounded-xl bg-surface-200 dark:bg-surface-700 flex items-center justify-center shrink-0">
-                        <i class="pi pi-image text-surface-400"></i>
-                      </div>
-                    }
+                    <img [src]="thumbUrl(b)" [alt]="b.nombre"
+                         class="w-16 h-16 rounded-xl object-cover shrink-0" loading="lazy" />
                     <div class="min-w-0">
                       <h4 class="font-bold text-sm text-surface-900 dark:text-surface-0 truncate">{{ b.nombre }}</h4>
                       @if (b.ubicacion_texto) {
@@ -118,8 +113,8 @@ export class BarriosMapaComponent implements OnInit {
     this.seleccionado.set(b);
   }
 
-  thumbUrl(b: BarrioConCatalogo): string | null {
-    if (!b.imagen_portada) return null;
+  thumbUrl(b: BarrioConCatalogo): string {
+    if (!b.imagen_portada) return PLACEHOLDER_BARRIO_URL;
     return this.pb.files.getURL(b, b.imagen_portada);
   }
 

@@ -44,7 +44,10 @@ export class InteresadosComponent {
   private messageService = inject(MessageService);
   private definicionesCache = inject(DefinicionesCacheService);
 
-  interesados = this.interesadosService.list();
+  interesados = this.interesadosService.list(undefined, {
+    expand: 'barrio_id,unidad_id,comparativa_id',
+    sort: '-created',
+  });
 
   displayDialog = signal(false);
   isEdit = signal(false);
@@ -72,6 +75,31 @@ export class InteresadosComponent {
   });
 
   hasActiveFilters = computed(() => !!this.filterNombre().trim() || !!this.filterEstado());
+
+  contextoLabel(interesado: InteresadosResponse): string {
+    const expand = (interesado as InteresadosResponse & {
+      expand?: {
+        comparativa_id?: { titulo?: string; id?: string };
+        unidad_id?: { codigo?: string; codigo_interno?: string; id?: string };
+        barrio_id?: { nombre?: string; id?: string };
+      };
+    }).expand;
+
+    if (interesado.comparativa_id) {
+      const titulo = expand?.comparativa_id?.titulo;
+      return titulo ? `Comparativa: ${titulo}` : 'Comparativa';
+    }
+    if (interesado.unidad_id) {
+      const codigo =
+        expand?.unidad_id?.codigo_interno || expand?.unidad_id?.codigo;
+      return codigo ? `Unidad: ${codigo}` : 'Unidad';
+    }
+    if (interesado.barrio_id) {
+      const nombre = expand?.barrio_id?.nombre;
+      return nombre ? `Barrio: ${nombre}` : 'Barrio';
+    }
+    return 'Contacto general';
+  }
 
   clearFilters(): void {
     this.filterNombre.set('');

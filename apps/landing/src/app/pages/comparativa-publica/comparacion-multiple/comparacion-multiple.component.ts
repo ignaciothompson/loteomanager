@@ -6,7 +6,7 @@ import { LandingTopbarComponent } from '../../../layout/landing-topbar/landing-t
 import { LandingFooterComponent } from '../../../layout/landing-footer/landing-footer.component';
 import { SanitizeHtmlPipe } from '../../../pipes/sanitize-html.pipe';
 import { LandingMapaComponent } from '../../../components/landing-mapa/landing-mapa.component';
-import { ContactarFabComponent } from '../../../components/contactar-fab/contactar-fab.component';
+import { ContactoFabComponent } from '../../../components/contacto-fab/contacto-fab.component';
 import { DescargarPdfFabComponent } from '../../../components/descargar-pdf-fab/descargar-pdf-fab.component';
 
 interface FilaComparativa {
@@ -24,7 +24,7 @@ interface FilaComparativa {
     LandingFooterComponent,
     SanitizeHtmlPipe,
     LandingMapaComponent,
-    ContactarFabComponent,
+    ContactoFabComponent,
     DescargarPdfFabComponent,
   ],
   template: `
@@ -152,7 +152,7 @@ interface FilaComparativa {
       <landing-footer />
 
       @if (!pdfMode) {
-        <contactar-fab [comparativaId]="comparativa.id" />
+        <contacto-fab [comparativaId]="comparativa.id" />
         <descargar-pdf-fab [token]="token" />
       }
     </div>

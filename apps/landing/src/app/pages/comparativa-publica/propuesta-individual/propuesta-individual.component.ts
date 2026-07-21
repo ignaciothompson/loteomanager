@@ -8,7 +8,7 @@ import { DatoCardComponent } from '../../../components/dato-card/dato-card.compo
 import { LightboxGaleriaComponent } from '../../../components/lightbox-galeria/lightbox-galeria.component';
 import { SanitizeHtmlPipe } from '../../../pipes/sanitize-html.pipe';
 import { LandingMapaComponent } from '../../../components/landing-mapa/landing-mapa.component';
-import { ContactarFabComponent } from '../../../components/contactar-fab/contactar-fab.component';
+import { ContactoFabComponent } from '../../../components/contacto-fab/contacto-fab.component';
 import { DescargarPdfFabComponent } from '../../../components/descargar-pdf-fab/descargar-pdf-fab.component';
 
 @Component({
@@ -22,7 +22,7 @@ import { DescargarPdfFabComponent } from '../../../components/descargar-pdf-fab/
     LightboxGaleriaComponent,
     SanitizeHtmlPipe,
     LandingMapaComponent,
-    ContactarFabComponent,
+    ContactoFabComponent,
     DescargarPdfFabComponent,
   ],
   template: `
@@ -144,7 +144,10 @@ import { DescargarPdfFabComponent } from '../../../components/descargar-pdf-fab/
       <landing-footer />
 
       @if (!pdfMode) {
-        <contactar-fab [comparativaId]="comparativa.id" />
+        <contacto-fab
+          [comparativaId]="comparativa.id"
+          [unidadId]="unidad.id"
+        />
         <descargar-pdf-fab [token]="token" />
       }
 
