@@ -1,0 +1,7 @@
+@use 'tailwindcss';
+@use 'primeicons/primeicons.css';
+
+@plugin 'tailwindcss-primeui';
+
+/* Landing dark mode uses .dark class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));

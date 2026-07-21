@@ -1,0 +1,26 @@
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  /* Salvia — no tiene equivalente semántico en PrimeNG */
+  --color-sage-50: #F4F6F1;
+  --color-sage-100: #E6EBDD;
+  --color-sage-200: #CDD8BC;
+  --color-sage-300: #B0C298;
+  --color-sage-400: #92AB78;
+  --color-sage-500: #75925C;
+  --color-sage-600: #5D7548;
+  --color-sage-700: #485A38;
+  --color-sage-800: #354229;
+  --color-sage-900: #26301E;
+  --color-sage-950: #171D12;
+
+  /* Fondo cálido stitch — no depende solo de PrimeNG runtime */
+  --color-surface-warm: #fff8f4;
+  --color-warning: #D89B3C;
+  --color-error: #C93B3B;
+  --color-info: #4A7C8C;
+
+  /* Sombras cálidas */
+  --shadow-soft: 0 4px 16px -4px rgba(43, 39, 35, 0.10);
+  --shadow-soft-lg: 0 16px 40px -12px rgba(43, 39, 35, 0.18);
+}

@@ -1,0 +1,13 @@
+.ingreso-geo-picker__map {
+  height: 18rem;
+  width: 100%;
+  min-height: 16rem;
+}
+
+:host ::ng-deep .p-autocomplete {
+  width: 100%;
+}
+
+:host ::ng-deep .p-autocomplete-input {
+  width: 100%;
+}

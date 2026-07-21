@@ -1,0 +1,18 @@
+html {
+  background-color: #fff8f4;
+  @apply font-sans antialiased dark:bg-surface-900;
+}
+
+body {
+  background-color: inherit;
+  min-height: 100%;
+  @apply text-surface-900 dark:bg-surface-900 dark:text-surface-0;
+}
+
+/* Fallback explícito — Tailwind lazy chunks + opacity */
+.bg-surface-warm {
+  background-color: #fff8f4;
+}
+.bg-surface-warm\/90 {
+  background-color: color-mix(in srgb, #fff8f4 90%, transparent);
+}

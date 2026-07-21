@@ -5,6 +5,7 @@ import {
   inject,
   input,
   model,
+  output,
   signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -27,6 +28,10 @@ import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { TabsModule } from 'primeng/tabs';
 import { TableModule } from 'primeng/table';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 export type BarrioVerAgruparPor = 'none' | 'precio' | 'tamano' | 'orientacion' | 'estado';
 
@@ -57,21 +62,31 @@ const AGRUPAR_OPTS: { label: string; value: BarrioVerAgruparPor }[] = [
     SelectModule,
     TabsModule,
     TableModule,
-    EstadoBadgeComponent
+    TooltipModule,
+    EstadoBadgeComponent,
+    ConfirmDialogModule,
+    ToastModule
   ],
+  providers: [ConfirmationService, MessageService],
   templateUrl: './barrio-ver-dialog.component.html',
   styleUrl: './barrio-ver-dialog.component.css'
 })
 export class BarrioVerDialogComponent {
   visible = model(false);
   barrioId = input<string | null>(null);
+  deleted = output<void>();
+  unidadesChanged = output<void>();
 
   private barriosSvc = inject(BarriosService);
   private unidadesSvc = inject(UnidadesService);
   private estadosSvc = inject(EstadosDefinicionesService);
   private router = inject(Router);
+  private confirmationSvc = inject(ConfirmationService);
+  private messages = inject(MessageService);
 
   readonly loading = signal(false);
+  readonly deleting = signal(false);
+  readonly deletingUnidadId = signal<string | null>(null);
   readonly barrio = signal<BarriosResponse | null>(null);
   readonly unidades = signal<UnidadesResponse[]>([]);
   readonly activeTipo = model<TipoUnidadIngreso | null>(null);
@@ -196,6 +211,97 @@ export class BarrioVerDialogComponent {
     if (!id) return;
     this.visible.set(false);
     void this.router.navigate(['/barrios', id]);
+  }
+
+  confirmarEliminarUnidad(unidad: UnidadesResponse): void {
+    if (this.deleting() || this.deletingUnidadId()) return;
+
+    const codigo = this.unidadCodigo(unidad);
+    this.confirmationSvc.confirm({
+      message: `¿Eliminar la unidad "${codigo}"? Esta acción no se puede deshacer.`,
+      header: 'Eliminar unidad',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => void this.ejecutarEliminarUnidad(unidad)
+    });
+  }
+
+  private async ejecutarEliminarUnidad(unidad: UnidadesResponse): Promise<void> {
+    if (this.deletingUnidadId()) return;
+    this.deletingUnidadId.set(unidad.id);
+    try {
+      await this.unidadesSvc.delete(unidad.id);
+      this.unidades.update((list) => list.filter((u) => u.id !== unidad.id));
+      this.messages.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `Unidad "${this.unidadCodigo(unidad)}" eliminada`
+      });
+      this.unidadesChanged.emit();
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo eliminar la unidad. Puede estar vinculada a comparativas u otros datos.';
+      this.messages.add({ severity: 'error', summary: 'Error', detail: msg });
+    } finally {
+      this.deletingUnidadId.set(null);
+    }
+  }
+
+  isDeletingUnidad(unidadId: string): boolean {
+    return this.deletingUnidadId() === unidadId;
+  }
+
+  confirmarEliminar(): void {
+    const barrio = this.barrio();
+    if (!barrio || this.deleting()) return;
+
+    const n = this.unidades().length;
+    const unidadesMsg =
+      n === 0
+        ? 'No tiene unidades cargadas.'
+        : n === 1
+          ? 'Se eliminará también 1 unidad.'
+          : `Se eliminarán también las ${n} unidades.`;
+
+    this.confirmationSvc.confirm({
+      message: `¿Eliminar el barrio "${barrio.nombre}"? ${unidadesMsg} También se borran plantillas y asignaciones de vendedores. Esta acción no se puede deshacer.`,
+      header: 'Eliminar barrio',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => void this.ejecutarEliminar(barrio.id, barrio.nombre)
+    });
+  }
+
+  private async ejecutarEliminar(id: string, nombre: string): Promise<void> {
+    if (this.deleting()) return;
+    this.deleting.set(true);
+    try {
+      const { unidades, plantillas } = await this.barriosSvc.deleteConDependencias(id);
+      this.messages.add({
+        severity: 'success',
+        summary: 'Barrio eliminado',
+        detail:
+          unidades || plantillas
+            ? `"${nombre}" eliminado (${unidades} unidad(es), ${plantillas} plantilla(s)).`
+            : `"${nombre}" eliminado.`
+      });
+      this.visible.set(false);
+      this.deleted.emit();
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo eliminar el barrio. Puede haber comparativas u otros datos vinculados a sus unidades.';
+      this.messages.add({ severity: 'error', summary: 'Error', detail: msg });
+    } finally {
+      this.deleting.set(false);
+    }
   }
 
   toggleGrupo(key: string): void {

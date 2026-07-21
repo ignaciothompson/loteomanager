@@ -138,7 +138,7 @@ export type AuditLogRecord<Tafter = unknown, Tbefore = unknown> = {
 
 export type TipoUnidadIngreso = 'lote_vacio' | 'casa_construida' | 'casa_prefabricada'
 
-export type BarriosRecord<Textras = unknown> = {
+export type BarriosRecord<Textras = unknown, Tsnapshot = unknown> = {
 	descripcion?: HTMLString
 	destacado?: boolean
 	extras?: null | Textras
@@ -148,7 +148,10 @@ export type BarriosRecord<Textras = unknown> = {
 	lng?: number
 	nombre: string
 	plano_general?: FileNameString
+	publicado?: boolean
+	publicado_at?: IsoDateString
 	slug: string
+	snapshot?: null | Tsnapshot
 	tipos_unidad?: TipoUnidadIngreso[]
 	ubicacion_texto?: string
 	zona?: string
@@ -519,7 +522,7 @@ export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemF
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
 export type ArquitectosResponse<Texpand = unknown> = Required<ArquitectosRecord> & BaseSystemFields<Texpand>
 export type AuditLogResponse<Tafter = unknown, Tbefore = unknown, Texpand = unknown> = Required<AuditLogRecord<Tafter, Tbefore>> & BaseSystemFields<Texpand>
-export type BarriosResponse<Textras = unknown, Texpand = unknown> = Required<BarriosRecord<Textras>> & BaseSystemFields<Texpand>
+export type BarriosResponse<Textras = unknown, Texpand = unknown, Tsnapshot = unknown> = Required<BarriosRecord<Textras, Tsnapshot>> & BaseSystemFields<Texpand>
 export type ComparativaVistasResponse<Texpand = unknown> = Required<ComparativaVistasRecord> & BaseSystemFields<Texpand>
 export type ComparativasResponse<Tcontenido_snapshot = unknown, Texpand = unknown> = Required<ComparativasRecord<Tcontenido_snapshot>> & BaseSystemFields<Texpand>
 export type ConfigResponse<Texpand = unknown> = Required<ConfigRecord> & BaseSystemFields<Texpand>

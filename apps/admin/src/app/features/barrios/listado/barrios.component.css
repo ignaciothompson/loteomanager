@@ -44,20 +44,25 @@
   padding: 0;
 }
 
-:host .default-height > .barrios-list-panel--toolbar {
+:host .default-height > .card.barrios-list-panel--table {
+  min-height: calc(100vh - 280px);
+  max-height: calc(100vh - 280px);
+}
+
+:host .default-height > .card.barrios-list-panel--cards {
   flex: 0 0 auto;
   min-height: auto;
   max-height: none;
+  overflow: visible;
   margin-bottom: 0.75rem;
 }
 
 :host .default-height > .barrios-cards-viewport {
   flex: 1 1 auto;
   min-height: 0;
-  max-height: var(--default-height-viewport, calc(100vh - 200px));
   overflow-y: auto;
-  padding: 0.25rem 0 1rem;
-  margin-bottom: 0;
+  padding: 0 0 1rem;
+  background: transparent;
 }
 
 .barrios-cards {

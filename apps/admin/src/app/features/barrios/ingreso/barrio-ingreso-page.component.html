@@ -1,5 +1,6 @@
 <div class="default-height barrio-ingreso-page">
     <p-toast />
+    <p-confirmDialog />
 
     @if (loading()) {
         <div class="card flex justify-center py-8">
@@ -84,6 +85,9 @@
                                     class="w-full"
                                     appendTo="body"
                                     display="chip"
+                                    [autofocusFilter]="false"
+                                    [resetFilterOnHide]="true"
+                                    (onPanelHide)="onTiposMultiselectHide()"
                                 />
                             </div>
                             <div class="lm-field lg:col-span-2">
@@ -113,19 +117,37 @@
                                 </div>
                             </div>
                             <div class="lm-field">
-                                <label class="lm-field-label">Geolocalización</label>
-                                <div class="flex flex-col gap-2">
-                                    <button
-                                        pButton
-                                        type="button"
-                                        icon="pi pi-map-marker"
-                                        label="Seleccionar en mapa"
-                                        class="p-button-outlined"
-                                        (click)="geoDialogVisible.set(true)"
-                                    ></button>
-                                    <span class="lm-hint">{{ geoLabel() }}</span>
-                                </div>
+                                <label for="ingreso-ubicacion-texto" class="lm-field-label">Ubicación (texto)</label>
+                                <input
+                                    pInputText
+                                    id="ingreso-ubicacion-texto"
+                                    class="w-full"
+                                    [ngModel]="barrioDraft().ubicacion_texto ?? ''"
+                                    (ngModelChange)="barrioDraft.update((d) => ({ ...d, ubicacion_texto: $event }))"
+                                    [ngModelOptions]="{ standalone: true }"
+                                    placeholder="Se completa al buscar o al marcar en el mapa"
+                                />
                             </div>
+                            <div class="lm-field">
+                                <label class="lm-field-label">Geolocalización</label>
+                                <app-ingreso-geo-picker
+                                    [lat]="barrioDraft().lat ?? null"
+                                    [lng]="barrioDraft().lng ?? null"
+                                    [ubicacionTexto]="barrioDraft().ubicacion_texto ?? ''"
+                                    (locationChange)="onGeoLocationChange($event)"
+                                />
+                            </div>
+                            @if (puedePublicarWeb()) {
+                                <div class="lm-field">
+                                    <label for="ingreso-publicado" class="lm-field-label">Publicado en la web</label>
+                                    <p-toggleswitch
+                                        inputId="ingreso-publicado"
+                                        [ngModel]="publicadoWeb()"
+                                        (ngModelChange)="publicadoWeb.set($event)"
+                                        [ngModelOptions]="{ standalone: true }"
+                                    />
+                                </div>
+                            }
                         </div>
                     }
                     @case ('extras') {
@@ -161,7 +183,6 @@
                     [usandoPlantilla]="usandoPlantilla()"
                     [(unidadForm)]="unidadForm"
                     [estadoOpts]="estadoOpts()"
-                    [disabled]="!barrioGuardado()"
                 >
                     <div formActions class="flex flex-wrap justify-end gap-2">
                         <button
@@ -170,7 +191,7 @@
                             [label]="usandoPlantilla() ? 'Limpiar' : 'Cancelar'"
                             [icon]="usandoPlantilla() ? 'pi pi-eraser' : 'pi pi-times'"
                             class="p-button-text"
-                            [disabled]="!barrioGuardado() || savingUnidad() || savingPlantilla()"
+                            [disabled]="savingUnidad() || savingPlantilla() || savingBarrio()"
                             (click)="cancelarForm()"
                         ></button>
                         @if (!usandoPlantilla()) {
@@ -181,8 +202,20 @@
                                 icon="pi pi-bookmark"
                                 class="p-button-outlined"
                                 [loading]="savingPlantilla()"
-                                [disabled]="!barrioGuardado() || savingPlantilla() || savingUnidad()"
+                                [disabled]="savingPlantilla() || savingUnidad() || deletingPlantilla() || savingBarrio()"
                                 (click)="abrirDialogPlantilla()"
+                            ></button>
+                        }
+                        @if (selectedPlantillaId()) {
+                            <button
+                                pButton
+                                type="button"
+                                label="Eliminar plantilla"
+                                icon="pi pi-trash"
+                                class="p-button-outlined p-button-danger"
+                                [loading]="deletingPlantilla()"
+                                [disabled]="savingUnidad() || savingPlantilla() || deletingPlantilla() || savingBarrio()"
+                                (click)="confirmarEliminarPlantilla()"
                             ></button>
                         }
                         <button
@@ -191,7 +224,7 @@
                             label="Guardar unidad"
                             icon="pi pi-check"
                             [loading]="savingUnidad()"
-                            [disabled]="!barrioGuardado() || savingUnidad() || savingPlantilla()"
+                            [disabled]="savingUnidad() || savingPlantilla() || savingBarrio()"
                             (click)="guardarUnidad()"
                         ></button>
                     </div>
@@ -213,12 +246,6 @@
             </div>
         </div>
 
-        <app-ingreso-geo-dialog
-            [(visible)]="geoDialogVisible"
-            [lat]="barrioDraft().lat ?? null"
-            [lng]="barrioDraft().lng ?? null"
-            (confirm)="onGeoConfirm($event)"
-        />
         <app-ingreso-imagenes-dialog
             [(visible)]="imagenesDialogVisible"
             [barrio]="barrio()"

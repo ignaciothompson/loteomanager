@@ -226,6 +226,20 @@ onRecordUpdateRequest((e) => {
   e.next();
 }, "unidades");
 
+// ─── HOOK 3c — pendiente_publicar CENTRALIZADO ───────────────────────────────
+
+onRecordCreateRequest((e) => {
+  const lm = require(__hooks + "/lm_unidades_pendiente.js");
+  lm.lmForcePendientePublicar(e, true);
+  e.next();
+}, "unidades");
+
+onRecordUpdateRequest((e) => {
+  const lm = require(__hooks + "/lm_unidades_pendiente.js");
+  lm.lmForcePendientePublicar(e, false);
+  e.next();
+}, "unidades");
+
 // ─── HOOK 4 — DUPLICADOS EN INTERESADOS ──────────────────────────────────────
 
 onRecordCreateRequest((e) => {

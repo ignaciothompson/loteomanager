@@ -135,6 +135,61 @@ app.post('/api/leads/from-comparativa', async (req, res) => {
   }
 });
 
+// ── /api/leads/from-unidad ────────────────────────────────────────────────────
+app.post('/api/leads/from-unidad', async (req, res) => {
+  const {
+    nombre,
+    email,
+    telefono,
+    mensaje,
+    unidad_id,
+    'cf-turnstile-response': turnstileToken,
+    website,
+  } = req.body ?? {};
+
+  if (website && String(website).length > 0) {
+    return res.json({ ok: true });
+  }
+  if (!turnstileToken || !(await verifyTurnstileToken(String(turnstileToken)))) {
+    return res.status(400).json({ error: 'Validación fallida' });
+  }
+  if (!nombre || !email || !unidad_id) {
+    return res.status(400).json({ error: 'Faltan campos requeridos' });
+  }
+
+  const pb = await getPocketBaseClient();
+  try {
+    const unidad = await pb.collection('unidades').getOne(unidad_id);
+    if (!unidad || unidad['web_visible'] === false) {
+      return res.status(404).json({ error: 'not_found' });
+    }
+
+    const barrioId = unidad['barrio_id'] as string | undefined;
+    if (barrioId) {
+      const barrio = await pb.collection('barrios').getOne(barrioId);
+      if (!barrio || barrio['publicado'] !== true) {
+        return res.status(404).json({ error: 'not_found' });
+      }
+    }
+
+    await pb.collection('interesados').create({
+      nombre: String(nombre),
+      email: String(email),
+      telefono: telefono ? String(telefono) : undefined,
+      mensaje: mensaje ? String(mensaje) : undefined,
+      unidad_id,
+      origen: 'web',
+      estado: 'nuevo',
+      sync_status: 'pending',
+    });
+
+    return res.json({ ok: true, message: 'Gracias, te contactaremos pronto.' });
+  } catch (err) {
+    console.error('[api/leads/from-unidad]', err);
+    return res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 // ── /api/comparativas/:token/pdf ─────────────────────────────────────────────
 app.get('/api/comparativas/:token/pdf', async (req, res) => {
   const { token } = req.params;
@@ -201,16 +256,55 @@ app.get('/api/comparativas/:token/pdf', async (req, res) => {
 });
 
 // ── /sitemap.xml ─────────────────────────────────────────────────────────────
-app.get('/sitemap.xml', (_req, res) => {
+app.get('/sitemap.xml', async (_req, res) => {
   const base = process.env['PUBLIC_BASE_URL'] ?? 'https://loteomanager.com';
+  const now = new Date().toISOString();
+
+  let barrioUrls = '';
+  let loteUrls = '';
+
+  try {
+    const pb = await getPocketBaseClient();
+    const barrios = await pb.collection('barrios').getFullList({
+      filter: 'publicado = true',
+      fields: 'id,slug,updated,snapshot',
+    });
+    const withSnap = barrios.filter((b) => b['snapshot'] != null);
+    barrioUrls = withSnap
+      .map((b) => `  <url>
+    <loc>${base}/barrios/${b['slug']}</loc>
+    <lastmod>${now}</lastmod>
+    <priority>0.8</priority>
+  </url>`)
+      .join('\n');
+
+    const loteLocs: string[] = [];
+    for (const b of withSnap) {
+      const snap = b['snapshot'] as { unidades?: Array<{ id: string }> } | null;
+      for (const u of snap?.unidades ?? []) {
+        if (!u?.id) continue;
+        loteLocs.push(`  <url>
+    <loc>${base}/lotes/${u.id}</loc>
+    <lastmod>${now}</lastmod>
+    <priority>0.6</priority>
+  </url>`);
+      }
+    }
+    loteUrls = loteLocs.join('\n');
+  } catch (err) {
+    console.error('[sitemap.xml]', err);
+  }
+
   res.type('text/xml');
   res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${base}/</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
+    <lastmod>${now}</lastmod>
     <priority>1.0</priority>
   </url>
+${barrioUrls}
+${loteUrls}
 </urlset>`);
 });
 
