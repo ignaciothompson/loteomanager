@@ -142,6 +142,16 @@ export class AppMenu {
                                 label: 'Zonas',
                                 icon: 'pi pi-fw pi-map',
                                 routerLink: ['/config/zonas']
+                            },
+                            {
+                                label: 'Extras',
+                                icon: 'pi pi-fw pi-list',
+                                routerLink: ['/config/extras']
+                            },
+                            {
+                                label: 'Estados',
+                                icon: 'pi pi-fw pi-flag',
+                                routerLink: ['/config/estados']
                             }
                         ]
                     }
