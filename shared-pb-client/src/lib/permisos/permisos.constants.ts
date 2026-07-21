@@ -68,6 +68,8 @@ export const PERMISOS_POR_ROL: Record<Role, Permiso[]> = {
     'arquitectos.read',
     'config.read',
     'zonas.manage',
+    'extras.crud',
+    'estados.crud',
     'seguimiento.view',
     'seguimiento.manage',
     'importador.use',

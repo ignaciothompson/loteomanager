@@ -70,13 +70,13 @@ export const appRoutes: Routes = [
             },
             {
                 path: 'config/extras',
-                canActivate: [authGuard, permisoGuard('config.update')],
+                canActivate: [authGuard, permisoGuard('extras.crud')],
                 loadComponent: () => import('./app/features/admin/extras/extras-admin.component').then(m => m.ExtrasAdminComponent),
                 data: { title: 'Extras' }
             },
             {
                 path: 'config/estados',
-                canActivate: [authGuard, permisoGuard('config.update')],
+                canActivate: [authGuard, permisoGuard('estados.crud')],
                 loadComponent: () => import('./app/features/admin/estados/estados-admin.component').then(m => m.EstadosAdminComponent),
                 data: { title: 'Estados' }
             },
