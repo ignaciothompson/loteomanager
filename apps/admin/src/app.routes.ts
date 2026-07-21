@@ -32,6 +32,15 @@ export const appRoutes: Routes = [
                 data: { title: 'Ingreso barrio' }
             },
             {
+                path: 'actualizacion-web',
+                canActivate: [authGuard, permisoGuard('web.publish')],
+                loadComponent: () =>
+                    import('./app/features/actualizacion-web/actualizacion-web.component').then(
+                        (m) => m.ActualizacionWebComponent
+                    ),
+                data: { title: 'Actualización web' }
+            },
+            {
                 path: 'lotes',
                 redirectTo: 'barrios',
                 pathMatch: 'full'

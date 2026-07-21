@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { BarriosService, POCKETBASE, type BarrioConCatalogo } from '@loteomanager/shared-pb-client';
+import { BarriosService, POCKETBASE, type BarrioConCatalogo, attachCatalogStatsFromSnapshots, isBarrioWebReady } from '@loteomanager/shared-pb-client';
 import { LandingTopbarComponent } from '../layout/landing-topbar/landing-topbar.component';
 import { LandingFooterComponent } from '../layout/landing-footer/landing-footer.component';
 import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
@@ -179,7 +179,7 @@ export class BarriosComponent implements OnInit {
       const rows = await this.barriosSvc.listFiltered({ soloPublicados: true }, null, {
         sort: 'nombre',
       });
-      this.barrios.set(await this.barriosSvc.attachCatalogStats(rows));
+      this.barrios.set(attachCatalogStatsFromSnapshots(rows.filter(isBarrioWebReady)));
     } finally {
       this.loading.set(false);
     }

@@ -1,8 +1,8 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { BarriosService, POCKETBASE, UnidadesService } from '@loteomanager/shared-pb-client';
-import { TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
+import { BarriosService, POCKETBASE, barrioFromSnapshot, parseBarrioWebSnapshot, snapUnidadToUnidadesResponse } from '@loteomanager/shared-pb-client';
+import { isInUruguay, TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
 import type { BarriosResponse, TipoUnidadIngreso, UnidadesResponse } from '@loteomanager/shared-types';
 import { LandingTopbarComponent } from '../layout/landing-topbar/landing-topbar.component';
 import { LandingFooterComponent } from '../layout/landing-footer/landing-footer.component';
@@ -57,7 +57,7 @@ type UnidadGrupo = {
                   </div>
                 }
               </div>
-              @if (barrio()!.lat != null && barrio()!.lng != null) {
+              @if (tieneMapa()) {
                 <div class="rounded-2xl overflow-hidden h-[280px] border border-surface-200 dark:border-surface-700">
                   @defer (on viewport) {
                     <landing-mapa [lat]="barrio()!.lat!" [lng]="barrio()!.lng!"
@@ -182,7 +182,6 @@ export class BarrioDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private barriosSvc = inject(BarriosService);
-  private unidadesSvc = inject(UnidadesService);
   private pb = inject(POCKETBASE);
 
   readonly loading = signal(true);
@@ -247,6 +246,11 @@ export class BarrioDetailComponent implements OnInit {
     return this.pb.files.getURL(b, b.plano_general);
   }
 
+  tieneMapa(): boolean {
+    const b = this.barrio();
+    return b != null && b.lat != null && b.lng != null && isInUruguay(b.lat, b.lng);
+  }
+
   private async load(): Promise<void> {
     const slug = this.route.snapshot.paramMap.get('slug');
     if (!slug) {
@@ -257,17 +261,16 @@ export class BarrioDetailComponent implements OnInit {
     this.loading.set(true);
     try {
       const found = await this.barriosSvc.getBySlug(slug);
-      if (!found || !found.publicado) {
+      const snap = found ? parseBarrioWebSnapshot(found.snapshot) : null;
+      if (!found || !found.publicado || !snap) {
         void this.router.navigate(['/404']);
         return;
       }
 
-      this.barrio.set(found);
-      const units = await this.unidadesSvc.listByBarrios(
-        [found.id],
-        'web_visible = true && estado = "disponible"',
-        { sort: 'codigo' },
-      );
+      this.barrio.set(barrioFromSnapshot(found, snap));
+      const units = snap.unidades
+        .filter((u) => u.estado === 'disponible')
+        .map((u) => snapUnidadToUnidadesResponse(u, found.id));
       this.unidades.set(units);
     } catch {
       void this.router.navigate(['/404']);

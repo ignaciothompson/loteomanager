@@ -117,18 +117,25 @@
                                 </div>
                             </div>
                             <div class="lm-field">
+                                <label for="ingreso-ubicacion-texto" class="lm-field-label">Ubicación (texto)</label>
+                                <input
+                                    pInputText
+                                    id="ingreso-ubicacion-texto"
+                                    class="w-full"
+                                    [ngModel]="barrioDraft().ubicacion_texto ?? ''"
+                                    (ngModelChange)="barrioDraft.update((d) => ({ ...d, ubicacion_texto: $event }))"
+                                    [ngModelOptions]="{ standalone: true }"
+                                    placeholder="Se completa al buscar o al marcar en el mapa"
+                                />
+                            </div>
+                            <div class="lm-field">
                                 <label class="lm-field-label">Geolocalización</label>
-                                <div class="flex flex-col gap-2">
-                                    <button
-                                        pButton
-                                        type="button"
-                                        icon="pi pi-map-marker"
-                                        label="Seleccionar en mapa"
-                                        class="p-button-outlined"
-                                        (click)="geoDialogVisible.set(true)"
-                                    ></button>
-                                    <span class="lm-hint">{{ geoLabel() }}</span>
-                                </div>
+                                <app-ingreso-geo-picker
+                                    [lat]="barrioDraft().lat ?? null"
+                                    [lng]="barrioDraft().lng ?? null"
+                                    [ubicacionTexto]="barrioDraft().ubicacion_texto ?? ''"
+                                    (locationChange)="onGeoLocationChange($event)"
+                                />
                             </div>
                             @if (puedePublicarWeb()) {
                                 <div class="lm-field">
@@ -239,12 +246,6 @@
             </div>
         </div>
 
-        <app-ingreso-geo-dialog
-            [(visible)]="geoDialogVisible"
-            [lat]="barrioDraft().lat ?? null"
-            [lng]="barrioDraft().lng ?? null"
-            (confirm)="onGeoConfirm($event)"
-        />
         <app-ingreso-imagenes-dialog
             [(visible)]="imagenesDialogVisible"
             [barrio]="barrio()"

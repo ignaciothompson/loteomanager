@@ -9,6 +9,7 @@ import {
   EstadosDefinicionesService,
   PermisosService,
   PlantillasUnidadService,
+  PublicacionService,
   UnidadesService,
   ZonasService
 } from '@loteomanager/shared-pb-client';
@@ -38,7 +39,10 @@ import {
 } from '../../unidades/dialogs/ingreso-unidades.types';
 import { IngresoFormPanelComponent } from './panel-listado/ingreso-form-panel.component';
 import { IngresoPanelLateralComponent, type IngresoLateralTab } from './panel-tabs/ingreso-panel-lateral.component';
-import { IngresoGeoDialogComponent } from '../dialogs/geo/ingreso-geo-dialog.component';
+import {
+  IngresoGeoPickerComponent,
+  type IngresoGeoLocation,
+} from '../dialogs/geo/ingreso-geo-picker.component';
 import { IngresoImagenesDialogComponent, type IngresoImagenesDraft } from '../dialogs/imagenes/ingreso-imagenes-dialog.component';
 import { IngresoPlantillaNombreDialogComponent } from '../dialogs/plantilla/ingreso-plantilla-nombre-dialog.component';
 import { ExtrasEditorComponent } from '../../../shared/components/extras-editor/extras-editor.component';
@@ -88,7 +92,7 @@ const TIPO_EXTRA_KEYS: Record<TipoUnidadIngreso, readonly string[]> = {
     ToggleSwitchModule,
     IngresoFormPanelComponent,
     IngresoPanelLateralComponent,
-    IngresoGeoDialogComponent,
+    IngresoGeoPickerComponent,
     IngresoImagenesDialogComponent,
     IngresoPlantillaNombreDialogComponent,
     ExtrasEditorComponent
@@ -102,6 +106,7 @@ export class BarrioIngresoPageComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private barriosSvc = inject(BarriosService);
+  private publicacionSvc = inject(PublicacionService);
   private unidadesSvc = inject(UnidadesService);
   private plantillasSvc = inject(PlantillasUnidadService);
   private departamentosSvc = inject(DepartamentosService);
@@ -134,7 +139,6 @@ export class BarrioIngresoPageComponent {
   readonly plantillaActiva = signal<PlantillasUnidadResponse | null>(null);
   readonly unidadForm = model<IngresoUnidadForm>(emptyUnidadForm());
 
-  readonly geoDialogVisible = model(false);
   readonly imagenesDialogVisible = model(false);
   readonly plantillaDialogVisible = model(false);
   readonly plantillaNombreDraft = model('');
@@ -159,7 +163,8 @@ export class BarrioIngresoPageComponent {
     planoFile: null,
     imagenFile: null,
     lat: null,
-    lng: null
+    lng: null,
+    ubicacion_texto: '',
   });
 
   readonly barrioExtras = signal<Record<string, unknown>>({});
@@ -184,12 +189,6 @@ export class BarrioIngresoPageComponent {
   readonly estadoOpts = computed(() =>
     this.estadosUnidades().map((e) => ({ label: e.nombre, value: e.code }))
   );
-
-  readonly geoLabel = computed(() => {
-    const { lat, lng } = this.barrioDraft();
-    if (lat == null || lng == null) return 'Sin ubicación';
-    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-  });
 
   readonly imagenesCountLabel = computed(() => {
     const d = this.barrioDraft();
@@ -281,7 +280,8 @@ export class BarrioIngresoPageComponent {
         planoNombre: full.plano_general || undefined,
         imagenNombre: full.imagen_portada || undefined,
         lat: full.lat ?? null,
-        lng: full.lng ?? null
+        lng: full.lng ?? null,
+        ubicacion_texto: full.ubicacion_texto ?? '',
       });
       this.barrioExtras.set(this.extrasRecordFromUnknown(full.extras));
       this.publicadoWeb.set(full.publicado ?? false);
@@ -407,8 +407,16 @@ export class BarrioIngresoPageComponent {
     this.barrioExtras.set(extras);
   }
 
-  onGeoConfirm(coords: { lat: number; lng: number }): void {
-    this.barrioDraft.update((d) => ({ ...d, lat: coords.lat, lng: coords.lng }));
+  onGeoLocationChange(loc: IngresoGeoLocation): void {
+    this.barrioDraft.update((d) => {
+      const nextTexto = loc.label?.trim();
+      return {
+        ...d,
+        lat: loc.lat,
+        lng: loc.lng,
+        ubicacion_texto: nextTexto || d.ubicacion_texto || '',
+      };
+    });
   }
 
   onImagenesConfirm(draft: IngresoImagenesDraft): void {
@@ -495,20 +503,32 @@ export class BarrioIngresoPageComponent {
       zona_id: v.zona_id,
       tipos_unidad: v.tipos_unidad,
       descripcion: bd.descripcion.trim() || undefined,
+      ubicacion_texto: bd.ubicacion_texto?.trim() || undefined,
       lat: bd.lat ?? undefined,
       lng: bd.lng ?? undefined,
       extras: this.stripEmptyExtras(this.barrioExtras())
     };
     if (bd.planoFile) payload['plano_general'] = bd.planoFile;
     if (bd.imagenFile) payload['imagen_portada'] = bd.imagenFile;
-    if (this.puedePublicarWeb()) {
-      const publicado = this.publicadoWeb();
-      payload['publicado'] = publicado;
-      if (publicado && !this.previousPublicado) {
-        payload['publicado_at'] = new Date().toISOString();
-      }
-    }
+    // publicado se maneja en persistirBarrio vía PublicacionService
     return payload;
+  }
+
+  private async applyPublicacionToggle(barrioId: string): Promise<void> {
+    if (!this.puedePublicarWeb()) return;
+    const want = this.publicadoWeb();
+    const current = this.barrio();
+    const hasSnapshot = !!current?.snapshot;
+
+    if (want && !this.previousPublicado) {
+      if (hasSnapshot) {
+        await this.barriosSvc.update(barrioId, { publicado: true });
+      } else {
+        await this.publicacionSvc.publicarBarrio(barrioId);
+      }
+    } else if (!want && this.previousPublicado) {
+      await this.barriosSvc.update(barrioId, { publicado: false });
+    }
   }
 
   /** Persiste barrio nuevo o actualiza existente. Devuelve id o null si falla validación/guardado. */
@@ -523,15 +543,18 @@ export class BarrioIngresoPageComponent {
       try {
         const updated = await this.barriosSvc.update(existingId, this.buildBarrioPayload());
         this.barrio.set(updated);
-        this.previousPublicado = updated.publicado ?? false;
-        this.publicadoWeb.set(updated.publicado ?? false);
-        this.barrioExtras.set(this.extrasRecordFromUnknown(updated.extras));
+        await this.applyPublicacionToggle(existingId);
+        const refreshed = await this.barriosSvc.getAsync(existingId);
+        this.barrio.set(refreshed);
+        this.previousPublicado = refreshed.publicado ?? false;
+        this.publicadoWeb.set(refreshed.publicado ?? false);
+        this.barrioExtras.set(this.extrasRecordFromUnknown(refreshed.extras));
         this.barrioDraft.update((d) => ({
           ...d,
           planoFile: null,
           imagenFile: null,
-          planoNombre: updated.plano_general || d.planoNombre,
-          imagenNombre: updated.imagen_portada || d.imagenNombre
+          planoNombre: refreshed.plano_general || d.planoNombre,
+          imagenNombre: refreshed.imagen_portada || d.imagenNombre
         }));
         if (opts?.showToast !== false) {
           this.messages.add({ severity: 'success', summary: 'Éxito', detail: 'Barrio guardado' });
@@ -554,7 +577,12 @@ export class BarrioIngresoPageComponent {
     try {
       const created = await this.barriosSvc.create(this.buildBarrioPayload());
       this.barrio.set(created);
-      this.barrioExtras.set(this.extrasRecordFromUnknown(created.extras));
+      await this.applyPublicacionToggle(created.id);
+      const refreshed = await this.barriosSvc.getAsync(created.id);
+      this.barrio.set(refreshed);
+      this.previousPublicado = refreshed.publicado ?? false;
+      this.publicadoWeb.set(refreshed.publicado ?? false);
+      this.barrioExtras.set(this.extrasRecordFromUnknown(refreshed.extras));
       this.routeId.set(created.id);
       void this.router.navigate(['/barrios', created.id], { replaceUrl: true });
       await this.reloadUnidades();

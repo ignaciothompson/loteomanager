@@ -3,3 +3,10 @@
 @use './base/reset';
 @use './components';
 @use './utilities/print';
+
+@import 'leaflet/dist/leaflet.css';
+
+/* Tailwind preflight sets img{max-width:100%} and breaks Leaflet tile positioning */
+.leaflet-container img {
+  max-width: none !important;
+}

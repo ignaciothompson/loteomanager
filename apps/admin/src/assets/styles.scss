@@ -4,3 +4,10 @@
  */
 @use 'primeicons/primeicons.css';
 @use '@/assets/layout/layout.scss';
+
+@import 'leaflet/dist/leaflet.css';
+
+/* Tailwind/global img max-width breaks Leaflet tiles */
+.leaflet-container img {
+  max-width: none !important;
+}
