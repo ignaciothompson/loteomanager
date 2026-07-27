@@ -7,7 +7,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
-import { AuthService } from '@loteomanager/shared-pb-client';
+import { AuthService, PermisosService } from '@loteomanager/shared-pb-client';
 
 @Component({
     selector: 'app-menu',
@@ -26,9 +26,25 @@ import { AuthService } from '@loteomanager/shared-pb-client';
 export class AppMenu {
     model: MenuItem[] = [];
     private authService = inject(AuthService);
+    private permisos = inject(PermisosService);
 
     ngOnInit() {
         const role = this.authService.currentRole() || 'vendedor';
+
+        const inventarioItems: MenuItem[] = [
+            {
+                label: 'Barrios',
+                icon: 'pi pi-fw pi-map',
+                routerLink: ['/barrios']
+            },
+        ];
+        if (this.permisos.can('web.publish')) {
+            inventarioItems.push({
+                label: 'Actualizacion Web',
+                icon: 'pi pi-fw pi-cloud-upload',
+                routerLink: ['/actualizacion-web']
+            });
+        }
 
         this.model = [
             {
@@ -43,18 +59,7 @@ export class AppMenu {
             {
                 label: 'Inventario',
                 icon: 'pi pi-fw pi-box',
-                items: [
-                    {
-                        label: 'Barrios',
-                        icon: 'pi pi-fw pi-map',
-                        routerLink: ['/barrios']
-                    },
-                    {
-                        label: 'Actualizacion Web',
-                        icon: 'pi pi-fw pi-cloud-upload',
-                        routerLink: ['/actualizacion-web']
-                    }
-                ]
+                items: inventarioItems
             },
             {
                 label: 'Ventas',
@@ -70,11 +75,6 @@ export class AppMenu {
                         icon: 'pi pi-fw pi-link',
                         routerLink: ['/enlaces']
                     },
-                    {
-                        label: 'Seguimiento',
-                        icon: 'pi pi-fw pi-chart-line',
-                        routerLink: ['/seguimiento']
-                    }
                 ]
             }
         ];
@@ -125,37 +125,62 @@ export class AppMenu {
                         label: 'Importador',
                         icon: 'pi pi-fw pi-cloud-upload',
                         routerLink: ['/importador']
+                    },
+                    {
+                        label: 'Exportador',
+                        icon: 'pi pi-fw pi-download',
+                        routerLink: ['/exportador']
                     }
                 ]
             });
         } else if (role === 'supervisor') {
+            const organizarItems: MenuItem[] = [
+                {
+                    label: 'Zonas',
+                    icon: 'pi pi-fw pi-map',
+                    routerLink: ['/config/zonas']
+                },
+            ];
+            if (this.permisos.can('extras.crud')) {
+                organizarItems.push({
+                    label: 'Extras',
+                    icon: 'pi pi-fw pi-list',
+                    routerLink: ['/config/extras']
+                });
+            }
+            if (this.permisos.can('estados.crud')) {
+                organizarItems.push({
+                    label: 'Estados',
+                    icon: 'pi pi-fw pi-flag',
+                    routerLink: ['/config/estados']
+                });
+            }
+
+            const configItems: MenuItem[] = [
+                {
+                    label: 'Organizar',
+                    icon: 'pi pi-fw pi-sliders-h',
+                    path: '/config',
+                    items: organizarItems
+                },
+            ];
+            if (this.permisos.can('importador.use')) {
+                configItems.push({
+                    label: 'Importador',
+                    icon: 'pi pi-fw pi-cloud-upload',
+                    routerLink: ['/importador']
+                });
+                configItems.push({
+                    label: 'Exportador',
+                    icon: 'pi pi-fw pi-download',
+                    routerLink: ['/exportador']
+                });
+            }
+
             this.model.push({
                 label: 'Configuración',
                 icon: 'pi pi-fw pi-cog',
-                items: [
-                    {
-                        label: 'Organizar',
-                        icon: 'pi pi-fw pi-sliders-h',
-                        path: '/config',
-                        items: [
-                            {
-                                label: 'Zonas',
-                                icon: 'pi pi-fw pi-map',
-                                routerLink: ['/config/zonas']
-                            },
-                            {
-                                label: 'Extras',
-                                icon: 'pi pi-fw pi-list',
-                                routerLink: ['/config/extras']
-                            },
-                            {
-                                label: 'Estados',
-                                icon: 'pi pi-fw pi-flag',
-                                routerLink: ['/config/estados']
-                            }
-                        ]
-                    }
-                ]
+                items: configItems
             });
         }
     }

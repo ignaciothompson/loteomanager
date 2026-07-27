@@ -15,7 +15,13 @@ import {
   postLeadsFromComparativa,
   postLeadsFromUnidad,
 } from './server/leads';
-import type { BarriosResponse, ComparativasResponse, ComparativaSnapshot } from '@loteomanager/shared-types';
+import type {
+  BarrioWebSnapshot,
+  BarriosResponse,
+  ComparativasResponse,
+  ComparativaSnapshot,
+  ConfigResponse,
+} from '@loteomanager/shared-types';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -29,13 +35,66 @@ app.get('/healthz', (_req, res) => {
 
 // ── /api/config-publica ──────────────────────────────────────────────────────
 app.get('/api/config-publica', async (_req, res) => {
-  // Config table doesn't have logo/nombre_inmobiliaria yet — return fallback
-  res.json({
+  const fallback = {
     nombreInmobiliaria: process.env['INMOBILIARIA_NOMBRE'] ?? 'LoteoManager',
-    logoUrl: process.env['INMOBILIARIA_LOGO_URL'] ?? null,
-    mensajeBienvenida: null,
+    logoUrl: process.env['LOGO_URL'] ?? process.env['INMOBILIARIA_LOGO_URL'] ?? null,
+    mensajeBienvenida: null as string | null,
     turnstileSiteKey: process.env['TURNSTILE_SITE_KEY'] ?? null,
-  });
+  };
+
+  try {
+    const pb = await getPocketBaseClient();
+    const config = await pb.collection('config').getFirstListItem('') as ConfigResponse;
+    res.json({
+      nombreInmobiliaria: config.nombre_inmobiliaria || fallback.nombreInmobiliaria,
+      logoUrl: config.logo_url || fallback.logoUrl,
+      mensajeBienvenida: config.mensaje_bienvenida_landing || fallback.mensajeBienvenida,
+      turnstileSiteKey: fallback.turnstileSiteKey,
+    });
+  } catch (err) {
+    console.error('[api/config-publica]', err);
+    res.json(fallback);
+  }
+});
+
+// ── /api/catalogo/meta ───────────────────────────────────────────────────────
+// Permite a la landing detectar nuevas publicaciones sin recargar manualmente.
+app.get('/api/catalogo/meta', async (_req, res) => {
+  try {
+    const pb = await getPocketBaseClient();
+    const result = await pb.collection('barrios').getList(1, 1, {
+      filter: 'publicado = true',
+      sort: '-publicado_at',
+      fields: 'publicado_at',
+    });
+    const lastPublishedAt = (result.items[0]?.['publicado_at'] as string | undefined) ?? null;
+    res.json({ lastPublishedAt });
+  } catch (err) {
+    console.error('[api/catalogo/meta]', err);
+    res.json({ lastPublishedAt: null });
+  }
+});
+
+// ── /api/catalogo/barrios ────────────────────────────────────────────────────
+// Catálogo público derivado del snapshot ya publicado — evita exponer PB directo al browser.
+app.get('/api/catalogo/barrios', async (_req, res) => {
+  try {
+    const pb = await getPocketBaseClient();
+    const pbUrl = resolvePublicPbUrl();
+    const barrios = await pb.collection('barrios').getFullList({
+      filter: 'publicado = true',
+      sort: 'nombre',
+    }) as BarriosResponse[];
+
+    const catalogo = barrios
+      .map((b) => buildCatalogoBarrio(b, pbUrl))
+      .filter((b): b is NonNullable<typeof b> => b != null);
+
+    res.json({ barrios: catalogo });
+  } catch (err) {
+    console.error('[api/catalogo/barrios]', err);
+    res.status(500).json({ error: 'internal' });
+  }
 });
 
 // Inyecta site key pública en runtime (Docker / SSR con env).
@@ -269,6 +328,56 @@ app.use('/**', async (req, res, next) => {
 });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+function resolvePublicPbUrl(): string {
+  return (
+    process.env['POCKETBASE_PUBLIC_URL'] ??
+    process.env['PB_INTERNAL_URL'] ??
+    process.env['POCKETBASE_URL'] ??
+    'http://localhost:8090'
+  );
+}
+
+/** Deriva el card de catálogo (id/nombre/slug/stats) del snapshot congelado de un barrio. */
+function buildCatalogoBarrio(b: BarriosResponse, pbUrl: string) {
+  const snap = b.snapshot as BarrioWebSnapshot | null;
+  if (!snap || !Array.isArray(snap.unidades)) return null;
+
+  const disponibles = snap.unidades.filter((u) => u.estado === 'disponible');
+  let precioDesde: number | null = null;
+  let moneda: string | null = null;
+  let areaMin: number | null = null;
+  let areaMax: number | null = null;
+  for (const u of disponibles) {
+    if (u.precio != null && (precioDesde == null || u.precio < precioDesde)) {
+      precioDesde = u.precio;
+      moneda = u.moneda ?? 'USD';
+    }
+    if (u.area != null) {
+      areaMin = areaMin == null ? u.area : Math.min(areaMin, u.area);
+      areaMax = areaMax == null ? u.area : Math.max(areaMax, u.area);
+    }
+  }
+
+  const imagen = snap.barrio.imagen_portada ?? b.imagen_portada ?? null;
+
+  return {
+    id: b.id,
+    nombre: snap.barrio.nombre || b.nombre,
+    slug: snap.barrio.slug || b.slug,
+    ubicacionTexto: snap.barrio.ubicacion_texto ?? b.ubicacion_texto ?? null,
+    imagenPortadaUrl: imagen ? `${pbUrl}/api/files/barrios/${b.id}/${imagen}` : null,
+    lat: snap.barrio.lat ?? b.lat ?? null,
+    lng: snap.barrio.lng ?? b.lng ?? null,
+    stats: {
+      unidadesCount: disponibles.length,
+      precioDesde,
+      moneda,
+      areaMin,
+      areaMax,
+    },
+  };
+}
+
 async function buildLiveSnapshot(
   comp: ComparativasResponse,
   pb: Awaited<ReturnType<typeof getPocketBaseClient>>,

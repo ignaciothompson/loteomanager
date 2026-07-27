@@ -1,7 +1,13 @@
-import { Component, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { InteresadosService, AuthService, DefinicionesCacheService } from '@loteomanager/shared-pb-client';
+import {
+  InteresadosService,
+  AuthService,
+  DefinicionesCacheService,
+  VendedorAccesoService,
+  type ReloadableSignal,
+} from '@loteomanager/shared-pb-client';
 import { InteresadosRecord, InteresadosResponse, ExtraPersistido, sanitizeExtrasPayload } from '@loteomanager/shared-types';
 import { EstadoBadgeComponent } from '@loteomanager/shared-ui';
 import { TableModule } from 'primeng/table';
@@ -41,13 +47,16 @@ export class InteresadosComponent {
 
   private interesadosService = inject(InteresadosService);
   private authService = inject(AuthService);
+  private vendedorAcceso = inject(VendedorAccesoService);
   private messageService = inject(MessageService);
   private definicionesCache = inject(DefinicionesCacheService);
 
-  interesados = this.interesadosService.list(undefined, {
-    expand: 'barrio_id,unidad_id,comparativa_id',
-    sort: '-created',
-  });
+interesados = this.createAccesoList((ids) =>
+    this.interesadosService.listVisibles(ids, {
+      expand: 'barrio_id,unidad_id,comparativa_id',
+      sort: '-created',
+    })
+  );
 
   displayDialog = signal(false);
   isEdit = signal(false);
@@ -75,6 +84,15 @@ export class InteresadosComponent {
   });
 
   hasActiveFilters = computed(() => !!this.filterNombre().trim() || !!this.filterEstado());
+
+constructor() {
+    effect(() => {
+      this.vendedorAcceso.barriosVisibles();
+      this.vendedorAcceso.accesoReady();
+      this.authService.currentUser();
+      this.interesados.reload();
+    });
+  }
 
   contextoLabel(interesado: InteresadosResponse): string {
     const expand = (interesado as InteresadosResponse & {
@@ -186,5 +204,24 @@ export class InteresadosComponent {
       return raw as ExtraPersistido[];
     }
     return [];
+  }
+
+  private createAccesoList<T>(
+    loader: (barrioIds: string[] | null) => Promise<T[]>
+  ): ReloadableSignal<T[]> {
+    const data = signal<T[]>([]) as ReloadableSignal<T[]>;
+    const load = async () => {
+      const { barrioIds, waiting } = this.vendedorAcceso.resolveBarrioIds();
+      if (waiting) {
+        data.set([]);
+        return;
+      }
+      data.set(await loader(barrioIds));
+    };
+    data.reload = () => {
+      void load();
+    };
+    void load();
+    return data;
   }
 }

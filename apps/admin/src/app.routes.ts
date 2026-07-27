@@ -98,6 +98,11 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('./app/features/importador/importador.routes').then(m => m.importadorRoutes),
             },
             {
+                path: 'exportador',
+                canActivate: [authGuard, mustNotChangePasswordGuard, permisoGuard('importador.use')],
+                loadChildren: () => import('./app/features/exportador/exportador.routes').then(m => m.exportadorRoutes),
+            },
+            {
                 path: 'mi-perfil',
                 loadComponent: () => import('./app/features/usuarios/mi-perfil/mi-perfil.component').then(m => m.MiPerfilComponent),
                 data: { title: 'Mi Perfil' }
