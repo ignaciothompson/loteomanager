@@ -51,7 +51,7 @@ export class InteresadosComponent {
   private messageService = inject(MessageService);
   private definicionesCache = inject(DefinicionesCacheService);
 
-  interesados = this.createAccesoList((ids) =>
+interesados = this.createAccesoList((ids) =>
     this.interesadosService.listVisibles(ids, {
       expand: 'barrio_id,unidad_id,comparativa_id',
       sort: '-created',
@@ -85,7 +85,7 @@ export class InteresadosComponent {
 
   hasActiveFilters = computed(() => !!this.filterNombre().trim() || !!this.filterEstado());
 
-  constructor() {
+constructor() {
     effect(() => {
       this.vendedorAcceso.barriosVisibles();
       this.vendedorAcceso.accesoReady();

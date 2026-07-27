@@ -11,7 +11,7 @@ import { DatoCardComponent } from '../components/dato-card/dato-card.component';
 import { LightboxGaleriaComponent } from '../components/lightbox-galeria/lightbox-galeria.component';
 import { SanitizeHtmlPipe } from '../pipes/sanitize-html.pipe';
 import { LandingMapaComponent } from '../components/landing-mapa/landing-mapa.component';
-import { ContactarUnidadFabComponent } from '../components/contactar-unidad-fab/contactar-unidad-fab.component';
+import { ContactoFabComponent } from '../components/contacto-fab/contacto-fab.component';
 import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
 import { ConfigPublicaService } from '../services/config-publica.service';
 
@@ -26,7 +26,7 @@ import { ConfigPublicaService } from '../services/config-publica.service';
     LightboxGaleriaComponent,
     SanitizeHtmlPipe,
     LandingMapaComponent,
-    ContactarUnidadFabComponent,
+    ContactoFabComponent,
     PrecioFormatPipe,
   ],
   template: `
@@ -162,7 +162,7 @@ import { ConfigPublicaService } from '../services/config-publica.service';
         </main>
 
         <landing-footer />
-        <contactar-unidad-fab [unidadId]="unidad()!.id" />
+        <contacto-fab [unidadId]="unidad()!.id" />
         <lightbox-galeria #lightbox [images]="galeriaUrls()" />
       }
     </div>

@@ -5,6 +5,7 @@ import { CatalogoService, type CatalogoBarrioVM } from '../services/catalogo.ser
 import { LandingTopbarComponent } from '../layout/landing-topbar/landing-topbar.component';
 import { LandingFooterComponent } from '../layout/landing-footer/landing-footer.component';
 import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
+import { PLACEHOLDER_BARRIO_URL } from '../utils/placeholder-images';
 
 /** Frecuencia de sondeo de `/api/catalogo/meta` para detectar nuevas publicaciones. */
 const CATALOGO_POLL_MS = 60_000;
@@ -67,15 +68,9 @@ const CATALOGO_POLL_MS = 60_000;
                           border border-surface-200 dark:border-surface-700 shadow-soft
                           hover:shadow-soft-lg transition-all duration-300 block">
                   <div class="relative h-56 overflow-hidden">
-                    @if (portadaUrl(barrio)) {
-                      <img [src]="portadaUrl(barrio)!" [alt]="barrio.nombre"
-                           class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                           loading="lazy" />
-                    } @else {
-                      <div class="w-full h-full bg-surface-200 dark:bg-surface-700 flex items-center justify-center">
-                        <i class="pi pi-image text-4xl text-surface-400"></i>
-                      </div>
-                    }
+                    <img [src]="portadaUrl(barrio)" [alt]="barrio.nombre"
+                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                         loading="lazy" />
                     @if (barrio.unidadesCount > 0) {
                       <span class="absolute top-4 left-4 bg-sage-50 text-sage-700 dark:bg-sage-900/40 dark:text-sage-200
                                    px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
@@ -173,8 +168,8 @@ export class BarriosComponent implements OnInit, OnDestroy {
     if (this.pollIntervalId != null) clearInterval(this.pollIntervalId);
   }
 
-  portadaUrl(barrio: CatalogoBarrioVM): string | null {
-    return barrio.imagenPortadaUrl;
+  portadaUrl(barrio: CatalogoBarrioVM): string {
+    return barrio.imagenPortadaUrl ?? PLACEHOLDER_BARRIO_URL;
   }
 
   precioLabel(barrio: CatalogoBarrioVM): string | null {

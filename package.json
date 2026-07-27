@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "dev:admin": "nx serve admin",
-    "dev:landing": "nx serve landing",
+    "dev:landing": "nx serve landing --port=4000",
     "build:all": "nx run-many -t build --projects=admin,landing",
     "lint:all": "nx run-many -t lint",
     "test:all": "nx run-many -t test",
