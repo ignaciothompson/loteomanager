@@ -599,7 +599,8 @@ routerAdd(
   "POST",
   "/api/admin/estados/replace-and-delete",
   (e) => {
-    if (!e.auth || (e.auth.get("role") !== "admin" && e.auth.get("role") !== "supervisor")) {
+    const role = e.auth ? e.auth.get("role") : "";
+    if (role !== "admin" && role !== "supervisor") {
       return e.forbiddenError("Solo administradores o supervisores.");
     }
     const data = {};
