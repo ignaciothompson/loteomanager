@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  input,
+  model
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import type { TipoUnidadIngreso, UnidadesOrientacionOptions } from '@loteomanager/shared-types';
@@ -6,7 +13,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TabsModule } from 'primeng/tabs';
-import type { IngresoFormMode, IngresoUnidadForm } from '../../../unidades/dialogs/ingreso-unidades.types';
+import type { IngresoFormMode, IngresoUnidadForm } from '../ingreso-unidades.types';
 import { ExtrasEditorComponent } from '../../../../shared/components/extras-editor/extras-editor.component';
 
 const FORM_TABS: { value: TipoUnidadIngreso; label: string }[] = [
@@ -42,13 +49,32 @@ export class IngresoFormPanelComponent {
   unidadForm = model.required<IngresoUnidadForm>();
   estadoOpts = input<{ label: string; value: string }[]>([]);
   disabled = input(false);
+  /** Tipos habilitados en el barrio; vacío = todos. */
+  tiposUnidad = input<TipoUnidadIngreso[]>([]);
 
-  readonly formTabs = FORM_TABS;
+  readonly formTabs = computed(() => {
+    const allowed = this.tiposUnidad();
+    if (!allowed.length) return FORM_TABS;
+    const set = new Set(allowed);
+    const filtered = FORM_TABS.filter((t) => set.has(t.value));
+    return filtered.length ? filtered : FORM_TABS;
+  });
+
   readonly orientacionOpts = ORIENTACION_OPTS;
   readonly monedaOpts = [
     { label: 'USD', value: 'USD' },
     { label: 'UYU', value: 'UYU' }
   ];
+
+  constructor() {
+    effect(() => {
+      const tabs = this.formTabs();
+      const current = this.formTab();
+      if (tabs.length && !tabs.some((t) => t.value === current)) {
+        this.formTab.set(tabs[0].value);
+      }
+    });
+  }
 
   modeLabel(): string {
     if (this.usandoPlantilla()) return 'Desde plantilla';

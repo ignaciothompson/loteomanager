@@ -10,7 +10,11 @@ export type BarrioListFilters = {
   soloPublicados?: boolean;
 };
 
-export type BarrioConUnidades = BarriosResponse & { unidadesCount: number };
+export type BarrioConUnidades = BarriosResponse & {
+  unidadesCount: number;
+  unidadesDisponiblesCount: number;
+  unidadesReservadasCount: number;
+};
 
 export type BarrioCatalogStats = {
   unidadesCount: number;
@@ -112,7 +116,12 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
 
   async attachUnidadesDisponiblesWebCount(barrios: BarriosResponse[]): Promise<BarrioConUnidades[]> {
     const rows = await this.attachCatalogStats(barrios);
-    return rows.map(({ unidadesCount, ...b }) => ({ ...b, unidadesCount }));
+    return rows.map(({ unidadesCount, ...b }) => ({
+      ...b,
+      unidadesCount,
+      unidadesDisponiblesCount: unidadesCount,
+      unidadesReservadasCount: 0,
+    }));
   }
 
   async attachCatalogStats(barrios: BarriosResponse[]): Promise<BarrioConCatalogo[]> {
@@ -166,18 +175,28 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
     const ids = barrios.map((b) => b.id);
     const unidades = await this.pb.collection('unidades').getFullList({
       filter: ids.map((id) => `barrio_id="${id}"`).join(' || '),
-      fields: 'id,barrio_id'
+      fields: 'id,barrio_id,estado'
     });
 
-    const counts: Record<string, number> = {};
+    const totals: Record<string, number> = {};
+    const disponibles: Record<string, number> = {};
+    const reservadas: Record<string, number> = {};
     for (const u of unidades) {
       const bid = u['barrio_id'] as string;
-      counts[bid] = (counts[bid] ?? 0) + 1;
+      totals[bid] = (totals[bid] ?? 0) + 1;
+      const estado = String(u['estado'] ?? '');
+      if (estado === 'disponible') {
+        disponibles[bid] = (disponibles[bid] ?? 0) + 1;
+      } else if (estado === 'reservado' || estado === 'sena') {
+        reservadas[bid] = (reservadas[bid] ?? 0) + 1;
+      }
     }
 
     return barrios.map((b) => ({
       ...b,
-      unidadesCount: counts[b.id] ?? 0
+      unidadesCount: totals[b.id] ?? 0,
+      unidadesDisponiblesCount: disponibles[b.id] ?? 0,
+      unidadesReservadasCount: reservadas[b.id] ?? 0,
     }));
   }
 

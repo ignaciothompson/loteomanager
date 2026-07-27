@@ -70,13 +70,13 @@ export const appRoutes: Routes = [
             },
             {
                 path: 'config/extras',
-                canActivate: [authGuard, permisoGuard('config.update')],
+                canActivate: [authGuard, permisoGuard('extras.crud')],
                 loadComponent: () => import('./app/features/admin/extras/extras-admin.component').then(m => m.ExtrasAdminComponent),
                 data: { title: 'Extras' }
             },
             {
                 path: 'config/estados',
-                canActivate: [authGuard, permisoGuard('config.update')],
+                canActivate: [authGuard, permisoGuard('estados.crud')],
                 loadComponent: () => import('./app/features/admin/estados/estados-admin.component').then(m => m.EstadosAdminComponent),
                 data: { title: 'Estados' }
             },
@@ -96,6 +96,11 @@ export const appRoutes: Routes = [
                 path: 'importador',
                 canActivate: [authGuard, mustNotChangePasswordGuard, permisoGuard('importador.use')],
                 loadChildren: () => import('./app/features/importador/importador.routes').then(m => m.importadorRoutes),
+            },
+            {
+                path: 'exportador',
+                canActivate: [authGuard, mustNotChangePasswordGuard, permisoGuard('importador.use')],
+                loadChildren: () => import('./app/features/exportador/exportador.routes').then(m => m.exportadorRoutes),
             },
             {
                 path: 'mi-perfil',

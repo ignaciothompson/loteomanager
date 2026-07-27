@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Meta, Title } from '@angular/platform-browser';
 import { BarriosService, POCKETBASE, barrioFromSnapshot, parseBarrioWebSnapshot, snapUnidadToUnidadesResponse } from '@loteomanager/shared-pb-client';
 import { isInUruguay, TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
 import type { BarriosResponse, TipoUnidadIngreso, UnidadesResponse } from '@loteomanager/shared-types';
@@ -10,6 +11,7 @@ import { LandingMapaComponent } from '../components/landing-mapa/landing-mapa.co
 import { SanitizeHtmlPipe } from '../pipes/sanitize-html.pipe';
 import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
 import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
+import { ConfigPublicaService } from '../services/config-publica.service';
 
 type UnidadGrupo = {
   tipo: TipoUnidadIngreso;
@@ -183,6 +185,9 @@ export class BarrioDetailComponent implements OnInit {
   private router = inject(Router);
   private barriosSvc = inject(BarriosService);
   private pb = inject(POCKETBASE);
+  private meta = inject(Meta);
+  private titleService = inject(Title);
+  private configService = inject(ConfigPublicaService);
 
   readonly loading = signal(true);
   readonly barrio = signal<BarriosResponse | null>(null);
@@ -260,6 +265,7 @@ export class BarrioDetailComponent implements OnInit {
 
     this.loading.set(true);
     try {
+      await this.configService.load();
       const found = await this.barriosSvc.getBySlug(slug);
       const snap = found ? parseBarrioWebSnapshot(found.snapshot) : null;
       if (!found || !found.publicado || !snap) {
@@ -267,15 +273,38 @@ export class BarrioDetailComponent implements OnInit {
         return;
       }
 
-      this.barrio.set(barrioFromSnapshot(found, snap));
+      const barrio = barrioFromSnapshot(found, snap);
+      this.barrio.set(barrio);
       const units = snap.unidades
         .filter((u) => u.estado === 'disponible')
         .map((u) => snapUnidadToUnidadesResponse(u, found.id));
       this.unidades.set(units);
+      this.setMetaTags(barrio);
     } catch {
       void this.router.navigate(['/404']);
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private setMetaTags(barrio: BarriosResponse): void {
+    const config = this.configService.config();
+    const titulo = `${barrio.nombre} — ${config.nombreInmobiliaria}`;
+    const precioLabel = this.formatPrecioDesde(this.stats().precioDesde, this.stats().moneda);
+    const descripcion = barrio.ubicacion_texto
+      ? `Barrio en ${barrio.ubicacion_texto}.${precioLabel ? ` Desde ${precioLabel}.` : ''}`
+      : `Conocé ${barrio.nombre}.${precioLabel ? ` Desde ${precioLabel}.` : ''}`;
+    const imagen = this.portadaUrl() ?? '';
+
+    this.titleService.setTitle(titulo);
+    this.meta.updateTag({ name: 'description', content: descripcion });
+    this.meta.updateTag({ property: 'og:title', content: titulo });
+    this.meta.updateTag({ property: 'og:description', content: descripcion });
+    this.meta.updateTag({ property: 'og:image', content: imagen });
+    this.meta.updateTag({ property: 'og:type', content: 'website' });
+    this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+    this.meta.updateTag({ name: 'twitter:title', content: titulo });
+    this.meta.updateTag({ name: 'twitter:description', content: descripcion });
+    this.meta.updateTag({ name: 'twitter:image', content: imagen });
   }
 }

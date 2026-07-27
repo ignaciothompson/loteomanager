@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { POCKETBASE } from '../pocketbase.config';
 import { AuthService } from '../auth.service';
 import { SupervisorAccesoService } from './supervisor-acceso.service';
@@ -11,7 +11,17 @@ export class VendedorAccesoService {
   private auth = inject(AuthService);
   private supervisorAcceso = inject(SupervisorAccesoService);
 
+  /** null = admin (sin filtro) o aún no cargado; array = scope. */
   readonly barriosVisibles = signal<string[] | null>(null);
+
+  /** true cuando loadCache terminó para el usuario actual (o no hay sesión). */
+  readonly accesoReady = signal(false);
+
+  readonly hasScope = computed(() => {
+    const role = this.auth.currentUser()?.['role'] as string | undefined;
+    if (!role || role === 'admin') return false;
+    return this.accesoReady() && this.barriosVisibles() !== null;
+  });
 
   constructor() {
     this.pb.authStore.onChange(async (_token, model) => {
@@ -23,6 +33,8 @@ export class VendedorAccesoService {
     });
     if (this.pb.authStore.isValid) {
       void this.loadCache().catch(() => undefined);
+    } else {
+      this.accesoReady.set(true);
     }
   }
 
@@ -71,24 +83,30 @@ export class VendedorAccesoService {
   }
 
   async loadCache(): Promise<void> {
+    this.accesoReady.set(false);
     const user = this.auth.currentUser();
     if (!user) {
       this.barriosVisibles.set(null);
+      this.accesoReady.set(true);
       return;
     }
     const role = user['role'] as string;
-    if (role === 'admin') {
-      this.barriosVisibles.set(null);
-      return;
-    }
-    if (role === 'supervisor') {
-      const ids = await this.supervisorAcceso.getBarriosAccesibles(user['id'] as string);
-      this.barriosVisibles.set(ids);
-      return;
-    }
+    try {
+      if (role === 'admin') {
+        this.barriosVisibles.set(null);
+        return;
+      }
+      if (role === 'supervisor') {
+        const ids = await this.supervisorAcceso.getBarriosAccesibles(user['id'] as string);
+        this.barriosVisibles.set(ids);
+        return;
+      }
 
-    const ids = await this.getBarriosAccesibles(user['id'] as string);
-    this.barriosVisibles.set(ids);
+      const ids = await this.getBarriosAccesibles(user['id'] as string);
+      this.barriosVisibles.set(ids);
+    } finally {
+      this.accesoReady.set(true);
+    }
   }
 
   async refresh(): Promise<void> {
@@ -97,5 +115,23 @@ export class VendedorAccesoService {
 
   clear(): void {
     this.barriosVisibles.set(null);
+    this.accesoReady.set(true);
+  }
+
+  /**
+   * Resuelve IDs de barrio visibles para loaders.
+   * - admin: null (sin filtro)
+   * - no-admin y aún no ready: null con `waiting: true`
+   * - no-admin listo: array (puede ser vacío)
+   */
+  resolveBarrioIds(): { barrioIds: string[] | null; waiting: boolean } {
+    const role = this.auth.currentUser()?.['role'] as string | undefined;
+    if (!role || role === 'admin') {
+      return { barrioIds: null, waiting: false };
+    }
+    if (!this.accesoReady()) {
+      return { barrioIds: null, waiting: true };
+    }
+    return { barrioIds: this.barriosVisibles() ?? [], waiting: false };
   }
 }

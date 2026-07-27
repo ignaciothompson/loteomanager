@@ -3,6 +3,7 @@ import type {
   BarrioWebSnapshot,
   BarrioWebSnapshotUnidad,
   BarriosResponse,
+  PublicacionHistorialResponse,
   UnidadPublicacionDiff,
   UnidadesResponse,
 } from '@loteomanager/shared-types';
@@ -70,6 +71,10 @@ export class PublicacionService {
       `barrio_id="${barrioId}" && web_visible = true`,
       { sort: 'codigo' },
     );
+
+    if (barrio.snapshot) {
+      await this.guardarHistorial(barrio);
+    }
 
     const snapshot: BarrioWebSnapshot = {
       barrio: {
@@ -222,6 +227,46 @@ export class PublicacionService {
     } catch {
       return null;
     }
+  }
+
+  /** Guarda el snapshot vigente de un barrio como entrada de historial antes de sobreescribirlo. */
+  private async guardarHistorial(barrio: BarriosResponse): Promise<void> {
+    const userId = this.pb.authStore.model?.['id'] as string | undefined;
+    await this.pb.collection('publicacion_historial').create({
+      barrio_id: barrio.id,
+      snapshot: barrio.snapshot,
+      publicado_at: barrio.publicado_at || new Date().toISOString(),
+      publicado_por: userId || undefined,
+    });
+  }
+
+  /** Lista el historial de publicaciones de un barrio, más reciente primero. */
+  async listHistorial(barrioId: string): Promise<PublicacionHistorialResponse[]> {
+    return this.pb.collection('publicacion_historial').getFullList({
+      filter: `barrio_id="${barrioId}"`,
+      sort: '-created',
+    }) as unknown as Promise<PublicacionHistorialResponse[]>;
+  }
+
+  /** Restaura un snapshot histórico como el snapshot vigente del barrio (rollback). */
+  async rollback(barrioId: string, historialId: string): Promise<void> {
+    const entry = await this.pb
+      .collection('publicacion_historial')
+      .getOne(historialId) as unknown as PublicacionHistorialResponse;
+    if (entry.barrio_id !== barrioId) {
+      throw new Error('El registro de historial no pertenece a este barrio.');
+    }
+
+    const barrio = await this.barriosSvc.getAsync(barrioId);
+    if (barrio.snapshot) {
+      await this.guardarHistorial(barrio);
+    }
+
+    await this.barriosSvc.update(barrioId, {
+      snapshot: entry.snapshot,
+      publicado: true,
+      publicado_at: new Date().toISOString(),
+    } as Partial<BarriosResponse>);
   }
 
   private firstChangedField(

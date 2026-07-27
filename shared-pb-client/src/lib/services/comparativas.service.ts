@@ -34,6 +34,27 @@ export class ComparativasService extends BaseCollectionService<ComparativasRespo
     return { record, url: publicUrl };
   }
 
+  /** Filtra comparativas cuyo set de unidades intersecta barrios visibles. */
+  async listVisibles(
+    barrioIds: string[] | null,
+    unidadesService: { listByBarrios: (ids: string[] | null) => Promise<{ id: string; barrio_id?: string }[]> },
+    options?: { sort?: string }
+  ): Promise<ComparativasResponse[]> {
+    if (barrioIds === null) {
+      return this.listAsync(undefined, options);
+    }
+    if (barrioIds.length === 0) {
+      return [];
+    }
+    const unidades = await unidadesService.listByBarrios(barrioIds);
+    const unitIds = new Set(unidades.map((u) => u.id));
+    if (unitIds.size === 0) {
+      return [];
+    }
+    const all = await this.listAsync(undefined, options);
+    return all.filter((c) => (c.unidades_ids || []).some((id) => unitIds.has(id)));
+  }
+
   async generarPdf(comparativaId: string): Promise<string> {
     // TODO: call /api/comparativas/:token/pdf endpoint
     console.log(`[ComparativasService] generarPdf para ${comparativaId}`);

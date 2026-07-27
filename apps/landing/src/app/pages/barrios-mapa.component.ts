@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { BarriosService, POCKETBASE, type BarrioConCatalogo, attachCatalogStatsFromSnapshots, isBarrioWebReady } from '@loteomanager/shared-pb-client';
+import { CatalogoService, type CatalogoBarrioVM } from '../services/catalogo.service';
 import { LandingTopbarComponent } from '../layout/landing-topbar/landing-topbar.component';
 import { LandingMapaComponent, type MapaMarcador } from '../components/landing-mapa/landing-mapa.component';
 import { isInUruguay } from '@loteomanager/shared-utils';
@@ -50,8 +50,8 @@ import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
                     }
                     <div class="min-w-0">
                       <h4 class="font-bold text-sm text-surface-900 dark:text-surface-0 truncate">{{ b.nombre }}</h4>
-                      @if (b.ubicacion_texto) {
-                        <p class="text-xs text-surface-500 truncate mb-1">{{ b.ubicacion_texto }}</p>
+                      @if (b.ubicacionTexto) {
+                        <p class="text-xs text-surface-500 truncate mb-1">{{ b.ubicacionTexto }}</p>
                       }
                       @if (precioLabel(b); as pl) {
                         <span class="text-primary font-bold text-sm">{{ pl }}</span>
@@ -90,13 +90,12 @@ import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
   `,
 })
 export class BarriosMapaComponent implements OnInit {
-  private barriosSvc = inject(BarriosService);
-  private pb = inject(POCKETBASE);
+  private catalogoSvc = inject(CatalogoService);
   private route = inject(ActivatedRoute);
 
   readonly loading = signal(true);
-  readonly barrios = signal<BarrioConCatalogo[]>([]);
-  readonly seleccionado = signal<BarrioConCatalogo | null>(null);
+  readonly barrios = signal<CatalogoBarrioVM[]>([]);
+  readonly seleccionado = signal<CatalogoBarrioVM | null>(null);
 
   readonly conUbicacion = computed(() =>
     this.barrios().filter((b) => isInUruguay(b.lat, b.lng)),
@@ -114,35 +113,31 @@ export class BarriosMapaComponent implements OnInit {
     void this.load();
   }
 
-  hoverBarrio(b: BarrioConCatalogo): void {
+  hoverBarrio(b: CatalogoBarrioVM): void {
     this.seleccionado.set(b);
   }
 
-  thumbUrl(b: BarrioConCatalogo): string | null {
-    if (!b.imagen_portada) return null;
-    return this.pb.files.getURL(b, b.imagen_portada);
+  thumbUrl(b: CatalogoBarrioVM): string | null {
+    return b.imagenPortadaUrl;
   }
 
-  precioLabel(b: BarrioConCatalogo): string | null {
+  precioLabel(b: CatalogoBarrioVM): string | null {
     return formatPrecioDesde(b.precioDesde, b.moneda);
   }
 
-  areaLabel(b: BarrioConCatalogo): string {
+  areaLabel(b: CatalogoBarrioVM): string {
     return formatAreaRange(b.areaMin, b.areaMax);
   }
 
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const rows = await this.barriosSvc.listFiltered({ soloPublicados: true }, null, {
-        sort: 'nombre',
-      });
-      const withStats = attachCatalogStatsFromSnapshots(rows.filter(isBarrioWebReady));
-      this.barrios.set(withStats);
+      const rows = await this.catalogoSvc.fetchBarrios();
+      this.barrios.set(rows);
 
       const slug = this.route.snapshot.queryParamMap.get('barrio');
       if (slug) {
-        const match = withStats.find((b) => b.slug === slug);
+        const match = rows.find((b) => b.slug === slug);
         if (match) this.seleccionado.set(match);
       }
     } finally {

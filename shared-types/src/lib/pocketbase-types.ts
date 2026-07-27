@@ -24,6 +24,7 @@ export const Collections = {
 	Importaciones: "importaciones",
 	Interesados: "interesados",
 	PlantillasUnidad: "plantillas_unidad",
+	PublicacionHistorial: "publicacion_historial",
 	SupervisorDepartamentos: "supervisor_departamentos",
 	Unidades: "unidades",
 	Users: "users",
@@ -191,7 +192,9 @@ export type ConfigRecord = {
 	comparativa_expiracion_default_dias?: number
 	email_notif_enabled?: boolean
 	id: string
+	logo_url?: string
 	mensaje_bienvenida_landing?: HTMLString
+	nombre_inmobiliaria?: string
 	responsable_default_id: RecordIdString
 	whatsapp_notif_enabled?: boolean
 }
@@ -200,6 +203,14 @@ export type DepartamentosRecord = {
 	id: string
 	nombre: string
 	slug: string
+}
+
+export type PublicacionHistorialRecord<Tsnapshot = unknown> = {
+	barrio_id: RecordIdString
+	id: string
+	publicado_at?: IsoDateString
+	publicado_por?: RecordIdString
+	snapshot: Tsnapshot
 }
 
 export const EstadosDefinicionesEntidadOptions = {
@@ -532,9 +543,10 @@ export type ExtrasDefinicionesResponse<Topciones = unknown, Texpand = unknown> =
 export type ImportacionFilasResponse<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Tmensajes = unknown, Texpand = unknown> = Required<ImportacionFilasRecord<Tdatos_normalizados, Tdatos_originales, Tmensajes>> & BaseSystemFields<Texpand>
 export type ImportacionesResponse<Tmapeo_columnas = unknown, Tmapeo_extras = unknown, Texpand = unknown> = Required<ImportacionesRecord<Tmapeo_columnas, Tmapeo_extras>> & BaseSystemFields<Texpand>
 export type InteresadosResponse<Textras = unknown, Texpand = unknown> = Required<InteresadosRecord<Textras>> & BaseSystemFields<Texpand>
+export type PlantillasUnidadResponse<Texpand = unknown> = Required<PlantillasUnidadRecord> & BaseSystemFields<Texpand>
+export type PublicacionHistorialResponse<Tsnapshot = unknown, Texpand = unknown> = Required<PublicacionHistorialRecord<Tsnapshot>> & BaseSystemFields<Texpand>
 export type SupervisorDepartamentosResponse<Texpand = unknown> = Required<SupervisorDepartamentosRecord> & BaseSystemFields<Texpand>
 export type UnidadesResponse<Textras = unknown, Texpand = unknown> = Required<UnidadesRecord<Textras>> & BaseSystemFields<Texpand>
-export type PlantillasUnidadResponse<Texpand = unknown> = Required<PlantillasUnidadRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 export type VendedorBarriosResponse<Texpand = unknown> = Required<VendedorBarriosRecord> & BaseSystemFields<Texpand>
 export type VendedorZonasResponse<Texpand = unknown> = Required<VendedorZonasRecord> & BaseSystemFields<Texpand>
@@ -561,6 +573,7 @@ export type CollectionRecords = {
 	importaciones: ImportacionesRecord
 	interesados: InteresadosRecord
 	plantillas_unidad: PlantillasUnidadRecord
+	publicacion_historial: PublicacionHistorialRecord
 	supervisor_departamentos: SupervisorDepartamentosRecord
 	unidades: UnidadesRecord
 	users: UsersRecord
@@ -588,6 +601,7 @@ export type CollectionResponses = {
 	importaciones: ImportacionesResponse
 	interesados: InteresadosResponse
 	plantillas_unidad: PlantillasUnidadResponse
+	publicacion_historial: PublicacionHistorialResponse
 	supervisor_departamentos: SupervisorDepartamentosResponse
 	unidades: UnidadesResponse
 	users: UsersResponse

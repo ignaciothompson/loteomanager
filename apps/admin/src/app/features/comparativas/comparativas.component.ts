@@ -1,11 +1,13 @@
-import { Component, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   ComparativasService,
   InteresadosService,
   UnidadesService,
-  AuthService
+  AuthService,
+  VendedorAccesoService,
+  type ReloadableSignal,
 } from '@loteomanager/shared-pb-client';
 import { ComparativasRecord, ComparativasResponse } from '@loteomanager/shared-types';
 import { TableModule } from 'primeng/table';
@@ -44,11 +46,14 @@ export class ComparativasComponent {
   private interesadosService = inject(InteresadosService);
   private unidadesService = inject(UnidadesService);
   private authService = inject(AuthService);
+  private vendedorAcceso = inject(VendedorAccesoService);
   private messageService = inject(MessageService);
 
-  comparativas = this.comparativasService.list(undefined, { sort: '-created' });
-  interesados = this.interesadosService.list();
-  unidades = this.unidadesService.list();
+  interesados = this.createAccesoList((ids) => this.interesadosService.listVisibles(ids));
+  unidades = this.createAccesoList((ids) => this.unidadesService.listByBarrios(ids));
+  comparativas = this.createAccesoList((ids) =>
+    this.comparativasService.listVisibles(ids, this.unidadesService, { sort: '-created' })
+  );
 
   filterCliente = signal('');
   filterTitulo = signal('');
@@ -75,6 +80,17 @@ export class ComparativasComponent {
   hasActiveFilters = computed(
     () => !!this.filterCliente().trim() || !!this.filterTitulo().trim()
   );
+
+  constructor() {
+    effect(() => {
+      this.vendedorAcceso.barriosVisibles();
+      this.vendedorAcceso.accesoReady();
+      this.authService.currentUser();
+      this.interesados.reload();
+      this.unidades.reload();
+      this.comparativas.reload();
+    });
+  }
 
   clearFilters(): void {
     this.filterCliente.set('');
@@ -149,5 +165,24 @@ export class ComparativasComponent {
 
   publicUrl(token: string): string {
     return `${this.comparativasService.getLandingBaseUrl()}/c/${token}`;
+  }
+
+  private createAccesoList<T>(
+    loader: (barrioIds: string[] | null) => Promise<T[]>
+  ): ReloadableSignal<T[]> {
+    const data = signal<T[]>([]) as ReloadableSignal<T[]>;
+    const load = async () => {
+      const { barrioIds, waiting } = this.vendedorAcceso.resolveBarrioIds();
+      if (waiting) {
+        data.set([]);
+        return;
+      }
+      data.set(await loader(barrioIds));
+    };
+    data.reload = () => {
+      void load();
+    };
+    void load();
+    return data;
   }
 }

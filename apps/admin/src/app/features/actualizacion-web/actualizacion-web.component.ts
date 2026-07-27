@@ -8,6 +8,7 @@ import {
 } from '@loteomanager/shared-pb-client';
 import type {
   BarriosResponse,
+  PublicacionHistorialResponse,
   UnidadPublicacionDiff,
   UnidadesResponse,
 } from '@loteomanager/shared-types';
@@ -82,6 +83,10 @@ export class ActualizacionWebComponent implements OnInit {
   readonly webVisibleValue = signal(true);
 
   readonly pendientes = signal<BarrioPendienteRow[]>([]);
+
+  readonly historial = signal<PublicacionHistorialResponse[]>([]);
+  readonly historialBarrioId = signal<string | null>(null);
+  readonly rollingBackId = signal<string | null>(null);
 
   readonly buscarCodigo = signal('');
 
@@ -253,6 +258,63 @@ export class ActualizacionWebComponent implements OnInit {
 
   onTabChange(value: string | number | undefined): void {
     if (String(value) === 'pendientes') void this.loadPendientes();
+    if (String(value) === 'historial' && this.historialBarrioId()) {
+      void this.loadHistorial();
+    }
+  }
+
+  async onHistorialBarrioChange(id: string | null): Promise<void> {
+    this.historialBarrioId.set(id);
+    if (!id) {
+      this.historial.set([]);
+      return;
+    }
+    await this.loadHistorial();
+  }
+
+  async loadHistorial(): Promise<void> {
+    const id = this.historialBarrioId();
+    if (!id) return;
+    this.loading.set(true);
+    try {
+      const rows = await this.publicacionSvc.listHistorial(id);
+      this.historial.set(rows);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  confirmarRollback(entry: PublicacionHistorialResponse): void {
+    const id = this.historialBarrioId();
+    if (!id) return;
+    this.confirmation.confirm({
+      header: 'Restaurar versión anterior',
+      message: `Se reemplazará la publicación actual por la versión del ${new Date(
+        entry.publicado_at,
+      ).toLocaleString('es-UY')}. ¿Continuar?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Restaurar',
+      rejectLabel: 'Cancelar',
+      accept: () => void this.rollback(id, entry.id),
+    });
+  }
+
+  private async rollback(barrioId: string, historialId: string): Promise<void> {
+    this.rollingBackId.set(historialId);
+    try {
+      await this.publicacionSvc.rollback(barrioId, historialId);
+      this.messages.add({
+        severity: 'success',
+        summary: 'Restaurado',
+        detail: 'Se restauró la versión seleccionada y se publicó en la web.',
+      });
+      await this.loadHistorial();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al restaurar';
+      this.messages.add({ severity: 'error', summary: 'Error', detail: msg });
+    } finally {
+      this.rollingBackId.set(null);
+    }
   }
 
   togglePendienteBarrio(id: string, checked: boolean): void {

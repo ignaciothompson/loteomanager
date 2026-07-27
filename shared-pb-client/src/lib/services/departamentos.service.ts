@@ -22,6 +22,10 @@ export class DepartamentosService extends BaseCollectionService<DepartamentoReco
   }
 
   override async update(id: string, data: Partial<DepartamentoRecord>): Promise<DepartamentoRecord> {
+    const existing = await this.getAsync(id);
+    if (this.isTodo(existing)) {
+      throw new Error('No se puede modificar el departamento "Todo".');
+    }
     const payload = { ...data };
     if (payload.nombre !== undefined) {
       const nombre = payload.nombre.trim();

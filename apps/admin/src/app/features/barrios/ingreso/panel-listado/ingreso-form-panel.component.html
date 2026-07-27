@@ -1,7 +1,7 @@
 <div class="ingreso-form-panel">
   <p-tabs [value]="formTab()" (valueChange)="formTab.set($any($event))" class="mb-4">
     <p-tablist>
-      @for (tab of formTabs; track tab.value) {
+      @for (tab of formTabs(); track tab.value) {
         <p-tab [value]="tab.value">{{ tab.label }}</p-tab>
       }
     </p-tablist>

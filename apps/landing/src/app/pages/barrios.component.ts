@@ -1,10 +1,13 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed, inject, signal, OnInit, OnDestroy, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { BarriosService, POCKETBASE, type BarrioConCatalogo, attachCatalogStatsFromSnapshots, isBarrioWebReady } from '@loteomanager/shared-pb-client';
+import { CatalogoService, type CatalogoBarrioVM } from '../services/catalogo.service';
 import { LandingTopbarComponent } from '../layout/landing-topbar/landing-topbar.component';
 import { LandingFooterComponent } from '../layout/landing-footer/landing-footer.component';
 import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
+
+/** Frecuencia de sondeo de `/api/catalogo/meta` para detectar nuevas publicaciones. */
+const CATALOGO_POLL_MS = 60_000;
 
 @Component({
   selector: 'app-barrios',
@@ -87,9 +90,9 @@ import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
                         <span class="font-bold text-primary whitespace-nowrap">{{ pl }}</span>
                       }
                     </div>
-                    @if (barrio.ubicacion_texto) {
+                    @if (barrio.ubicacionTexto) {
                       <p class="text-surface-500 text-xs mb-4 flex items-center gap-1">
-                        <i class="pi pi-map-marker text-[10px]"></i>{{ barrio.ubicacion_texto }}
+                        <i class="pi pi-map-marker text-[10px]"></i>{{ barrio.ubicacionTexto }}
                       </p>
                     }
                     <div class="flex items-center justify-between pt-4 border-t border-surface-200 dark:border-surface-700">
@@ -137,13 +140,16 @@ import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
     </div>
   `,
 })
-export class BarriosComponent implements OnInit {
-  private barriosSvc = inject(BarriosService);
-  private pb = inject(POCKETBASE);
+export class BarriosComponent implements OnInit, OnDestroy {
+  private catalogoSvc = inject(CatalogoService);
+  private platformId = inject(PLATFORM_ID);
 
   readonly loading = signal(true);
-  readonly barrios = signal<BarrioConCatalogo[]>([]);
+  readonly barrios = signal<CatalogoBarrioVM[]>([]);
   readonly busqueda = signal('');
+
+  private lastPublishedAt: string | null = null;
+  private pollIntervalId: ReturnType<typeof setInterval> | null = null;
 
   readonly filtrados = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
@@ -152,36 +158,58 @@ export class BarriosComponent implements OnInit {
     return rows.filter(
       (b) =>
         b.nombre.toLowerCase().includes(q) ||
-        (b.ubicacion_texto?.toLowerCase().includes(q) ?? false),
+        (b.ubicacionTexto?.toLowerCase().includes(q) ?? false),
     );
   });
 
   ngOnInit(): void {
     void this.load();
+    if (isPlatformBrowser(this.platformId)) {
+      this.pollIntervalId = setInterval(() => void this.checkForUpdates(), CATALOGO_POLL_MS);
+    }
   }
 
-  portadaUrl(barrio: BarrioConCatalogo): string | null {
-    if (!barrio.imagen_portada) return null;
-    return this.pb.files.getURL(barrio, barrio.imagen_portada);
+  ngOnDestroy(): void {
+    if (this.pollIntervalId != null) clearInterval(this.pollIntervalId);
   }
 
-  precioLabel(barrio: BarrioConCatalogo): string | null {
+  portadaUrl(barrio: CatalogoBarrioVM): string | null {
+    return barrio.imagenPortadaUrl;
+  }
+
+  precioLabel(barrio: CatalogoBarrioVM): string | null {
     return formatPrecioDesde(barrio.precioDesde, barrio.moneda);
   }
 
-  areaLabel(barrio: BarrioConCatalogo): string {
+  areaLabel(barrio: CatalogoBarrioVM): string {
     return formatAreaRange(barrio.areaMin, barrio.areaMax);
   }
 
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const rows = await this.barriosSvc.listFiltered({ soloPublicados: true }, null, {
-        sort: 'nombre',
-      });
-      this.barrios.set(attachCatalogStatsFromSnapshots(rows.filter(isBarrioWebReady)));
+      const [rows, meta] = await Promise.all([
+        this.catalogoSvc.fetchBarrios(),
+        this.catalogoSvc.fetchMeta(),
+      ]);
+      this.barrios.set(rows);
+      this.lastPublishedAt = meta.lastPublishedAt;
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /** Sondea `/api/catalogo/meta`; si hubo una publicación nueva, recarga el catálogo. */
+  private async checkForUpdates(): Promise<void> {
+    try {
+      const meta = await this.catalogoSvc.fetchMeta();
+      if (meta.lastPublishedAt && meta.lastPublishedAt !== this.lastPublishedAt) {
+        this.lastPublishedAt = meta.lastPublishedAt;
+        const rows = await this.catalogoSvc.fetchBarrios();
+        this.barrios.set(rows);
+      }
+    } catch {
+      // No crítico — se reintenta en el próximo ciclo.
     }
   }
 }
