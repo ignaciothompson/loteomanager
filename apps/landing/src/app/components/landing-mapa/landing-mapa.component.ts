@@ -24,6 +24,14 @@ const MARKER_ICON_RETINA = '/leaflet/marker-icon-2x.png';
 const MARKER_ICON = '/leaflet/marker-icon.png';
 const MARKER_SHADOW = '/leaflet/marker-shadow.png';
 
+type LeafletNS = typeof import('leaflet');
+
+/** Vite/ESM may wrap leaflet on `.default` — without this, `L.Icon` is undefined. */
+function resolveLeaflet(mod: LeafletNS | { default: LeafletNS }): LeafletNS {
+  const m = mod as { default?: LeafletNS } & LeafletNS;
+  return (m.default ?? m) as LeafletNS;
+}
+
 @Component({
   selector: 'landing-mapa',
   standalone: true,
@@ -54,7 +62,7 @@ export class LandingMapaComponent implements AfterViewInit, OnChanges, OnDestroy
   private tileLayer: TileLayer | null = null;
   private markers: Marker[] = [];
   private resizeObserver: ResizeObserver | null = null;
-  private L: typeof import('leaflet') | null = null;
+  private L: LeafletNS | null = null;
   private destroyed = false;
   private invalidateTimer: ReturnType<typeof setTimeout> | null = null;
   private initStarted = false;
@@ -102,7 +110,7 @@ export class LandingMapaComponent implements AfterViewInit, OnChanges, OnDestroy
     this.initStarted = true;
 
     try {
-      const L = await import('leaflet');
+      const L = resolveLeaflet(await import('leaflet'));
       if (this.destroyed) return;
       this.L = L;
 
@@ -162,7 +170,7 @@ export class LandingMapaComponent implements AfterViewInit, OnChanges, OnDestroy
     this.markers = [];
   }
 
-  private applyViewAndMarkers(L: typeof import('leaflet'), map: LeafletMap): void {
+  private applyViewAndMarkers(L: LeafletNS, map: LeafletMap): void {
     this.clearMarkers();
 
     if (this.marcadores?.length) {

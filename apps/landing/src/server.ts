@@ -115,14 +115,7 @@ window.__env.TURNSTILE_SITE_KEY = window.__env.TURNSTILE_SITE_KEY || ${JSON.stri
 app.get('/api/comparativas/:token', async (req, res) => {
   const { token } = req.params;
   const pb = await getPocketBaseClient();
-  // URL pública del PB para que las URLs de archivos del snapshot las pueda
-  // resolver el browser. Si no está seteada, fallback a la interna (asume
-  // que el deploy expone PB en la misma red que el browser, p.ej. dev).
-  const pbUrl =
-    process.env['POCKETBASE_PUBLIC_URL'] ??
-    process.env['PB_INTERNAL_URL'] ??
-    process.env['POCKETBASE_URL'] ??
-    'http://localhost:8090';
+  const pbUrl = resolvePublicPbUrl();
 
   try {
     const comp = await pb.collection('comparativas').getFirstListItem(
@@ -357,7 +350,8 @@ function buildCatalogoBarrio(b: BarriosResponse, pbUrl: string) {
     }
   }
 
-  const imagen = snap.barrio.imagen_portada ?? b.imagen_portada ?? null;
+  // Prefer live file name over snapshot — snap stays stale until republish
+  const imagen = b.imagen_portada || snap.barrio.imagen_portada || null;
 
   return {
     id: b.id,

@@ -152,7 +152,10 @@ export class IngresoGeoPickerComponent implements AfterViewInit, OnDestroy {
   private async initMap(): Promise<void> {
     if (!this.mapEl?.nativeElement) return;
 
-    this.L = await import('leaflet');
+    this.L = await import('leaflet').then((m) => {
+      const mod = m as { default?: typeof import('leaflet') } & typeof import('leaflet');
+      return (mod.default ?? mod) as typeof import('leaflet');
+    });
     if (this.destroyed) return;
     const L = this.L;
 
