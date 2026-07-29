@@ -45,7 +45,7 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /app/dist/apps/landing ./dist/apps/landing
 
 COPY --from=builder /app/package.json /app/package-lock.json ./
-RUN npm ci --omit=dev && npx playwright install chromium
+RUN npm ci --omit=dev --ignore-scripts && npx playwright install chromium
 
 EXPOSE 4000
 
