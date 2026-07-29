@@ -1,13 +1,18 @@
-# Stage 1: Build
-FROM node:20-alpine AS builder
+# Stage 1: Build (bookworm/glibc — Nx native binaries; alpine/musl breaks project graph)
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
+
+ENV NX_DAEMON=false
+ENV NX_NO_CLOUD=true
+ENV NODE_OPTIONS=--max-old-space-size=4096
 
 COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN npx nx build landing --configuration=production
+RUN npx nx build landing --configuration=production \
+  && test -d dist/apps/landing/server
 
 # Stage 2: Production runtime con Playwright/Chromium
 FROM node:20-bookworm-slim AS runner
