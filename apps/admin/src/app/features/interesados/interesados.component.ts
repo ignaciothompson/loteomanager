@@ -1,7 +1,13 @@
-import { Component, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { InteresadosService, AuthService, DefinicionesCacheService } from '@loteomanager/shared-pb-client';
+import {
+  InteresadosService,
+  AuthService,
+  DefinicionesCacheService,
+  VendedorAccesoService,
+  type ReloadableSignal,
+} from '@loteomanager/shared-pb-client';
 import { InteresadosRecord, InteresadosResponse, ExtraPersistido, sanitizeExtrasPayload } from '@loteomanager/shared-types';
 import { EstadoBadgeComponent } from '@loteomanager/shared-ui';
 import { TableModule } from 'primeng/table';
@@ -41,10 +47,16 @@ export class InteresadosComponent {
 
   private interesadosService = inject(InteresadosService);
   private authService = inject(AuthService);
+  private vendedorAcceso = inject(VendedorAccesoService);
   private messageService = inject(MessageService);
   private definicionesCache = inject(DefinicionesCacheService);
 
-  interesados = this.interesadosService.list();
+interesados = this.createAccesoList((ids) =>
+    this.interesadosService.listVisibles(ids, {
+      expand: 'barrio_id,unidad_id,comparativa_id',
+      sort: '-created',
+    })
+  );
 
   displayDialog = signal(false);
   isEdit = signal(false);
@@ -72,6 +84,40 @@ export class InteresadosComponent {
   });
 
   hasActiveFilters = computed(() => !!this.filterNombre().trim() || !!this.filterEstado());
+
+constructor() {
+    effect(() => {
+      this.vendedorAcceso.barriosVisibles();
+      this.vendedorAcceso.accesoReady();
+      this.authService.currentUser();
+      this.interesados.reload();
+    });
+  }
+
+  contextoLabel(interesado: InteresadosResponse): string {
+    const expand = (interesado as InteresadosResponse & {
+      expand?: {
+        comparativa_id?: { titulo?: string; id?: string };
+        unidad_id?: { codigo?: string; codigo_interno?: string; id?: string };
+        barrio_id?: { nombre?: string; id?: string };
+      };
+    }).expand;
+
+    if (interesado.comparativa_id) {
+      const titulo = expand?.comparativa_id?.titulo;
+      return titulo ? `Comparativa: ${titulo}` : 'Comparativa';
+    }
+    if (interesado.unidad_id) {
+      const codigo =
+        expand?.unidad_id?.codigo_interno || expand?.unidad_id?.codigo;
+      return codigo ? `Unidad: ${codigo}` : 'Unidad';
+    }
+    if (interesado.barrio_id) {
+      const nombre = expand?.barrio_id?.nombre;
+      return nombre ? `Barrio: ${nombre}` : 'Barrio';
+    }
+    return 'Contacto general';
+  }
 
   clearFilters(): void {
     this.filterNombre.set('');
@@ -158,5 +204,24 @@ export class InteresadosComponent {
       return raw as ExtraPersistido[];
     }
     return [];
+  }
+
+  private createAccesoList<T>(
+    loader: (barrioIds: string[] | null) => Promise<T[]>
+  ): ReloadableSignal<T[]> {
+    const data = signal<T[]>([]) as ReloadableSignal<T[]>;
+    const load = async () => {
+      const { barrioIds, waiting } = this.vendedorAcceso.resolveBarrioIds();
+      if (waiting) {
+        data.set([]);
+        return;
+      }
+      data.set(await loader(barrioIds));
+    };
+    data.reload = () => {
+      void load();
+    };
+    void load();
+    return data;
   }
 }

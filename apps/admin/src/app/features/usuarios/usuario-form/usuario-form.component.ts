@@ -262,6 +262,30 @@ export class UsuarioFormComponent implements OnChanges {
     await this.vendedorAcceso.refresh();
   }
 
+  /** Borra pivots del rol anterior al cambiar role (supervisor↔vendedor↔admin). */
+  private async clearPivotsForRole(userId: string, previousRole: UsersRoleOptions): Promise<void> {
+    if (previousRole === 'supervisor') {
+      const recs = await this.pb.collection('supervisor_departamentos').getFullList({
+        filter: `user_id="${userId}"`,
+      });
+      await Promise.all(recs.map((r) => this.pb.collection('supervisor_departamentos').delete(r.id)));
+      this.selectedDepartamentos = [];
+    }
+
+    if (previousRole === 'vendedor') {
+      const [zonas, barrios] = await Promise.all([
+        this.pb.collection('vendedor_zonas').getFullList({ filter: `vendedor_id="${userId}"` }),
+        this.pb.collection('vendedor_barrios').getFullList({ filter: `vendedor_id="${userId}"` }),
+      ]);
+      await Promise.all([
+        ...zonas.map((r) => this.pb.collection('vendedor_zonas').delete(r.id)),
+        ...barrios.map((r) => this.pb.collection('vendedor_barrios').delete(r.id)),
+      ]);
+      this.selectedZonas = [];
+      this.selectedBarrios = [];
+    }
+  }
+
   async save(): Promise<void> {
     if (!this.form.name || !this.form.email || !this.form.role) return;
     this.saving.set(true);
@@ -278,6 +302,11 @@ export class UsuarioFormComponent implements OnChanges {
           payload['leads_visibility'] = this.form.leads_visibility || 'solo_mios';
         }
         await this.pb.collection('users').update(this.user.id, payload);
+
+        const previousRole = this.user.role;
+        if (previousRole !== this.form.role) {
+          await this.clearPivotsForRole(this.user.id, previousRole);
+        }
 
         if (this.form.role === 'supervisor') {
           await this.syncSupervisorDepts(this.user.id);

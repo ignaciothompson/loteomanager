@@ -1,6 +1,9 @@
 /**
  * Aplica deltas de schema post pocketbase-typegen (migración ingreso unidades).
  * Corre automáticamente al final de npm run pb:types.
+ *
+ * Idempotente: si typegen ya emite plantillas_unidad / TipoUnidadIngreso, no toca nada
+ * salvo asegurar el alias TipoUnidadIngreso en BarriosRecord.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -11,136 +14,77 @@ const out = join(root, "shared-types", "src", "lib", "pocketbase-types.ts");
 
 let src = readFileSync(out, "utf8");
 
-if (src.includes("TipoUnidadIngreso")) {
-  console.log("=> pb-typegen-patch: ya aplicado, skip.");
-  process.exit(0);
+const hasTipoAlias = src.includes("export type TipoUnidadIngreso");
+const hasPlantillasInCollections = /\tPlantillasUnidad: "plantillas_unidad",/.test(src);
+const plantillasCount = (src.match(/\tPlantillasUnidad: "plantillas_unidad",/g) || []).length;
+
+// Deduplicate Collections key if patch ran twice historically
+if (plantillasCount > 1) {
+  src = src.replace(
+    /(\tPlantillasUnidad: "plantillas_unidad",\n)+/,
+    '\tPlantillasUnidad: "plantillas_unidad",\n',
+  );
 }
 
-// Collections
+// Deduplicate CollectionRecords / Responses entries
 src = src.replace(
-  /(\tInteresados: "interesados",\n)/,
-  '$1\tPlantillasUnidad: "plantillas_unidad",\n',
-);
-
-// BarriosRecord
-src = src.replace(
-  /export type BarriosRecord<Textras = unknown> = \{/,
-  `export type TipoUnidadIngreso = 'lote_vacio' | 'casa_construida' | 'casa_prefabricada'
-
-export type BarriosRecord<Textras = unknown> = {`,
+  /(\tplantillas_unidad: PlantillasUnidadRecord\n)+/g,
+  "\tplantillas_unidad: PlantillasUnidadRecord\n",
 );
 src = src.replace(
-  /(\tslug: string\n)/,
-  `$1\ttipos_unidad?: TipoUnidadIngreso[]\n`,
+  /(\tplantillas_unidad: PlantillasUnidadResponse\n)+/g,
+  "\tplantillas_unidad: PlantillasUnidadResponse\n",
+);
+src = src.replace(
+  /(export type PlantillasUnidadResponse<Texpand = unknown> = Required<PlantillasUnidadRecord> & BaseSystemFields<Texpand>\n)+/g,
+  "export type PlantillasUnidadResponse<Texpand = unknown> = Required<PlantillasUnidadRecord> & BaseSystemFields<Texpand>\n",
 );
 
-// Unidades tipo/moneda options + record fields
-src = src.replace(
-  /export const UnidadesTipoUnidadOptions = \{[\s\S]*?\} as const\nexport type UnidadesTipoUnidadOptions = typeof UnidadesTipoUnidadOptions\[keyof typeof UnidadesTipoUnidadOptions\]\n\nexport const UnidadesMonedaOptions = \{[\s\S]*?\} as const\nexport type UnidadesMonedaOptions = typeof UnidadesMonedaOptions\[keyof typeof UnidadesMonedaOptions\]\nexport type UnidadesRecord<Textras = unknown> = \{[\s\S]*?\ttipo_unidad: UnidadesTipoUnidadOptions\n\}/,
-  `export const UnidadesTipoUnidadOptions = {
-	"lote_vacio": "lote_vacio",
-	"casa_construida": "casa_construida",
-	"casa_prefabricada": "casa_prefabricada",
-} as const
-export type UnidadesTipoUnidadOptions = typeof UnidadesTipoUnidadOptions[keyof typeof UnidadesTipoUnidadOptions]
-
-export const UnidadesMonedaOptions = {
-	"USD": "USD",
-	"UYU": "UYU",
-	"ARS": "ARS",
-} as const
-export type UnidadesMonedaOptions = typeof UnidadesMonedaOptions[keyof typeof UnidadesMonedaOptions]
-
-export const UnidadesOrientacionOptions = {
-	"Norte": "Norte",
-	"Sur": "Sur",
-	"Este": "Este",
-	"Oeste": "Oeste",
-	"Noreste": "Noreste",
-	"Noroeste": "Noroeste",
-	"Sureste": "Sureste",
-	"Suroeste": "Suroeste",
-} as const
-export type UnidadesOrientacionOptions = typeof UnidadesOrientacionOptions[keyof typeof UnidadesOrientacionOptions]
-
-export type UnidadesRecord<Textras = unknown> = {
-	ambientes?: number
-	antiguedad_anios?: number
-	arquitecto_id?: RecordIdString
-	area_m2?: number
-	barrio_id?: RecordIdString
-	cocheras?: number
-	codigo: string
-	codigo_interno?: string
-	descripcion?: HTMLString
-	destacado?: boolean
-	direccion_propia?: string
-	en_oferta?: boolean
-	estado: string
-	extras?: null | Textras
-	fecha_bloqueo?: IsoDateString
-	fecha_escritura?: IsoDateString
-	fecha_ingreso?: IsoDateString
-	fecha_reserva?: IsoDateString
-	fecha_sena?: IsoDateString
-	fecha_venta?: IsoDateString
-	galeria?: FileNameString[]
-	id: string
-	interesado_comprador_id?: RecordIdString
-	metros_construidos?: number
-	metros_cuadrados?: number
-	moneda: UnidadesMonedaOptions
-	numero_unidad?: string
-	oferta?: boolean
-	orientacion?: UnidadesOrientacionOptions
-	pendiente_publicar?: boolean
-	plano_unidad?: FileNameString
-	precio?: number
-	precio_oferta?: number
-	responsable_id: RecordIdString
-	tipo_unidad: UnidadesTipoUnidadOptions
-	web_visible?: boolean
+// Normalize BarriosRecord tipos_unidad to TipoUnidadIngreso[]
+if (!hasTipoAlias) {
+  src = src.replace(
+    /export type BarriosRecord</,
+    `export type TipoUnidadIngreso = 'lote_vacio' | 'casa_construida' | 'casa_prefabricada'\n\nexport type BarriosRecord<`,
+  );
 }
 
-export const PlantillasUnidadEstadoInicialOptions = {
-	"disponible": "disponible",
-	"reservado": "reservado",
-	"bloqueado": "bloqueado",
-} as const
-export type PlantillasUnidadEstadoInicialOptions = typeof PlantillasUnidadEstadoInicialOptions[keyof typeof PlantillasUnidadEstadoInicialOptions]
-
-export type PlantillasUnidadRecord = {
-	area_m2?: number
-	barrio_id: RecordIdString
-	cantidad: number
-	estado_inicial?: PlantillasUnidadEstadoInicialOptions
-	id: string
-	modelo?: string
-	moneda?: UnidadesMonedaOptions
-	nombre: string
-	orientacion?: UnidadesOrientacionOptions
-	patron_codigo: string
-	precio?: number
-	tipo_unidad: UnidadesTipoUnidadOptions
-	web_visible?: boolean
-}`,
+// Collapse duplicate tipos_unidad lines inside BarriosRecord
+src = src.replace(
+  /export type BarriosRecord<[^>]+> = \{[\s\S]*?\n\}/,
+  (block) => {
+    let next = block.replace(/\n\ttipos_unidad\?:[^\n]+\n/g, "\n");
+    next = next.replace(
+      /(\tslug: string\n)/,
+      "$1\ttipos_unidad?: TipoUnidadIngreso[]\n",
+    );
+    // Drop unused Ttipos_unidad generic if present
+    next = next.replace(
+      /export type BarriosRecord<Textras = unknown, Tsnapshot = unknown, Ttipos_unidad = unknown>/,
+      "export type BarriosRecord<Textras = unknown, Tsnapshot = unknown>",
+    );
+    return next;
+  },
 );
 
-// PlantillasUnidadResponse
 src = src.replace(
-  /(export type UnidadesResponse<Textras = unknown, Texpand = unknown> = Required<UnidadesRecord<Textras>> & BaseSystemFields<Texpand>\n)/,
-  `$1export type PlantillasUnidadResponse<Texpand = unknown> = Required<PlantillasUnidadRecord> & BaseSystemFields<Texpand>\n`,
+  /export type BarriosResponse<Textras = unknown, Tsnapshot = unknown, Ttipos_unidad = unknown, Texpand = unknown> = Required<BarriosRecord<Textras, Tsnapshot, Ttipos_unidad>> & BaseSystemFields<Texpand>/,
+  "export type BarriosResponse<Textras = unknown, Tsnapshot = unknown, Texpand = unknown> = Required<BarriosRecord<Textras, Tsnapshot>> & BaseSystemFields<Texpand>",
 );
 
-// CollectionRecords / CollectionResponses
-src = src.replace(
-  /(\tinteresados: InteresadosRecord\n)/,
-  `$1\tplantillas_unidad: PlantillasUnidadRecord\n`,
-);
-src = src.replace(
-  /(\tinteresados: InteresadosResponse\n)/,
-  `$1\tplantillas_unidad: PlantillasUnidadResponse\n`,
-);
+// Legacy path: typegen sin plantillas_unidad — insertar (solo si falta)
+if (!hasPlantillasInCollections) {
+  src = src.replace(
+    /(\tInteresados: "interesados",\n)/,
+    '$1\tPlantillasUnidad: "plantillas_unidad",\n',
+  );
+}
+
+if (!src.includes("export type PlantillasUnidadRecord")) {
+  // Keep old heavy patch path out — schema ahora viene de typegen.
+  console.warn(
+    "=> pb-typegen-patch: PlantillasUnidadRecord ausente en typegen; revisar migración plantillas_unidad.",
+  );
+}
 
 writeFileSync(out, src, "utf8");
 console.log("=> pb-typegen-patch: deltas ingreso unidades aplicados.");

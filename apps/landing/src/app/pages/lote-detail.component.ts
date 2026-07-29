@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Meta, Title } from '@angular/platform-browser';
 import { BarriosService, POCKETBASE, PublicacionService, barrioFromSnapshot, parseBarrioWebSnapshot, snapUnidadToUnidadesResponse } from '@loteomanager/shared-pb-client';
 import { isInUruguay, TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
 import type { BarriosResponse, UnidadesResponse } from '@loteomanager/shared-types';
@@ -10,8 +11,9 @@ import { DatoCardComponent } from '../components/dato-card/dato-card.component';
 import { LightboxGaleriaComponent } from '../components/lightbox-galeria/lightbox-galeria.component';
 import { SanitizeHtmlPipe } from '../pipes/sanitize-html.pipe';
 import { LandingMapaComponent } from '../components/landing-mapa/landing-mapa.component';
-import { ContactarUnidadFabComponent } from '../components/contactar-unidad-fab/contactar-unidad-fab.component';
+import { ContactoFabComponent } from '../components/contacto-fab/contacto-fab.component';
 import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
+import { ConfigPublicaService } from '../services/config-publica.service';
 
 @Component({
   selector: 'app-lote-detail',
@@ -24,7 +26,7 @@ import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
     LightboxGaleriaComponent,
     SanitizeHtmlPipe,
     LandingMapaComponent,
-    ContactarUnidadFabComponent,
+    ContactoFabComponent,
     PrecioFormatPipe,
   ],
   template: `
@@ -160,7 +162,7 @@ import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
         </main>
 
         <landing-footer />
-        <contactar-unidad-fab [unidadId]="unidad()!.id" />
+        <contacto-fab [unidadId]="unidad()!.id" />
         <lightbox-galeria #lightbox [images]="galeriaUrls()" />
       }
     </div>
@@ -172,6 +174,9 @@ export class LoteDetailComponent implements OnInit {
   private barriosSvc = inject(BarriosService);
   private publicacionSvc = inject(PublicacionService);
   private pb = inject(POCKETBASE);
+  private meta = inject(Meta);
+  private titleService = inject(Title);
+  private configService = inject(ConfigPublicaService);
 
   @ViewChild('lightbox') lightboxRef!: LightboxGaleriaComponent;
 
@@ -256,6 +261,7 @@ export class LoteDetailComponent implements OnInit {
 
     this.loading.set(true);
     try {
+      await this.configService.load();
       const barrioId = await this.publicacionSvc.getBarrioIdOfUnidad(id);
       if (!barrioId) {
         void this.router.navigate(['/404']);
@@ -275,12 +281,36 @@ export class LoteDetailComponent implements OnInit {
         return;
       }
 
-      this.barrio.set(barrioFromSnapshot(b, snap));
-      this.unidad.set(snapUnidadToUnidadesResponse(snapUnidad, barrioId));
+      const barrio = barrioFromSnapshot(b, snap);
+      const unidad = snapUnidadToUnidadesResponse(snapUnidad, barrioId);
+      this.barrio.set(barrio);
+      this.unidad.set(unidad);
+      this.setMetaTags(barrio, unidad);
     } catch {
       void this.router.navigate(['/404']);
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private setMetaTags(barrio: BarriosResponse, unidad: UnidadesResponse): void {
+    const config = this.configService.config();
+    const codigo = unidad.codigo_interno || unidad.codigo;
+    const titulo = `${codigo} en ${barrio.nombre} — ${config.nombreInmobiliaria}`;
+    const precio = this.precioDisplay();
+    const precioLabel = precio != null ? `${unidad.moneda} ${precio.toLocaleString('es-UY')}` : null;
+    const descripcion = `${this.tipoLabel()} en ${barrio.nombre}.${precioLabel ? ` ${precioLabel}.` : ''}`;
+    const imagen = this.imagenHero() ?? '';
+
+    this.titleService.setTitle(titulo);
+    this.meta.updateTag({ name: 'description', content: descripcion });
+    this.meta.updateTag({ property: 'og:title', content: titulo });
+    this.meta.updateTag({ property: 'og:description', content: descripcion });
+    this.meta.updateTag({ property: 'og:image', content: imagen });
+    this.meta.updateTag({ property: 'og:type', content: 'website' });
+    this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+    this.meta.updateTag({ name: 'twitter:title', content: titulo });
+    this.meta.updateTag({ name: 'twitter:description', content: descripcion });
+    this.meta.updateTag({ name: 'twitter:image', content: imagen });
   }
 }

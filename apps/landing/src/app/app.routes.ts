@@ -27,6 +27,11 @@ export const appRoutes: Route[] = [
       import('./pages/lote-detail.component').then(m => m.LoteDetailComponent),
   },
   {
+    path: 'contacto',
+    loadComponent: () =>
+      import('./pages/contacto/contacto.component').then(m => m.ContactoPageComponent),
+  },
+  {
     path: 'c/:token',
     loadComponent: () =>
       import('./pages/comparativa-publica/comparativa-publica.component').then(

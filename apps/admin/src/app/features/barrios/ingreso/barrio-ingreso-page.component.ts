@@ -36,7 +36,7 @@ import {
   type IngresoFormMode,
   type IngresoPaso2BarrioDraft,
   type IngresoUnidadForm
-} from '../../unidades/dialogs/ingreso-unidades.types';
+} from './ingreso-unidades.types';
 import { IngresoFormPanelComponent } from './panel-listado/ingreso-form-panel.component';
 import { IngresoPanelLateralComponent, type IngresoLateralTab } from './panel-tabs/ingreso-panel-lateral.component';
 import {

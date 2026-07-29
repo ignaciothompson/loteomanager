@@ -75,10 +75,10 @@ export class BarriosComponent {
 
   readonly metricBarrios = computed(() => this.rows().length);
   readonly metricUnidadesDisponibles = computed(() =>
-    this.rows().reduce((sum, r) => sum + r.unidadesCount, 0)
+    this.rows().reduce((sum, r) => sum + (r.unidadesDisponiblesCount ?? 0), 0)
   );
   readonly metricUnidadesReservadas = computed(() =>
-    this.rows().reduce((sum, r) => sum + r.unidadesCount, 0)
+    this.rows().reduce((sum, r) => sum + (r.unidadesReservadasCount ?? 0), 0)
   );
   readonly metricUnidades = computed(() =>
     this.rows().reduce((sum, r) => sum + r.unidadesCount, 0)
@@ -108,6 +108,7 @@ export class BarriosComponent {
 
     effect(() => {
       this.vendedorAcceso.barriosVisibles();
+      this.vendedorAcceso.accesoReady();
       this.authService.currentUser();
       this.filterDepartamento();
       this.filterZona();
@@ -193,8 +194,8 @@ export class BarriosComponent {
   }
 
   private resolveVisibleBarrioIds(): string[] | null {
-    const role = this.authService.currentUser()?.['role'] as string | undefined;
-    if (!role || role === 'admin') return null;
-    return this.vendedorAcceso.barriosVisibles();
+    const { barrioIds, waiting } = this.vendedorAcceso.resolveBarrioIds();
+    if (waiting) return [];
+    return barrioIds;
   }
 }

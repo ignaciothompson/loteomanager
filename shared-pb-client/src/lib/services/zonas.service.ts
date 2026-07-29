@@ -23,6 +23,10 @@ export class ZonasService extends BaseCollectionService<ZonaRecord> {
   }
 
   override async update(id: string, data: Partial<ZonaRecord>): Promise<ZonaRecord> {
+    const existing = await this.getAsync(id);
+    if (this.isTodo(existing)) {
+      throw new Error('No se puede modificar la zona "Todo".');
+    }
     const payload = { ...data };
     if (payload.nombre !== undefined) {
       const nombre = payload.nombre.trim();

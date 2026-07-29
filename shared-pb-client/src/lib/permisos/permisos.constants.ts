@@ -28,10 +28,8 @@ export type Permiso =
   | 'config.update'
   | 'extras.crud'
   | 'estados.crud'
-  | 'users.read'
   | 'users.crud'
   | 'users.manage'
-  | 'users.assign_barrios'
   | 'departamentos.manage'
   | 'zonas.manage'
   | 'web.publish'
@@ -67,7 +65,11 @@ export const PERMISOS_POR_ROL: Record<Role, Permiso[]> = {
     'comparativas.update_propias',
     'arquitectos.read',
     'config.read',
+    'extras.crud',
+    'estados.crud',
     'zonas.manage',
+    'extras.crud',
+    'estados.crud',
     'seguimiento.view',
     'seguimiento.manage',
     'importador.use',

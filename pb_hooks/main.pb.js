@@ -555,13 +555,53 @@ onRecordCreateRequest((e) => {
   e.next();
 }, "vendedor_zonas");
 
+// ─── HOOK E — SUPERVISOR SOLO ZONAS DE SUS DEPARTAMENTOS (P7) ─────────────────
+
+function lmSupervisorPuedeZona(auth, departamentoId) {
+  if (!auth) return false;
+  const role = auth.get("role");
+  if (role === "admin") return true;
+  if (role !== "supervisor") return false;
+  if (!departamentoId) return false;
+  const pivots = $app.findRecordsByFilter(
+    "supervisor_departamentos",
+    'user_id="' + auth.id + '" && departamento_id="' + departamentoId + '"',
+    "",
+    1,
+    0
+  );
+  return pivots && pivots.length > 0;
+}
+
+onRecordCreateRequest((e) => {
+  if (!lmSupervisorPuedeZona(e.auth, e.record.get("departamento_id"))) {
+    throw new ForbiddenError("No podés crear zonas fuera de tus departamentos asignados.");
+  }
+  e.next();
+}, "zonas");
+
+onRecordUpdateRequest((e) => {
+  if (!lmSupervisorPuedeZona(e.auth, e.record.get("departamento_id"))) {
+    throw new ForbiddenError("No podés modificar zonas fuera de tus departamentos asignados.");
+  }
+  e.next();
+}, "zonas");
+
+onRecordDeleteRequest((e) => {
+  if (!lmSupervisorPuedeZona(e.auth, e.record.get("departamento_id"))) {
+    throw new ForbiddenError("No podés borrar zonas fuera de tus departamentos asignados.");
+  }
+  e.next();
+}, "zonas");
+
 // --- Endpoint admin: reemplazar estado y borrar definición custom ---
 routerAdd(
   "POST",
   "/api/admin/estados/replace-and-delete",
   (e) => {
-    if (!e.auth || e.auth.get("role") !== "admin") {
-      return e.forbiddenError("Solo administradores.");
+    const role = e.auth ? e.auth.get("role") : "";
+    if (role !== "admin" && role !== "supervisor") {
+      return e.forbiddenError("Solo administradores o supervisores.");
     }
     const data = {};
     try {
