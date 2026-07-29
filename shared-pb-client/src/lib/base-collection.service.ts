@@ -1,6 +1,6 @@
 import { inject, signal, type WritableSignal } from '@angular/core';
 
-export type ReloadableSignal<T> = WritableSignal<T> & { reload: () => void };
+export type ReloadableSignal<T> = WritableSignal<T> & { reload: () => void | Promise<void> };
 
 export type ListOptions = {
   expand?: string;

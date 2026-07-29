@@ -8,6 +8,8 @@ import {
   output,
   signal
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { startWith } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -64,9 +66,14 @@ export class ComparativaFormDialogComponent {
     mensaje_personalizado: ['']
   });
 
+  private formValue = toSignal(
+    this.form.valueChanges.pipe(startWith(this.form.getRawValue())),
+    { initialValue: this.form.getRawValue() }
+  );
+
   canSubmit = computed(() => {
-    const v = this.form.getRawValue();
-    return !!v.interesadoId && v.unidades_ids.length > 0;
+    const v = this.formValue();
+    return !!v.interesadoId && (v.unidades_ids?.length ?? 0) > 0;
   });
 
   constructor() {

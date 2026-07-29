@@ -1,4 +1,5 @@
 import type {
+  ExtraPersistido,
   TipoUnidadIngreso,
   UnidadesOrientacionOptions
 } from '@loteomanager/shared-types';
@@ -66,7 +67,7 @@ export type IngresoUnidadForm = {
   garage?: number | null;
   anio_construccion?: number | null;
   /** Campos custom desde extras_definiciones (no incluye campos fijos del tipo). */
-  extras?: Record<string, unknown>;
+  extras?: ExtraPersistido[];
 };
 
 /** @deprecated use IngresoUnidadForm */
@@ -80,7 +81,7 @@ export function emptyUnidadForm(): IngresoUnidadForm {
     moneda: 'USD',
     estado_inicial: 'disponible',
     web_visible: true,
-    extras: {}
+    extras: []
   };
 }
 

@@ -28,9 +28,9 @@ const CARTO_LIGHT =
 const CARTO_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
-const MARKER_ICON_RETINA = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png';
-const MARKER_ICON = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png';
-const MARKER_SHADOW = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png';
+const MARKER_ICON_RETINA = '/leaflet/marker-icon-2x.png';
+const MARKER_ICON = '/leaflet/marker-icon.png';
+const MARKER_SHADOW = '/leaflet/marker-shadow.png';
 
 const MONTEVIDEO: readonly [number, number] = [-34.9011, -56.1645];
 

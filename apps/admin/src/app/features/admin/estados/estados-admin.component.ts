@@ -115,8 +115,9 @@ export class EstadosAdminComponent {
         this.toast.add({ severity: 'success', summary: 'Creado' });
       }
       this.formVisible.set(false);
-      this.rows.reload();
+      this.formDialog?.stopSaving();
       await this.cache.refresh();
+      this.rows.set(this.cache.estados());
     } catch (e: unknown) {
       this.formDialog?.stopSaving();
       const msg = e instanceof Error ? e.message : 'Error al guardar';

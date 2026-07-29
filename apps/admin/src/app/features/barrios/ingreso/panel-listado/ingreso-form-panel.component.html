@@ -98,11 +98,20 @@
       </div>
       <hr class="extras-divider" />
       <p class="extras-section-label">Campos adicionales</p>
-      <app-extras-editor
-        entidad="unidades"
-        [extras]="unidadForm().extras ?? {}"
+      <input
+        pInputText
+        type="search"
+        class="w-full mb-2"
+        placeholder="Buscar campo…"
+        [ngModel]="extrasFilter()"
+        (ngModelChange)="extrasFilter.set($event)"
         [disabled]="disabled()"
+      />
+      <lib-extras-editor
+        entidad="unidades"
+        [extras]="unidadForm().extras ?? []"
         (extrasChange)="onUnidadExtrasChange($event)"
+        [filterQuery]="extrasFilter()"
       />
     }
     @case ('casa_construida') {
@@ -244,11 +253,20 @@
       </div>
       <hr class="extras-divider" />
       <p class="extras-section-label">Campos adicionales</p>
-      <app-extras-editor
-        entidad="unidades"
-        [extras]="unidadForm().extras ?? {}"
+      <input
+        pInputText
+        type="search"
+        class="w-full mb-2"
+        placeholder="Buscar campo…"
+        [ngModel]="extrasFilter()"
+        (ngModelChange)="extrasFilter.set($event)"
         [disabled]="disabled()"
+      />
+      <lib-extras-editor
+        entidad="unidades"
+        [extras]="unidadForm().extras ?? []"
         (extrasChange)="onUnidadExtrasChange($event)"
+        [filterQuery]="extrasFilter()"
       />
     }
     @case ('casa_prefabricada') {
@@ -369,11 +387,20 @@
       </div>
       <hr class="extras-divider" />
       <p class="extras-section-label">Campos adicionales</p>
-      <app-extras-editor
-        entidad="unidades"
-        [extras]="unidadForm().extras ?? {}"
+      <input
+        pInputText
+        type="search"
+        class="w-full mb-2"
+        placeholder="Buscar campo…"
+        [ngModel]="extrasFilter()"
+        (ngModelChange)="extrasFilter.set($event)"
         [disabled]="disabled()"
+      />
+      <lib-extras-editor
+        entidad="unidades"
+        [extras]="unidadForm().extras ?? []"
         (extrasChange)="onUnidadExtrasChange($event)"
+        [filterQuery]="extrasFilter()"
       />
     }
   }

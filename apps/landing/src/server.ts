@@ -329,12 +329,11 @@ app.use('/**', async (req, res, next) => {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function resolvePublicPbUrl(): string {
-  return (
+  const raw =
     process.env['POCKETBASE_PUBLIC_URL'] ??
-    process.env['PB_INTERNAL_URL'] ??
     process.env['POCKETBASE_URL'] ??
-    'http://localhost:8090'
-  );
+    'http://localhost:8090';
+  return raw.replace(/\/+$/, '');
 }
 
 /** Deriva el card de catálogo (id/nombre/slug/stats) del snapshot congelado de un barrio. */

@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { ThemeService } from '../../services/theme.service';
 import { ConfigPublicaService } from '../../services/config-publica.service';
 
 @Component({
@@ -38,22 +37,10 @@ import { ConfigPublicaService } from '../../services/config-publica.service';
             </a>
           </nav>
         </div>
-        <button (click)="theme.toggle()"
-                class="theme-toggle flex items-center justify-center w-9 h-9 rounded-full
-                       bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700
-                       text-surface-700 dark:text-surface-200 transition-colors"
-                [attr.aria-label]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'">
-          @if (theme.isDark()) {
-            <i class="pi pi-sun"></i>
-          } @else {
-            <i class="pi pi-moon"></i>
-          }
-        </button>
       </div>
     </header>
   `,
 })
 export class LandingTopbarComponent {
-  readonly theme = inject(ThemeService);
   readonly config = inject(ConfigPublicaService).config;
 }

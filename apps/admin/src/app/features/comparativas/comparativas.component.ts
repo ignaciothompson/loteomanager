@@ -86,9 +86,9 @@ export class ComparativasComponent {
       this.vendedorAcceso.barriosVisibles();
       this.vendedorAcceso.accesoReady();
       this.authService.currentUser();
-      this.interesados.reload();
-      this.unidades.reload();
-      this.comparativas.reload();
+      void this.interesados.reload();
+      void this.unidades.reload();
+      void this.comparativas.reload();
     });
   }
 
@@ -127,14 +127,34 @@ export class ComparativasComponent {
         });
       }
 
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Comparativa generada',
-        detail: response.url,
-        life: 10000
-      });
+      // Mostrar ya en tabla (reload a veces no pinta por carrera / cancel PB)
+      this.comparativas.update((rows) => [
+        response.record,
+        ...rows.filter((r) => r.id !== response.record.id)
+      ]);
+
       this.displayDialog.set(false);
-      this.comparativas.reload();
+      this.formDialog?.stopSaving();
+
+      const url = response.url;
+      try {
+        await navigator.clipboard.writeText(url);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Comparativa generada',
+          detail: 'Enlace copiado al portapapeles',
+          life: 5000
+        });
+      } catch {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Comparativa generada',
+          detail: url,
+          life: 10000
+        });
+      }
+
+      await this.comparativas.reload();
     } catch (err: unknown) {
       this.formDialog?.stopSaving();
       const msg = err instanceof Error ? err.message : 'Error al generar';
@@ -147,7 +167,8 @@ export class ComparativasComponent {
     try {
       await this.comparativasService.delete(comp.id);
       this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Comparativa eliminada' });
-      this.comparativas.reload();
+      this.comparativas.update((rows) => rows.filter((r) => r.id !== comp.id));
+      await this.comparativas.reload();
     } catch {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar' });
     }
@@ -172,16 +193,18 @@ export class ComparativasComponent {
   ): ReloadableSignal<T[]> {
     const data = signal<T[]>([]) as ReloadableSignal<T[]>;
     const load = async () => {
-      const { barrioIds, waiting } = this.vendedorAcceso.resolveBarrioIds();
-      if (waiting) {
-        data.set([]);
-        return;
+      try {
+        const { barrioIds, waiting } = this.vendedorAcceso.resolveBarrioIds();
+        if (waiting) {
+          data.set([]);
+          return;
+        }
+        data.set(await loader(barrioIds));
+      } catch (err) {
+        console.error('[comparativas] list reload failed', err);
       }
-      data.set(await loader(barrioIds));
     };
-    data.reload = () => {
-      void load();
-    };
+    data.reload = () => load();
     void load();
     return data;
   }

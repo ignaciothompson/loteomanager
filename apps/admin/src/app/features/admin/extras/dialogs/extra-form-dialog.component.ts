@@ -19,6 +19,7 @@ import {
   type AbstractControl
 } from '@angular/forms';
 import type { EntidadExtra, ExtraTipo, ExtrasDefinicion } from '@loteomanager/shared-types';
+import { slugify } from '@loteomanager/shared-utils';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -96,6 +97,13 @@ export class ExtraFormDialogComponent {
   isOpciones = computed(() => this.tipoValue() === 'opciones');
 
   constructor() {
+    this.form.controls.nombre.valueChanges.subscribe((nombre) => {
+      if (this.editingId()) return;
+      const codeCtrl = this.form.controls.code;
+      if (codeCtrl.dirty) return;
+      codeCtrl.setValue(slugify(nombre).replace(/-/g, '_'), { emitEvent: false });
+    });
+
     effect(() => {
       if (!this.visible()) return;
       const row = this.currentExtra();

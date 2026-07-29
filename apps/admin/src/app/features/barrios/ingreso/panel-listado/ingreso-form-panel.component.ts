@@ -4,17 +4,18 @@ import {
   computed,
   effect,
   input,
-  model
+  model,
+  signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import type { TipoUnidadIngreso, UnidadesOrientacionOptions } from '@loteomanager/shared-types';
+import type { ExtraPersistido, TipoUnidadIngreso, UnidadesOrientacionOptions } from '@loteomanager/shared-types';
+import { ExtrasEditorComponent } from '@loteomanager/shared-ui';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TabsModule } from 'primeng/tabs';
 import type { IngresoFormMode, IngresoUnidadForm } from '../ingreso-unidades.types';
-import { ExtrasEditorComponent } from '../../../../shared/components/extras-editor/extras-editor.component';
 
 const FORM_TABS: { value: TipoUnidadIngreso; label: string }[] = [
   { value: 'lote_vacio', label: 'Lote' },
@@ -51,6 +52,8 @@ export class IngresoFormPanelComponent {
   disabled = input(false);
   /** Tipos habilitados en el barrio; vacío = todos. */
   tiposUnidad = input<TipoUnidadIngreso[]>([]);
+
+  readonly extrasFilter = signal('');
 
   readonly formTabs = computed(() => {
     const allowed = this.tiposUnidad();
@@ -90,7 +93,7 @@ export class IngresoFormPanelComponent {
     return this.formMode() === 'editando';
   }
 
-  onUnidadExtrasChange(extras: Record<string, unknown>): void {
+  onUnidadExtrasChange(extras: ExtraPersistido[]): void {
     this.unidadForm.update((f) => ({ ...f, extras }));
   }
 }

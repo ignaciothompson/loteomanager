@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   AuthService,
   BarriosService,
+  DefinicionesCacheService,
   DepartamentosService,
   EstadosDefinicionesService,
   PermisosService,
@@ -15,12 +16,16 @@ import {
 } from '@loteomanager/shared-pb-client';
 import {
   BarriosResponse,
+  ExtraPersistido,
+  ExtraValor,
   PlantillasUnidadResponse,
+  sanitizeExtrasPayload,
   TipoUnidadIngreso,
   UnidadesResponse,
   UnidadesTipoUnidadOptions
 } from '@loteomanager/shared-types';
 import { TIPO_UNIDAD_LABELS, slugify } from '@loteomanager/shared-utils';
+import { ExtrasEditorComponent } from '@loteomanager/shared-ui';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -45,7 +50,6 @@ import {
 } from '../dialogs/geo/ingreso-geo-picker.component';
 import { IngresoImagenesDialogComponent, type IngresoImagenesDraft } from '../dialogs/imagenes/ingreso-imagenes-dialog.component';
 import { IngresoPlantillaNombreDialogComponent } from '../dialogs/plantilla/ingreso-plantilla-nombre-dialog.component';
-import { ExtrasEditorComponent } from '../../../shared/components/extras-editor/extras-editor.component';
 
 const TIPO_OPTS: { label: string; value: TipoUnidadIngreso }[] = [
   { label: TIPO_UNIDAD_LABELS['lote_vacio'], value: 'lote_vacio' },
@@ -116,6 +120,7 @@ export class BarrioIngresoPageComponent {
   private permisosSvc = inject(PermisosService);
   private messages = inject(MessageService);
   private confirmationSvc = inject(ConfirmationService);
+  private definicionesCache = inject(DefinicionesCacheService);
 
   readonly routeId = signal('');
   readonly barrio = signal<BarriosResponse | null>(null);
@@ -167,7 +172,9 @@ export class BarrioIngresoPageComponent {
     ubicacion_texto: '',
   });
 
-  readonly barrioExtras = signal<Record<string, unknown>>({});
+  readonly barrioExtras = signal<ExtraPersistido[]>([]);
+  readonly extrasFilter = signal('');
+  readonly selectedDepartamentoId = signal('');
 
   readonly publicadoWeb = signal(false);
   readonly puedePublicarWeb = computed(() => this.permisosSvc.can('web.publish'));
@@ -180,9 +187,10 @@ export class BarrioIngresoPageComponent {
   );
 
   readonly zonaOpts = computed(() => {
-    const deptId = this.paso1Form.controls.departamento_id.value;
+    const deptId = this.selectedDepartamentoId();
+    if (!deptId) return [];
     return this.zonas()
-      .filter((z) => !deptId || z.departamento_id === deptId)
+      .filter((z) => z.departamento_id === deptId)
       .map((z) => ({ label: z.nombre, value: z.id }));
   });
 
@@ -201,7 +209,8 @@ export class BarrioIngresoPageComponent {
   });
 
   constructor() {
-    this.paso1Form.controls.departamento_id.valueChanges.subscribe(() => {
+    this.paso1Form.controls.departamento_id.valueChanges.subscribe((deptId) => {
+      this.selectedDepartamentoId.set(deptId ?? '');
       if (this.hydratingBarrioForm) return;
       this.paso1Form.controls.zona_id.setValue('');
     });
@@ -229,6 +238,7 @@ export class BarrioIngresoPageComponent {
     this.hydratingBarrioForm = true;
     try {
       const deptId = this.resolveDepartamentoId(full.zona_id, zonaExpand);
+      this.selectedDepartamentoId.set(deptId);
       this.paso1Form.controls.departamento_id.setValue(deptId, { emitEvent: false });
       this.paso1Form.patchValue({
         nombre: full.nombre,
@@ -283,7 +293,7 @@ export class BarrioIngresoPageComponent {
         lng: full.lng ?? null,
         ubicacion_texto: full.ubicacion_texto ?? '',
       });
-      this.barrioExtras.set(this.extrasRecordFromUnknown(full.extras));
+      this.barrioExtras.set(this.parseExtrasPersistidos(full.extras, 'barrios'));
       this.publicadoWeb.set(full.publicado ?? false);
       this.previousPublicado = full.publicado ?? false;
 
@@ -351,7 +361,7 @@ export class BarrioIngresoPageComponent {
       estado_inicial: p.estado_inicial ?? 'disponible',
       web_visible: p.web_visible ?? true,
       modelo: p.modelo,
-      extras: {}
+      extras: []
     };
   }
 
@@ -362,7 +372,20 @@ export class BarrioIngresoPageComponent {
   }
 
   selectUnidad(u: UnidadesResponse): void {
-    const extras = (u.extras ?? {}) as Record<string, unknown>;
+    const extrasArr = this.parseExtrasPersistidos(u.extras, 'unidades');
+    const extrasRecord = this.extrasAsRecord(u.extras);
+    const num = (code: string): number | null => {
+      const fromRec = extrasRecord[code];
+      if (typeof fromRec === 'number') return fromRec;
+      const fromArr = this.extraValorByCode(extrasArr, code);
+      return typeof fromArr === 'number' ? fromArr : null;
+    };
+    const str = (code: string): string | undefined => {
+      const fromRec = extrasRecord[code];
+      if (typeof fromRec === 'string') return fromRec;
+      const fromArr = this.extraValorByCode(extrasArr, code);
+      return typeof fromArr === 'string' ? fromArr : undefined;
+    };
     this.lateralTab.set('listado');
     this.selectedUnidadId.set(u.id);
     this.selectedPlantillaId.set(null);
@@ -381,14 +404,14 @@ export class BarrioIngresoPageComponent {
       estado_inicial: u.estado,
       web_visible: u.web_visible ?? true,
       modelo: u.numero_unidad,
-      fabricante: typeof extras['fabricante'] === 'string' ? extras['fabricante'] : undefined,
-      sup_cubierta: (extras['sup_cubierta'] as number | undefined) ?? u.metros_construidos ?? null,
-      sup_semicubierta: (extras['sup_semicubierta'] as number | undefined) ?? null,
-      dormitorios: (extras['dormitorios'] as number | undefined) ?? null,
-      banos: (extras['banos'] as number | undefined) ?? null,
-      garage: (extras['garage'] as number | undefined) ?? u.cocheras ?? null,
-      anio_construccion: (extras['anio_construccion'] as number | undefined) ?? null,
-      extras: this.splitUnidadExtras(extras, u.tipo_unidad as TipoUnidadIngreso)
+      fabricante: str('fabricante'),
+      sup_cubierta: num('sup_cubierta') ?? u.metros_construidos ?? null,
+      sup_semicubierta: num('sup_semicubierta'),
+      dormitorios: num('dormitorios'),
+      banos: num('banos'),
+      garage: num('garage') ?? u.cocheras ?? null,
+      anio_construccion: num('anio_construccion'),
+      extras: this.splitUnidadExtrasPersistidos(extrasArr, u.tipo_unidad as TipoUnidadIngreso)
     });
   }
 
@@ -401,10 +424,6 @@ export class BarrioIngresoPageComponent {
     this.formTab.set(p.tipo_unidad as TipoUnidadIngreso);
     this.formMode.set('nuevo');
     this.unidadForm.set(this.formFromPlantilla(p, ''));
-  }
-
-  onBarrioExtrasChange(extras: Record<string, unknown>): void {
-    this.barrioExtras.set(extras);
   }
 
   onGeoLocationChange(loc: IngresoGeoLocation): void {
@@ -429,65 +448,73 @@ export class BarrioIngresoPageComponent {
     }));
   }
 
-  private unidadExtras(form: IngresoUnidadForm, tipo: TipoUnidadIngreso): Record<string, unknown> | undefined {
-    const base: Record<string, unknown> = { ...(form.extras ?? {}) };
+  private unidadExtras(form: IngresoUnidadForm, tipo: TipoUnidadIngreso): ExtraPersistido[] {
+    const custom = sanitizeExtrasPayload(form.extras ?? []);
+    const byCode = new Map(custom.map((x) => [x.code, x]));
+    const upsert = (code: string, valor: ExtraValor) => {
+      if (valor === null || valor === undefined || valor === '') return;
+      const def = this.definicionesCache.extrasActivosPara('unidades').find((d) => d.code === code);
+      if (!def) return;
+      byCode.set(code, { extra_id: def.id, code: def.code, nombre: def.nombre, valor });
+    };
     if (tipo === 'casa_construida') {
-      Object.assign(base, {
-        sup_cubierta: form.sup_cubierta ?? undefined,
-        sup_semicubierta: form.sup_semicubierta ?? undefined,
-        dormitorios: form.dormitorios ?? undefined,
-        banos: form.banos ?? undefined,
-        garage: form.garage ?? undefined,
-        anio_construccion: form.anio_construccion ?? undefined
-      });
+      upsert('sup_cubierta', form.sup_cubierta ?? null);
+      upsert('sup_semicubierta', form.sup_semicubierta ?? null);
+      upsert('dormitorios', form.dormitorios ?? null);
+      upsert('banos', form.banos ?? null);
+      upsert('garage', form.garage ?? null);
+      upsert('anio_construccion', form.anio_construccion ?? null);
     } else if (tipo === 'casa_prefabricada') {
-      Object.assign(base, {
-        fabricante: form.fabricante?.trim() || undefined,
-        dormitorios: form.dormitorios ?? undefined
-      });
+      upsert('fabricante', form.fabricante?.trim() || null);
+      upsert('dormitorios', form.dormitorios ?? null);
     }
-    return this.stripEmptyExtras(base);
+    return sanitizeExtrasPayload([...byCode.values()]);
   }
 
-  private extrasRecordFromUnknown(input: unknown): Record<string, unknown> {
+  private parseExtrasPersistidos(input: unknown, entidad: 'barrios' | 'unidades'): ExtraPersistido[] {
+    const sanitized = sanitizeExtrasPayload(input);
+    if (sanitized.length) return sanitized;
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return [];
+    const defs = this.definicionesCache.extrasActivosPara(entidad);
+    const out: ExtraPersistido[] = [];
+    for (const [code, valor] of Object.entries(input as Record<string, unknown>)) {
+      const def = defs.find((d) => d.code === code);
+      if (!def) continue;
+      out.push({
+        extra_id: def.id,
+        code: def.code,
+        nombre: def.nombre,
+        valor: (valor ?? null) as ExtraValor
+      });
+    }
+    return out;
+  }
+
+  private extrasAsRecord(input: unknown): Record<string, unknown> {
     if (Array.isArray(input)) {
       const out: Record<string, unknown> = {};
       for (const x of input) {
         if (x && typeof x === 'object' && 'code' in x) {
           const row = x as { code?: string; valor?: unknown };
-          if (typeof row.code === 'string' && row.code) {
-            out[row.code] = row.valor ?? null;
-          }
+          if (typeof row.code === 'string' && row.code) out[row.code] = row.valor ?? null;
         }
       }
       return out;
     }
-    if (input && typeof input === 'object') {
-      return { ...(input as Record<string, unknown>) };
-    }
+    if (input && typeof input === 'object') return { ...(input as Record<string, unknown>) };
     return {};
   }
 
-  private splitUnidadExtras(
-    extras: Record<string, unknown>,
-    tipo: TipoUnidadIngreso
-  ): Record<string, unknown> {
-    const known = new Set(TIPO_EXTRA_KEYS[tipo]);
-    const custom: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(extras)) {
-      if (!known.has(key)) custom[key] = value;
-    }
-    return custom;
+  private extraValorByCode(extras: ExtraPersistido[], code: string): ExtraValor {
+    return extras.find((x) => x.code === code)?.valor ?? null;
   }
 
-  private stripEmptyExtras(extras: Record<string, unknown>): Record<string, unknown> | undefined {
-    const out: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(extras)) {
-      if (value !== null && value !== undefined && value !== '') {
-        out[key] = value;
-      }
-    }
-    return Object.keys(out).length ? out : undefined;
+  private splitUnidadExtrasPersistidos(
+    extras: ExtraPersistido[],
+    tipo: TipoUnidadIngreso
+  ): ExtraPersistido[] {
+    const known = new Set(TIPO_EXTRA_KEYS[tipo]);
+    return extras.filter((x) => !known.has(x.code));
   }
 
   onTiposMultiselectHide(): void {
@@ -506,26 +533,19 @@ export class BarrioIngresoPageComponent {
       ubicacion_texto: bd.ubicacion_texto?.trim() || undefined,
       lat: bd.lat ?? undefined,
       lng: bd.lng ?? undefined,
-      extras: this.stripEmptyExtras(this.barrioExtras())
+      extras: sanitizeExtrasPayload(this.barrioExtras())
     };
     if (bd.planoFile) payload['plano_general'] = bd.planoFile;
     if (bd.imagenFile) payload['imagen_portada'] = bd.imagenFile;
-    // publicado se maneja en persistirBarrio vía PublicacionService
     return payload;
   }
 
   private async applyPublicacionToggle(barrioId: string): Promise<void> {
     if (!this.puedePublicarWeb()) return;
     const want = this.publicadoWeb();
-    const current = this.barrio();
-    const hasSnapshot = !!current?.snapshot;
 
     if (want && !this.previousPublicado) {
-      if (hasSnapshot) {
-        await this.barriosSvc.update(barrioId, { publicado: true });
-      } else {
-        await this.publicacionSvc.publicarBarrio(barrioId);
-      }
+      await this.publicacionSvc.publicarBarrio(barrioId);
     } else if (!want && this.previousPublicado) {
       await this.barriosSvc.update(barrioId, { publicado: false });
     }
@@ -548,7 +568,7 @@ export class BarrioIngresoPageComponent {
         this.barrio.set(refreshed);
         this.previousPublicado = refreshed.publicado ?? false;
         this.publicadoWeb.set(refreshed.publicado ?? false);
-        this.barrioExtras.set(this.extrasRecordFromUnknown(refreshed.extras));
+        this.barrioExtras.set(this.parseExtrasPersistidos(refreshed.extras, 'barrios'));
         this.barrioDraft.update((d) => ({
           ...d,
           planoFile: null,
@@ -582,7 +602,7 @@ export class BarrioIngresoPageComponent {
       this.barrio.set(refreshed);
       this.previousPublicado = refreshed.publicado ?? false;
       this.publicadoWeb.set(refreshed.publicado ?? false);
-      this.barrioExtras.set(this.extrasRecordFromUnknown(refreshed.extras));
+      this.barrioExtras.set(this.parseExtrasPersistidos(refreshed.extras, 'barrios'));
       this.routeId.set(created.id);
       void this.router.navigate(['/barrios', created.id], { replaceUrl: true });
       await this.reloadUnidades();

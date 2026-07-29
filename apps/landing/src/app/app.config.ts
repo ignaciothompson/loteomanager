@@ -34,7 +34,7 @@ export const appConfig: ApplicationConfig = {
     providePrimeNG({
       theme: {
         preset: LandingWarmPreset,
-        options: { darkModeSelector: '.dark' },
+        options: { darkModeSelector: false },
       },
     }),
   ],

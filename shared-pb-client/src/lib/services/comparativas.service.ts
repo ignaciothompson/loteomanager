@@ -4,7 +4,7 @@ import { ComparativasResponse, ComparativasRecord } from '@loteomanager/shared-t
 import { ConfigService } from './config.service';
 
 /** Landing base URL for dev — override in production via config or env */
-const DEV_LANDING_URL = 'http://localhost:4201';
+const DEV_LANDING_URL = 'http://localhost:4000';
 
 @Injectable({
   providedIn: 'root'
@@ -19,9 +19,9 @@ export class ComparativasService extends BaseCollectionService<ComparativasRespo
     if (typeof window === 'undefined') return DEV_LANDING_URL;
 
     const origin = window.location.origin;
-    // If running on standard ports (4200 admin), redirect to 4201 (landing dev)
-    if (origin.includes('localhost:4200')) return 'http://localhost:4201';
-    if (origin.includes('localhost:4300')) return 'http://localhost:4201';
+    // Admin local → landing `npm run dev:landing` (port 4000)
+    if (origin.includes('localhost:4200')) return 'http://localhost:4000';
+    if (origin.includes('localhost:4300')) return 'http://localhost:4000';
 
     // Production: assume landing and admin share same domain root
     // (e.g. admin on admin.example.com, landing on example.com)

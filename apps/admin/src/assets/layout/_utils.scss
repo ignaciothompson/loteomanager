@@ -84,6 +84,12 @@
     }
 }
 
+/* Center p-table emptymessage cells (custom templates use td[colspan]) */
+.p-datatable-tbody > tr > td[colspan] {
+    text-align: center;
+    padding-block: 1.5rem;
+}
+
 .buttons-col{
     text-align: right !important;
     width: 110px !important;
