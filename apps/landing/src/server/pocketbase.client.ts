@@ -2,14 +2,16 @@ import PocketBase from 'pocketbase';
 import type { TypedPocketBase } from '@loteomanager/shared-types';
 
 let _pb: TypedPocketBase | null = null;
+let _authAttempted = false;
 
 /**
  * Singleton PocketBase client for server-side use.
- * Authenticates with PB_SERVICE_USER/PB_SERVICE_PASSWORD on startup (session auto-refreshed by SDK).
+ * Authenticates with PB_SERVICE_USER/PB_SERVICE_PASSWORD when set.
+ * Auth failure does NOT abort — public list/view still work anonymous.
  * ONLY use server-side — never import from browser code.
  */
 export async function getPocketBaseClient(): Promise<TypedPocketBase> {
-  if (_pb?.authStore.isValid) {
+  if (_pb) {
     return _pb;
   }
 
@@ -24,9 +26,16 @@ export async function getPocketBaseClient(): Promise<TypedPocketBase> {
 
   const user = process.env['PB_SERVICE_USER'];
   const password = process.env['PB_SERVICE_PASSWORD'];
-  if (user && password) {
-    await _pb.collection('users').authWithPassword(user, password);
-    return _pb;
+  if (user && password && !_authAttempted) {
+    _authAttempted = true;
+    try {
+      await _pb.collection('users').authWithPassword(user, password);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[pb] service auth failed (${msg}). Continuing anonymous. Fix PB_SERVICE_USER / PB_SERVICE_PASSWORD in Dokploy.`,
+      );
+    }
   }
 
   return _pb;

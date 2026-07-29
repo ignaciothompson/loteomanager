@@ -5,6 +5,7 @@ import type {
   ComparativaSnapshot,
   ComparativaSnapshotUnidad,
 } from '@loteomanager/shared-types';
+import { publicPbFileUrl } from '../app/utils/pb-file-url';
 
 const TIPO_LABEL: Record<string, string> = {
   lote: 'Lote',
@@ -15,11 +16,6 @@ const TIPO_LABEL: Record<string, string> = {
 function formatPrecio(precio: number, moneda: string): string {
   const num = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(precio);
   return `${moneda} ${num}`;
-}
-
-function buildFileUrl(collection: string, recordId: string, fileName: string | undefined | null, pbUrl: string): string | null {
-  if (!fileName) return null;
-  return `${pbUrl}/api/files/${collection}/${recordId}/${fileName}`;
 }
 
 export function buildSnapshot(
@@ -33,7 +29,9 @@ export function buildSnapshot(
     const enOferta = !!(u.oferta && u.precio_oferta && u.precio_oferta < u.precio);
     const precioDisplay = enOferta ? u.precio_oferta! : u.precio;
 
-    const galerias = (u.galeria ?? []).map(f => buildFileUrl('unidades', u.id, f, pbUrl) ?? '').filter(Boolean);
+    const galerias = (u.galeria ?? [])
+      .map(f => publicPbFileUrl(pbUrl, 'unidades', u.id, f) ?? '')
+      .filter(Boolean);
     const [imagenHero, ...galeriaRest] = galerias;
 
     return {
@@ -59,7 +57,7 @@ export function buildSnapshot(
       ubicacionTexto: barrio?.ubicacion_texto ?? null,
       imagenHero: imagenHero ?? null,
       galeria: galeriaRest,
-      urlPlano: buildFileUrl('unidades', u.id, u.plano_unidad, pbUrl),
+      urlPlano: publicPbFileUrl(pbUrl, 'unidades', u.id, u.plano_unidad),
     };
   });
 

@@ -11,6 +11,7 @@ import { LandingMapaComponent } from '../components/landing-mapa/landing-mapa.co
 import { SanitizeHtmlPipe } from '../pipes/sanitize-html.pipe';
 import { PrecioFormatPipe } from '../pipes/precio-format.pipe';
 import { formatAreaRange, formatPrecioDesde } from '../utils/catalog-format';
+import { pbFileName } from '../utils/pb-file-url';
 import { ConfigPublicaService } from '../services/config-publica.service';
 import { ContactoFabComponent } from '../components/contacto-fab/contacto-fab.component';
 
@@ -247,14 +248,16 @@ export class BarrioDetailComponent implements OnInit {
 
   portadaUrl(): string | null {
     const b = this.barrio();
-    if (!b?.imagen_portada) return null;
-    return this.pb.files.getURL(b, b.imagen_portada);
+    const file = pbFileName(b?.imagen_portada);
+    if (!b || !file) return null;
+    return this.pb.files.getURL(b, file);
   }
 
   planoUrl(): string | null {
     const b = this.barrio();
-    if (!b?.plano_general) return null;
-    return this.pb.files.getURL(b, b.plano_general);
+    const file = pbFileName(b?.plano_general);
+    if (!b || !file) return null;
+    return this.pb.files.getURL(b, file);
   }
 
   tieneMapa(): boolean {

@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { getPocketBaseClient } from './server/pocketbase.client';
 import { hashIp } from './server/ip-hash';
 import { buildSnapshot } from './server/snapshot-builder';
+import { publicPbFileUrl } from './app/utils/pb-file-url';
 import {
   postLeads,
   postLeadsFromComparativa,
@@ -358,7 +359,7 @@ function buildCatalogoBarrio(b: BarriosResponse, pbUrl: string) {
     nombre: snap.barrio.nombre || b.nombre,
     slug: snap.barrio.slug || b.slug,
     ubicacionTexto: snap.barrio.ubicacion_texto ?? b.ubicacion_texto ?? null,
-    imagenPortadaUrl: imagen ? `${pbUrl}/api/files/barrios/${b.id}/${imagen}` : null,
+    imagenPortadaUrl: publicPbFileUrl(pbUrl, 'barrios', b.id, imagen),
     lat: snap.barrio.lat ?? b.lat ?? null,
     lng: snap.barrio.lng ?? b.lng ?? null,
     stats: {

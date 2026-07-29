@@ -8,6 +8,7 @@ import {
   isBarrioWebReady,
   type BarrioConSnapshotCatalogo,
 } from '@loteomanager/shared-pb-client';
+import { pbFileName } from '../utils/pb-file-url';
 
 /** Vista unificada de barrio para catálogo/mapa, sin importar si vino del endpoint SSR o de PocketBase. */
 export interface CatalogoBarrioVM {
@@ -101,12 +102,13 @@ export class CatalogoService {
   }
 
   private mapPbBarrio(b: BarrioConSnapshotCatalogo): CatalogoBarrioVM {
+    const file = pbFileName(b.imagen_portada);
     return {
       id: b.id,
       slug: b.slug,
       nombre: b.nombre,
       ubicacionTexto: b.ubicacion_texto ?? null,
-      imagenPortadaUrl: b.imagen_portada ? this.pb.files.getURL(b, b.imagen_portada) : null,
+      imagenPortadaUrl: file ? this.pb.files.getURL(b, file) : null,
       lat: b.lat ?? null,
       lng: b.lng ?? null,
       unidadesCount: b.unidadesCount,
