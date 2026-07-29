@@ -64,8 +64,9 @@ export function barrioFromSnapshot(b: BarriosResponse, snap: BarrioWebSnapshot):
     slug: sb.slug || b.slug,
     descripcion: (sb.descripcion ?? b.descripcion) as BarriosResponse['descripcion'],
     ubicacion_texto: (sb.ubicacion_texto ?? b.ubicacion_texto) as BarriosResponse['ubicacion_texto'],
-    imagen_portada: (sb.imagen_portada ?? b.imagen_portada) as BarriosResponse['imagen_portada'],
-    plano_general: (sb.plano_general ?? b.plano_general) as BarriosResponse['plano_general'],
+    // Live file names win: re-upload changes the suffix; snapshot stays stale until republish.
+    imagen_portada: (b.imagen_portada || sb.imagen_portada) as BarriosResponse['imagen_portada'],
+    plano_general: (b.plano_general || sb.plano_general) as BarriosResponse['plano_general'],
     lat: (sb.lat ?? b.lat) as BarriosResponse['lat'],
     lng: (sb.lng ?? b.lng) as BarriosResponse['lng'],
   };

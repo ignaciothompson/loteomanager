@@ -147,11 +147,12 @@ Agregar al Tunnel un hostname `pb.tu-dominio.com → http://pocketbase:8080` y p
 Desde el admin UI de PocketBase:
 
 1. Ir a Collections → `users` → New record.
-2. Email: el valor de `PB_SERVICE_USER` del `.env`.
-3. Password: el valor de `PB_SERVICE_PASSWORD`.
+2. Email: el valor de `PB_SERVICE_USER` de Dokploy (debe coincidir **exacto** con el user en ese PocketBase; local y prod pueden diferir).
+3. Password: el valor de `PB_SERVICE_PASSWORD` (la misma string que en Dokploy).
 4. Role: `admin` (o un role limitado si tenés uno custom para servicios).
 5. Verified: `true`.
 6. Guardar.
+7. Redeploy `landing-ssr` para que tome las env vars; en logs no debe aparecer `service auth failed`.
 
 ### 8. Verificación post-deploy
 
