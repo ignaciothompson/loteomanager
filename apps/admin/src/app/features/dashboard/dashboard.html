@@ -1,78 +1,158 @@
-<div class="grid grid-cols-12 gap-8">
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-        <div class="card mb-0">
-            <div class="flex justify-between mb-4">
-                <div>
-                    <span class="block text-muted-color font-medium mb-4">Unidades Disponibles</span>
-                    <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ disponibles().length }}</div>
+<div class="flex flex-col gap-4">
+    <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+            <a routerLink="/barrios" class="card mb-0 dashboard-kpi" aria-label="Ver barrios — unidades disponibles">
+                <div class="flex justify-between mb-4">
+                    <div>
+                        <span class="block text-muted-color font-medium mb-4">Unidades disponibles</span>
+                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ disponiblesCount() }}</div>
+                    </div>
+                    <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-border dashboard-kpi__icon">
+                        <i class="pi pi-check-circle text-green-500 !text-xl"></i>
+                    </div>
                 </div>
-                <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                    <i class="pi pi-check-circle text-blue-500 !text-xl"></i>
+            </a>
+        </div>
+        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+            <a routerLink="/barrios" class="card mb-0 dashboard-kpi" aria-label="Ver barrios — unidades reservadas">
+                <div class="flex justify-between mb-4">
+                    <div>
+                        <span class="block text-muted-color font-medium mb-4">Reservadas</span>
+                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ reservadasCount() }}</div>
+                    </div>
+                    <div class="flex items-center justify-center bg-yellow-100 dark:bg-yellow-400/10 rounded-border dashboard-kpi__icon">
+                        <i class="pi pi-clock text-yellow-500 !text-xl"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+            <a routerLink="/interesados" class="card mb-0 dashboard-kpi" aria-label="Ver contactos — leads activos">
+                <div class="flex justify-between mb-4">
+                    <div>
+                        <span class="block text-muted-color font-medium mb-4">Leads activos</span>
+                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ leadsActivosCount() }}</div>
+                    </div>
+                    <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-border dashboard-kpi__icon">
+                        <i class="pi pi-users text-blue-500 !text-xl"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+            <a routerLink="/barrios" class="card mb-0 dashboard-kpi" aria-label="Ver barrios — ventas cerradas">
+                <div class="flex justify-between mb-4">
+                    <div>
+                        <span class="block text-muted-color font-medium mb-4">Ventas cerradas</span>
+                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ ventasCount() }}</div>
+                    </div>
+                    <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-border dashboard-kpi__icon">
+                        <i class="pi pi-star text-green-500 !text-xl"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="dashboard-pair">
+        <div class="card mb-0 dashboard-tile">
+            <h5 class="m-0 mb-4 dashboard-tile__header">Evolución de unidades (últimas 12 semanas)</h5>
+            <div class="dashboard-tile__body">
+                <div class="dashboard-chart">
+                    <p-chart type="line" [data]="chartData()" [options]="chartOptions()" height="100%"></p-chart>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-        <div class="card mb-0">
-            <div class="flex justify-between mb-4">
-                <div>
-                    <span class="block text-muted-color font-medium mb-4">Reservadas / Señadas</span>
-                    <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ reservadas().length }}</div>
-                </div>
-                <div class="flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                    <i class="pi pi-clock text-orange-500 !text-xl"></i>
-                </div>
+
+        <div class="card mb-0 dashboard-tile">
+            <div class="flex justify-between items-center mb-4 dashboard-tile__header">
+                <h5 class="m-0">Leads recientes</h5>
+                <button
+                    pButton
+                    type="button"
+                    label="Ver todos"
+                    class="p-button-text p-button-sm"
+                    routerLink="/interesados"
+                ></button>
             </div>
-        </div>
-    </div>
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-        <div class="card mb-0">
-            <div class="flex justify-between mb-4">
-                <div>
-                    <span class="block text-muted-color font-medium mb-4">Leads Nuevos</span>
-                    <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ leadsNuevos().length }}</div>
-                </div>
-                <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                    <i class="pi pi-users text-green-500 !text-xl"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-        <div class="card mb-0">
-            <div class="flex justify-between mb-4">
-                <div>
-                    <span class="block text-muted-color font-medium mb-4">Ventas Cerradas</span>
-                    <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ ventas().length }}</div>
-                </div>
-                <div class="flex items-center justify-center bg-purple-100 dark:bg-purple-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                    <i class="pi pi-star text-purple-500 !text-xl"></i>
-                </div>
+            <div class="dashboard-tile__body">
+                <p-table [value]="leadsRecientes()" [scrollable]="true" scrollHeight="flex">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Contexto</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-lead>
+                        <tr>
+                            <td>{{ lead.nombre }}</td>
+                            <td>
+                                <span class="text-sm text-muted-color">{{ contextoLabel(lead) }}</span>
+                            </td>
+                            <td>
+                                <lib-estado-badge [code]="lead.estado" entidad="interesados" />
+                            </td>
+                            <td>{{ fechaLabel(lead) }}</td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="4">No hay leads en tu alcance.</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
             </div>
         </div>
     </div>
 
-    <div class="col-span-12 lg:col-span-6">
-        <div class="card">
-            <h5>Estado de Unidades</h5>
-            <p-chart type="doughnut" [data]="chartData()" [options]="chartOptions"></p-chart>
+    <div class="dashboard-pair">
+        <div class="card mb-0 dashboard-tile">
+            <div class="flex justify-between items-center mb-4 dashboard-tile__header">
+                <h5 class="m-0">Actividad reciente</h5>
+                <button
+                    pButton
+                    type="button"
+                    label="Ver todos"
+                    class="p-button-text p-button-sm"
+                    routerLink="/enlaces"
+                ></button>
+            </div>
+            <div class="dashboard-tile__body">
+                <p-table [value]="actividadReciente()" [scrollable]="true" scrollHeight="flex">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Título</th>
+                            <th>Destinatario</th>
+                            <th>Vistas</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-comp>
+                        <tr>
+                            <td>{{ comp.titulo }}</td>
+                            <td>{{ comp.cliente_destinatario_nombre || 'Sin nombre' }}</td>
+                            <td>{{ vistasCount(comp) }}</td>
+                            <td>{{ fechaLabel(comp) }}</td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="4">No hay comparativas en tu alcance.</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
         </div>
-    </div>
-    
-    <div class="col-span-12 lg:col-span-6">
-        <div class="card">
-            <h5>Leads Recientes</h5>
-            <ul class="p-0 mx-0 mt-0 mb-6 list-none">
-                <li class="flex items-center py-4 border-b border-surface" *ngFor="let lead of leadsNuevos().slice(0, 5)">
-                    <div class="w-12 h-12 flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-full mr-4 shrink-0">
-                        <i class="pi pi-user !text-xl text-green-500"></i>
-                    </div>
-                    <span class="text-surface-900 dark:text-surface-0 leading-normal">
-                        {{ lead.nombre }} <span class="text-muted-color ml-2">{{ lead.email }}</span>
-                    </span>
-                </li>
-                <li *ngIf="leadsNuevos().length === 0" class="text-muted-color py-4">No hay leads nuevos pendientes.</li>
-            </ul>
+
+        <div class="card mb-0 dashboard-tile">
+            <h5 class="m-0 mb-4 dashboard-tile__header">Interacciones web</h5>
+            <div class="dashboard-placeholder">
+                <i class="pi pi-chart-line" aria-hidden="true"></i>
+                <p class="m-0 font-medium text-surface-900 dark:text-surface-0">Métricas web — próximamente</p>
+                <span class="text-muted-color text-sm">Visitas, leads y segundo contacto cuando haya tracking en la landing.</span>
+            </div>
         </div>
     </div>
 </div>
