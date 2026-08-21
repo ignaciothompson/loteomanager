@@ -1,3 +1,4 @@
+/* Dialog shell tweaks need host ::ng-deep for PrimeNG overlay */
 :host ::ng-deep .barrio-ver-dialog.p-dialog {
   display: flex;
   flex-direction: column;
@@ -10,93 +11,11 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+  padding-top: 1.25rem;
   padding-bottom: 0;
 }
 
-.barrio-ver-dialog__shell {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: calc(85vh - 9rem);
-}
-
-.barrio-ver-dialog__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-}
-
-.barrio-ver-dialog__header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.barrio-ver-dialog__header-main {
-  min-width: 0;
-}
-
-.barrio-ver-dialog__title {
-  margin: 0 0 0.5rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-}
-
-.barrio-ver-dialog__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-  font-size: 0.875rem;
-  color: var(--p-text-muted-color);
-}
-
-.barrio-ver-dialog__meta strong {
-  color: var(--p-text-color);
-  font-weight: 600;
-}
-
-.barrio-ver-dialog__toolbar {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  min-width: 0;
-}
-
-.barrio-ver-dialog__tabs {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.barrio-ver-dialog__agrupar {
-  flex: 0 0 14rem;
-  min-width: 12rem;
-}
-
-.barrio-ver-dialog__body {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.barrio-ver-dialog__table-wrap {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-.barrio-ver-dialog__table-wrap ::ng-deep .p-datatable {
+:host ::ng-deep .barrio-ver-dialog__table-wrap .p-datatable {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -104,102 +23,8 @@
   height: 100%;
 }
 
-.barrio-ver-dialog__table-wrap ::ng-deep .p-datatable-table-container {
+:host ::ng-deep .barrio-ver-dialog__table-wrap .p-datatable-table-container {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-}
-
-.barrio-ver-grupos {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.barrio-ver-dialog__empty {
-  margin: 0;
-  padding: 2rem 1rem;
-  text-align: center;
-  color: var(--p-text-muted-color);
-}
-
-.barrio-ver-table__otros {
-  min-width: 10rem;
-}
-
-.barrio-ver-table__actions {
-  width: 3rem;
-  text-align: center;
-}
-
-.barrio-ver-grupos__head,
-.barrio-ver-grupos__body {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.barrio-ver-grupos__head th,
-.barrio-ver-grupos__body td {
-  padding: 0.65rem 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--p-content-border-color);
-  font-size: 0.875rem;
-}
-
-.barrio-ver-grupos__head th {
-  font-weight: 600;
-  color: var(--p-text-muted-color);
-  background: var(--p-content-hover-background);
-}
-
-.barrio-ver-grupos__toggle-col {
-  width: 2rem;
-}
-
-.barrio-ver-grupo__header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.75rem;
-  border: none;
-  border-bottom: 1px solid var(--p-content-border-color);
-  background: var(--p-content-background);
-  color: var(--p-text-color);
-  cursor: pointer;
-  text-align: left;
-}
-
-.barrio-ver-grupo__header:hover {
-  background: var(--p-content-hover-background);
-}
-
-.barrio-ver-grupo__label {
-  font-weight: 600;
-}
-
-.barrio-ver-grupo__count {
-  margin-left: auto;
-  font-size: 0.8rem;
-  color: var(--p-text-muted-color);
-}
-
-.barrio-ver-grupos__body tr:hover td {
-  background: var(--p-content-hover-background);
-}
-
-@media (max-width: 768px) {
-  .barrio-ver-dialog__toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .barrio-ver-dialog__agrupar {
-    flex: 1 1 auto;
-    width: 100%;
-  }
-
-  .barrio-ver-dialog__header {
-    flex-direction: column;
-  }
 }

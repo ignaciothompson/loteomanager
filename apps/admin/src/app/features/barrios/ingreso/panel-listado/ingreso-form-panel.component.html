@@ -1,13 +1,31 @@
 <div class="ingreso-form-panel">
-  <p-tabs [value]="formTab()" (valueChange)="formTab.set($any($event))" class="mb-4">
-    <p-tablist>
-      @for (tab of formTabs(); track tab.value) {
-        <p-tab [value]="tab.value">{{ tab.label }}</p-tab>
-      }
-    </p-tablist>
-  </p-tabs>
-
-  <div class="ingreso-form-panel__mode">
+  <div class="ingreso-form-panel__tabs-row">
+    <p-tabs [value]="formTab()" (valueChange)="onTipoTab($any($event))" class="ingreso-form-panel__tabs">
+      <p-tablist>
+        @for (tab of formTabs(); track tab.value) {
+          <p-tab [value]="tab.value">{{ tab.label }}</p-tab>
+        }
+      </p-tablist>
+    </p-tabs>
+    @if (tiposRestantes().length) {
+      <div class="ingreso-form-panel__add-tipo">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          class="p-button-text p-button-sm"
+          [attr.aria-label]="'Habilitar otro tipo'"
+          (click)="addTipoOpen.set(!addTipoOpen())"
+        ></button>
+        @if (addTipoOpen()) {
+          <div class="ingreso-form-panel__add-menu">
+            @for (t of tiposRestantes(); track t.value) {
+              <button type="button" (click)="pedirHabilitarTipo(t.value)">{{ t.label }}</button>
+            }
+          </div>
+        }
+      </div>
+    }
     <span
       class="ingreso-form-panel__mode-badge"
       [class.ingreso-form-panel__mode-badge--edit]="isEditMode()"
@@ -26,7 +44,7 @@
           <label class="lm-field-label">Código <span class="lm-required">*</span></label>
           <input type="text"
                 pInputText
-                class="w-full"
+                class="w-full js-codigo-unidad"
                 [ngModel]="unidadForm().codigo"
                 (ngModelChange)="unidadForm.update((f) => ({ ...f, codigo: $event }))"
                 [disabled]="disabled()" />
@@ -47,6 +65,9 @@
             [ngModel]="unidadForm().precio"
             (ngModelChange)="unidadForm.update((f) => ({ ...f, precio: $event }))"
             [min]="0"
+            locale="es-AR"
+            [minFractionDigits]="0"
+            [maxFractionDigits]="2"
             class="w-full"
             [disabled]="disabled()"
           />
@@ -122,7 +143,7 @@
           <input
             type="text"
             pInputText
-            class="w-full"
+            class="w-full js-codigo-unidad"
             [ngModel]="unidadForm().codigo"
             (ngModelChange)="unidadForm.update((f) => ({ ...f, codigo: $event }))"
             [disabled]="disabled()"
@@ -202,6 +223,9 @@
             [ngModel]="unidadForm().precio"
             (ngModelChange)="unidadForm.update((f) => ({ ...f, precio: $event }))"
             [min]="0"
+            locale="es-AR"
+            [minFractionDigits]="0"
+            [maxFractionDigits]="2"
             class="w-full"
             [disabled]="disabled()"
           />
@@ -277,7 +301,7 @@
           <input
             type="text"
             pInputText
-            class="w-full"
+            class="w-full js-codigo-unidad"
             [ngModel]="unidadForm().codigo"
             (ngModelChange)="unidadForm.update((f) => ({ ...f, codigo: $event }))"
             [disabled]="disabled()"
@@ -336,6 +360,9 @@
             [ngModel]="unidadForm().precio"
             (ngModelChange)="unidadForm.update((f) => ({ ...f, precio: $event }))"
             [min]="0"
+            locale="es-AR"
+            [minFractionDigits]="0"
+            [maxFractionDigits]="2"
             class="w-full"
             [disabled]="disabled()"
           />

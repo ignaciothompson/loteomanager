@@ -14,6 +14,8 @@ export type BarrioConUnidades = BarriosResponse & {
   unidadesCount: number;
   unidadesDisponiblesCount: number;
   unidadesReservadasCount: number;
+  unidadesVendidasCount: number;
+  pendientePublicarCount: number;
 };
 
 export type BarrioCatalogStats = {
@@ -121,6 +123,8 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
       unidadesCount,
       unidadesDisponiblesCount: unidadesCount,
       unidadesReservadasCount: 0,
+      unidadesVendidasCount: 0,
+      pendientePublicarCount: 0,
     }));
   }
 
@@ -175,12 +179,14 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
     const ids = barrios.map((b) => b.id);
     const unidades = await this.pb.collection('unidades').getFullList({
       filter: ids.map((id) => `barrio_id="${id}"`).join(' || '),
-      fields: 'id,barrio_id,estado'
+      fields: 'id,barrio_id,estado,pendiente_publicar'
     });
 
     const totals: Record<string, number> = {};
     const disponibles: Record<string, number> = {};
     const reservadas: Record<string, number> = {};
+    const vendidas: Record<string, number> = {};
+    const pendientes: Record<string, number> = {};
     for (const u of unidades) {
       const bid = u['barrio_id'] as string;
       totals[bid] = (totals[bid] ?? 0) + 1;
@@ -189,6 +195,11 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
         disponibles[bid] = (disponibles[bid] ?? 0) + 1;
       } else if (estado === 'reservado' || estado === 'sena') {
         reservadas[bid] = (reservadas[bid] ?? 0) + 1;
+      } else if (estado === 'vendido' || estado === 'escriturado') {
+        vendidas[bid] = (vendidas[bid] ?? 0) + 1;
+      }
+      if (u['pendiente_publicar'] === true) {
+        pendientes[bid] = (pendientes[bid] ?? 0) + 1;
       }
     }
 
@@ -197,6 +208,8 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
       unidadesCount: totals[b.id] ?? 0,
       unidadesDisponiblesCount: disponibles[b.id] ?? 0,
       unidadesReservadasCount: reservadas[b.id] ?? 0,
+      unidadesVendidasCount: vendidas[b.id] ?? 0,
+      pendientePublicarCount: pendientes[b.id] ?? 0,
     }));
   }
 

@@ -1,13 +1,13 @@
 <p-toast />
-<p-confirmDialog />
+<p-menu #footerMenu [model]="footerMenuItems" [popup]="true" appendTo="body" />
 <p-dialog
-  [header]="barrio()?.nombre ?? 'Ver barrio'"
   [(visible)]="visible"
   [modal]="true"
   [style]="{ width: '92vw', maxWidth: '72rem', height: '85vh' }"
   styleClass="barrio-ver-dialog"
   [draggable]="false"
   [maximizable]="false"
+  [showHeader]="false"
   (onShow)="onShow()"
   (onHide)="onHide()"
 >
@@ -17,197 +17,336 @@
     </div>
   } @else if (barrio()) {
     <div class="barrio-ver-dialog__shell">
-    <header class="barrio-ver-dialog__header card m-0 mb-4">
-      <div class="barrio-ver-dialog__header-main">
-        <h3 class="barrio-ver-dialog__title">{{ barrio()!.nombre }}</h3>
-        <div class="barrio-ver-dialog__meta">
-          <span><strong>Zona / Depto:</strong> {{ headerGeo() }}</span>
-          <span><strong>Slug:</strong> {{ barrio()!.slug }}</span>
-          <span><strong>Tipos:</strong> {{ headerTipos() }}</span>
-          <span><strong>Unidades:</strong> {{ unidades().length }}</span>
+      <header class="barrio-ver-dialog__header">
+        <div class="barrio-ver-dialog__header-main">
+          <h3 class="barrio-ver-dialog__title">
+            {{ barrio()!.nombre }}
+            @let badge = pubBadge();
+            <span class="barrio-ver-pub-pill" [attr.data-kind]="badge.kind">{{ badge.label }}</span>
+          </h3>
+          <div class="barrio-ver-dialog__meta">
+            {{ headerGeo() }} · {{ barrio()!.slug }}
+          </div>
         </div>
-      </div>
-      <div class="barrio-ver-dialog__header-actions">
         <button
           pButton
           type="button"
-          label="Eliminar barrio"
-          icon="pi pi-trash"
-          class="p-button-outlined p-button-danger shrink-0"
-          [loading]="deleting()"
-          [disabled]="deleting()"
-          (click)="confirmarEliminar()"
+          icon="pi pi-times"
+          class="p-button-text p-button-rounded p-button-sm"
+          aria-label="Cerrar"
+          (click)="visible.set(false)"
         ></button>
-        <button
-          pButton
-          type="button"
-          label="Editar/Ingresar nuevo"
-          icon="pi pi-external-link"
-          class="p-button-outlined shrink-0"
-          [disabled]="deleting()"
-          (click)="irAlIngreso()"
-        ></button>
-      </div>
-    </header>
+      </header>
 
-    <section class="barrio-ver-dialog__body">
-      <div class="barrio-ver-dialog__toolbar">
-        @if (tipoTabs().length) {
-          <p-tabs
-            [value]="activeTipo() ?? tipoTabs()[0].value"
-            (valueChange)="activeTipo.set($any($event))"
-            class="barrio-ver-dialog__tabs"
-          >
-            <p-tablist>
-              @for (tab of tipoTabs(); track tab.value) {
-                <p-tab [value]="tab.value">{{ tab.label }}</p-tab>
-              }
-            </p-tablist>
-          </p-tabs>
-        } @else {
-          <span class="text-muted-color text-sm">Sin tipos de unidad configurados.</span>
-        }
-
-        <div class="barrio-ver-dialog__agrupar lm-field">
-          <label class="lm-field-label" for="barrio-ver-agrupar">Agrupar por</label>
-          <p-select
-            inputId="barrio-ver-agrupar"
-            [options]="agruparOpts"
-            [ngModel]="agruparPor()"
-            (ngModelChange)="onAgruparChange($event)"
-            optionLabel="label"
-            optionValue="value"
-            class="w-full"
-            appendTo="body"
-          />
+      <div class="barrio-ver-stats">
+        <div class="barrio-ver-stat">
+          <div class="barrio-ver-stat__label">Unidades</div>
+          <div class="barrio-ver-stat__value">{{ stats().total }}</div>
+        </div>
+        <div class="barrio-ver-stat">
+          <div class="barrio-ver-stat__label">Disponibles</div>
+          <div class="barrio-ver-stat__value barrio-ver-stat__value--disp">{{ stats().disponibles }}</div>
+        </div>
+        <div class="barrio-ver-stat">
+          <div class="barrio-ver-stat__label">Reservadas</div>
+          <div class="barrio-ver-stat__value barrio-ver-stat__value--res">{{ stats().reservadas }}</div>
+        </div>
+        <div class="barrio-ver-stat">
+          <div class="barrio-ver-stat__label">Precios desde</div>
+          <div class="barrio-ver-stat__value barrio-ver-stat__value--precio">{{ stats().precioLabel }}</div>
         </div>
       </div>
 
-      <div class="barrio-ver-dialog__table-wrap card m-0">
-        @if (!activeTipo()) {
-          <p class="barrio-ver-dialog__empty">Seleccioná un tipo de unidad.</p>
-        } @else if (!unidadesFiltradas().length) {
-          <p class="barrio-ver-dialog__empty">No hay unidades de este tipo en el barrio.</p>
-        } @else if (agruparPor() === 'none') {
-          <p-table
-            [value]="unidadesFiltradas()"
-            [scrollable]="true"
-            scrollHeight="flex"
-            styleClass="barrio-ver-table"
-          >
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                <th>Precio</th>
-                <th class="barrio-ver-table__otros">Otros</th>
-                <th class="barrio-ver-table__actions"></th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-u>
-              <tr>
-                <td>{{ unidadCodigo(u) }}</td>
-                <td>{{ unidadNombre(u) }}</td>
-                <td>{{ tipoLabel(u.tipo_unidad) }}</td>
-                <td><lib-estado-badge [code]="u.estado" entidad="unidades" /></td>
-                <td>{{ unidadPrecio(u) }}</td>
-                <td class="barrio-ver-table__otros">{{ unidadOtros(u) }}</td>
-                <td class="barrio-ver-table__actions">
-                  <button
-                    pButton
-                    type="button"
-                    icon="pi pi-trash"
-                    class="p-button-text p-button-danger p-button-sm"
-                    [loading]="isDeletingUnidad(u.id)"
-                    [disabled]="deleting() || (!!deletingUnidadId() && !isDeletingUnidad(u.id))"
-                    (click)="confirmarEliminarUnidad(u)"
-                    pTooltip="Eliminar unidad"
-                    tooltipPosition="left"
-                  ></button>
-                </td>
-            </ng-template>
-          </p-table>
-        } @else {
-          <div class="barrio-ver-grupos">
-            <table class="barrio-ver-grupos__head">
-              <thead>
+      <section class="barrio-ver-dialog__body">
+        <div class="barrio-ver-dialog__toolbar">
+          @if (tipoTabs().length) {
+            <p-tabs
+              [value]="activeTipo() ?? tipoTabs()[0].value"
+              (valueChange)="onTipoChange($any($event))"
+              class="barrio-ver-dialog__tabs"
+            >
+              <p-tablist>
+                @for (tab of tipoTabs(); track tab.value) {
+                  <p-tab [value]="tab.value">{{ tab.label }}</p-tab>
+                }
+              </p-tablist>
+            </p-tabs>
+          } @else {
+            <span class="text-muted-color text-sm">Sin tipos de unidad configurados.</span>
+          }
+
+          <div class="barrio-ver-dialog__filters">
+            <button
+              type="button"
+              class="barrio-ver-fchip"
+              [class.barrio-ver-fchip--on]="estadoFiltro() === 'disponibles'"
+              (click)="setEstadoFiltro('disponibles')"
+            >
+              Disponibles
+            </button>
+            <button
+              type="button"
+              class="barrio-ver-fchip"
+              [class.barrio-ver-fchip--on]="estadoFiltro() === 'reservadas'"
+              (click)="setEstadoFiltro('reservadas')"
+            >
+              Reservadas
+            </button>
+            <button
+              type="button"
+              class="barrio-ver-fchip"
+              [class.barrio-ver-fchip--on]="estadoFiltro() === 'todas'"
+              (click)="setEstadoFiltro('todas')"
+            >
+              Todas
+            </button>
+
+            <div class="barrio-ver-dialog__agrupar">
+              <p-select
+                [options]="agruparOpts"
+                [ngModel]="agruparPor()"
+                (ngModelChange)="onAgruparChange($event)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Agrupar por"
+                styleClass="w-full"
+                appendTo="body"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="barrio-ver-fchip"
+              [class.barrio-ver-fchip--on]="precioOrden() !== 'none'"
+              (click)="togglePrecioOrden()"
+            >
+              {{ precioOrdenLabel() }}
+            </button>
+          </div>
+        </div>
+
+        <div class="barrio-ver-dialog__table-wrap card m-0">
+          @if (!activeTipo()) {
+            <p class="barrio-ver-dialog__empty">Seleccioná un tipo de unidad.</p>
+          } @else if (!unidadesFiltradas().length) {
+            <p class="barrio-ver-dialog__empty">No hay unidades que coincidan con el filtro.</p>
+          } @else if (agruparPor() === 'none') {
+            <p-table
+              [value]="unidadesFiltradas()"
+              [scrollable]="true"
+              scrollHeight="flex"
+              styleClass="barrio-ver-table"
+              dataKey="id"
+            >
+              <ng-template pTemplate="header">
                 <tr>
-                  <th class="barrio-ver-grupos__toggle-col"></th>
+                  <th style="width: 2.5rem"></th>
                   <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Tipo</th>
                   <th>Estado</th>
                   <th>Precio</th>
-                  <th class="barrio-ver-table__otros">Otros</th>
+                  <th>Detalle</th>
                   <th class="barrio-ver-table__actions"></th>
                 </tr>
-              </thead>
-            </table>
-            @for (grupo of grupos(); track grupo.key) {
-              <div class="barrio-ver-grupo">
-                <button
-                  type="button"
-                  class="barrio-ver-grupo__header"
-                  (click)="toggleGrupo(grupo.key)"
-                >
-                  <i
-                    class="pi barrio-ver-grupos__toggle-icon"
-                    [class.pi-chevron-down]="isGrupoExpanded(grupo.key)"
-                    [class.pi-chevron-right]="!isGrupoExpanded(grupo.key)"
-                    aria-hidden="true"
-                  ></i>
-                  <span class="barrio-ver-grupo__label">{{ grupo.label }}</span>
-                  <span class="barrio-ver-grupo__count">{{ grupo.unidades.length }} unidad(es)</span>
-                </button>
-                @if (isGrupoExpanded(grupo.key)) {
-                  <table class="barrio-ver-grupos__body">
-                    <tbody>
-                      @for (u of grupo.unidades; track u.id) {
-                        <tr>
-                          <td class="barrio-ver-grupos__toggle-col"></td>
-                          <td>{{ unidadCodigo(u) }}</td>
-                          <td>{{ unidadNombre(u) }}</td>
-                          <td>{{ tipoLabel(u.tipo_unidad) }}</td>
-                          <td><lib-estado-badge [code]="u.estado" entidad="unidades" /></td>
-                          <td>{{ unidadPrecio(u) }}</td>
-                          <td class="barrio-ver-table__otros">{{ unidadOtros(u) }}</td>
-                          <td class="barrio-ver-table__actions">
-                            <button
-                              pButton
-                              type="button"
-                              icon="pi pi-trash"
-                              class="p-button-text p-button-danger p-button-sm"
-                              [loading]="isDeletingUnidad(u.id)"
-                              [disabled]="deleting() || (!!deletingUnidadId() && !isDeletingUnidad(u.id))"
-                              (click)="confirmarEliminarUnidad(u)"
-                              pTooltip="Eliminar unidad"
-                              tooltipPosition="left"
-                            ></button>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                }
-              </div>
-            }
-          </div>
-        }
-      </div>
-    </section>
+              </ng-template>
+              <ng-template pTemplate="body" let-u>
+                <tr [class.barrio-ver-row--muted]="u.estado !== 'disponible'">
+                  <td>
+                    <p-checkbox
+                      [binary]="true"
+                      [ngModel]="isSelected(u)"
+                      (ngModelChange)="toggleSelect(u, $event)"
+                      [inputId]="'ver-sel-' + u.id"
+                    />
+                  </td>
+                  <td>
+                    <strong>{{ unidadCodigo(u) }}</strong>
+                  </td>
+                  <td><lib-estado-badge [code]="u.estado" entidad="unidades" /></td>
+                  <td>
+                    <strong>{{ unidadPrecio(u) }}</strong>
+                  </td>
+                  <td class="text-muted-color text-sm">{{ unidadDetalle(u) }}</td>
+                  <td class="barrio-ver-table__actions">
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-pencil"
+                      class="p-button-text p-button-sm"
+                      pTooltip="Editar unidad"
+                      tooltipPosition="left"
+                      (click)="editarUnidad(u)"
+                    ></button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          } @else {
+            <div class="barrio-ver-grupos">
+              <table class="barrio-ver-grupos__head">
+                <thead>
+                  <tr>
+                    <th class="barrio-ver-grupos__toggle-col"></th>
+                    <th style="width: 2.5rem"></th>
+                    <th>Código</th>
+                    <th>Estado</th>
+                    <th>Precio</th>
+                    <th>Detalle</th>
+                    <th class="barrio-ver-table__actions"></th>
+                  </tr>
+                </thead>
+              </table>
+              @for (grupo of grupos(); track grupo.key) {
+                <div class="barrio-ver-grupo">
+                  <button
+                    type="button"
+                    class="barrio-ver-grupo__header"
+                    (click)="toggleGrupo(grupo.key)"
+                  >
+                    <i
+                      class="pi barrio-ver-grupos__toggle-icon"
+                      [class.pi-chevron-down]="isGrupoExpanded(grupo.key)"
+                      [class.pi-chevron-right]="!isGrupoExpanded(grupo.key)"
+                      aria-hidden="true"
+                    ></i>
+                    <span class="barrio-ver-grupo__label">{{ grupo.label }}</span>
+                    <span class="barrio-ver-grupo__count">{{ grupo.unidades.length }} unidad(es)</span>
+                  </button>
+                  @if (isGrupoExpanded(grupo.key)) {
+                    <table class="barrio-ver-grupos__body">
+                      <tbody>
+                        @for (u of grupo.unidades; track u.id) {
+                          <tr [class.barrio-ver-row--muted]="u.estado !== 'disponible'">
+                            <td class="barrio-ver-grupos__toggle-col"></td>
+                            <td>
+                              <p-checkbox
+                                [binary]="true"
+                                [ngModel]="isSelected(u)"
+                                (ngModelChange)="toggleSelect(u, $event)"
+                                [inputId]="'ver-g-sel-' + u.id"
+                              />
+                            </td>
+                            <td>
+                              <strong>{{ unidadCodigo(u) }}</strong>
+                            </td>
+                            <td><lib-estado-badge [code]="u.estado" entidad="unidades" /></td>
+                            <td>
+                              <strong>{{ unidadPrecio(u) }}</strong>
+                            </td>
+                            <td class="text-muted-color text-sm">{{ unidadDetalle(u) }}</td>
+                            <td class="barrio-ver-table__actions">
+                              <button
+                                pButton
+                                type="button"
+                                icon="pi pi-pencil"
+                                class="p-button-text p-button-sm"
+                                pTooltip="Editar unidad"
+                                tooltipPosition="left"
+                                (click)="editarUnidad(u)"
+                              ></button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
     </div>
   }
 
   <ng-template pTemplate="footer">
-    <button
-      pButton
-      type="button"
-      label="Cerrar"
-      class="p-button-text"
-      [disabled]="deleting()"
-      (click)="visible.set(false)"
-    ></button>
+    <div class="barrio-ver-footer">
+      @if (canDeleteBarrio() || canPublishWeb()) {
+        <button
+          pButton
+          type="button"
+          icon="pi pi-ellipsis-v"
+          class="p-button-text"
+          aria-label="Más acciones"
+          [disabled]="deleting()"
+          (click)="openFooterMenu($event)"
+        ></button>
+      }
+      <div class="barrio-ver-footer__spacer"></div>
+      @if (canCreateComparativa() && selectedCount() > 0) {
+        <button
+          pButton
+          type="button"
+          icon="pi pi-link"
+          [label]="comparativaUnidadesLabel()"
+          class="p-button-outlined"
+          [disabled]="deleting()"
+          (click)="crearComparativa()"
+        ></button>
+      }
+      <button
+        pButton
+        type="button"
+        icon="pi pi-pencil"
+        label="Editar barrio"
+        class="p-button-secondary"
+        [disabled]="deleting()"
+        (click)="irAlIngreso(false)"
+      ></button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-plus"
+        label="Ingresar unidades"
+        class="p-button-success"
+        [disabled]="deleting()"
+        (click)="irAlIngreso(true)"
+      ></button>
+    </div>
   </ng-template>
+</p-dialog>
+
+<p-dialog
+  header="Eliminar barrio"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  [visible]="deleteConfirmVisible()"
+  (visibleChange)="!$event && cancelDeleteConfirm()"
+  [draggable]="false"
+  appendTo="body"
+>
+  @if (barrio(); as b) {
+    <p class="mb-3 text-sm">
+      Para confirmar, escribí el nombre del barrio:
+      <strong>{{ b.nombre }}</strong>
+    </p>
+    <input
+      pInputText
+      type="text"
+      class="w-full"
+      placeholder="Nombre del barrio"
+      [ngModel]="deleteNameInput()"
+      (ngModelChange)="deleteNameInput.set($event)"
+      autocomplete="off"
+    />
+    <div class="flex justify-end gap-2 mt-4">
+      <button
+        pButton
+        type="button"
+        label="Cancelar"
+        class="p-button-text"
+        [disabled]="deleting()"
+        (click)="cancelDeleteConfirm()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Eliminar"
+        icon="pi pi-trash"
+        class="p-button-danger"
+        [loading]="deleting()"
+        [disabled]="!deleteNameMatches() || deleting()"
+        (click)="confirmDeleteBarrio()"
+      ></button>
+    </div>
+  }
 </p-dialog>

@@ -1,0 +1,66 @@
+<div class="ingreso-rail">
+  <div class="ingreso-rail__wide">
+    <p class="ingreso-rail__kicker">Barrio</p>
+    <div class="ingreso-rail__card">
+      <strong class="ingreso-rail__nombre">{{ nombre() || 'Sin nombre' }}</strong>
+      <span class="ingreso-rail__meta">{{ lugarLabel() }} · {{ slug() || '—' }}</span>
+    </div>
+    <div class="ingreso-rail__card">
+      <span class="ingreso-rail__meta">Tipos: {{ tiposLabel() }}</span>
+      <span class="ingreso-rail__meta">{{ unidadesCount() }} unidades · {{ imagenesLabel() }}</span>
+    </div>
+    <button
+      type="button"
+      class="ingreso-rail__map"
+      (click)="edit.emit()"
+      [attr.aria-label]="hasCoords() ? 'Editar ubicación del barrio' : 'Cargar ubicación del barrio'"
+    >
+      @if (hasCoords()) {
+        <div #miniMap class="ingreso-rail__map-el" aria-hidden="true"></div>
+      } @else {
+        <span class="ingreso-rail__map-ph">Sin ubicación · click para cargarla</span>
+      }
+    </button>
+    @if (puedePublicar()) {
+      <label class="ingreso-rail__publish">
+        <p-toggleswitch
+          [ngModel]="publicado()"
+          (ngModelChange)="publicadoChange.emit($event)"
+        />
+        <span>Publicado en la web</span>
+      </label>
+    }
+    <button
+      pButton
+      type="button"
+      icon="pi pi-pencil"
+      label="Editar datos del barrio"
+      class="p-button-outlined w-full"
+      (click)="edit.emit()"
+    ></button>
+  </div>
+
+  <div class="ingreso-rail__compact">
+    <div class="ingreso-rail__compact-main">
+      <strong>{{ nombre() || 'Sin nombre' }}</strong>
+      <span class="ingreso-rail__meta">{{ lugarLabel() }}</span>
+    </div>
+    @if (puedePublicar()) {
+      <label class="ingreso-rail__publish ingreso-rail__publish--row">
+        <p-toggleswitch
+          [ngModel]="publicado()"
+          (ngModelChange)="publicadoChange.emit($event)"
+        />
+        <span>Publicado</span>
+      </label>
+    }
+    <button
+      pButton
+      type="button"
+      icon="pi pi-pencil"
+      label="Editar"
+      class="p-button-outlined p-button-sm"
+      (click)="edit.emit()"
+    ></button>
+  </div>
+</div>

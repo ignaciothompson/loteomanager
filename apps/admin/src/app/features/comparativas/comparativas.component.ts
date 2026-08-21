@@ -1,6 +1,7 @@
 import { Component, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   ComparativasService,
   InteresadosService,
@@ -48,6 +49,8 @@ export class ComparativasComponent {
   private authService = inject(AuthService);
   private vendedorAcceso = inject(VendedorAccesoService);
   private messageService = inject(MessageService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   interesados = this.createAccesoList((ids) => this.interesadosService.listVisibles(ids));
   unidades = this.createAccesoList((ids) => this.unidadesService.listByBarrios(ids));
@@ -59,6 +62,7 @@ export class ComparativasComponent {
   filterTitulo = signal('');
 
   displayDialog = signal(false);
+  readonly initialUnidadesIds = signal<string[]>([]);
 
   unidadesDisponibles = computed(() =>
     this.unidades().filter((u) => u.estado === 'disponible')
@@ -90,6 +94,30 @@ export class ComparativasComponent {
       void this.unidades.reload();
       void this.comparativas.reload();
     });
+
+    effect(() => {
+      this.vendedorAcceso.accesoReady();
+      const { waiting } = this.vendedorAcceso.resolveBarrioIds();
+      if (waiting) return;
+
+      const qp = this.route.snapshot.queryParamMap.get('unidades_ids');
+      if (!qp) return;
+
+      const ids = qp
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!ids.length) return;
+
+      this.initialUnidadesIds.set(ids);
+      this.displayDialog.set(true);
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { unidades_ids: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    });
   }
 
   clearFilters(): void {
@@ -98,6 +126,7 @@ export class ComparativasComponent {
   }
 
   openNew(): void {
+    this.initialUnidadesIds.set([]);
     this.displayDialog.set(true);
   }
 

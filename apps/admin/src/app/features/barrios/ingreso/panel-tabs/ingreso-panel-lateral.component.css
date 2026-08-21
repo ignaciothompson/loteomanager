@@ -44,12 +44,24 @@
   gap: 0.5rem;
 }
 
+.ingreso-lateral__filter {
+  flex: 0 0 auto;
+  padding: 0.75rem 0.75rem 0;
+}
+
 .ingreso-lateral__empty {
   margin: 0;
   padding: 1rem 0.5rem;
   text-align: center;
   color: var(--p-text-muted-color);
   font-size: 0.875rem;
+}
+
+.ingreso-lateral__empty--hero {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ingreso-lateral__item {
@@ -76,7 +88,6 @@
   border-color: var(--p-primary-color);
   box-shadow: 0 0 0 1px var(--p-primary-color);
   background: var(--p-highlight-background);
-  color: var(--p-highlight-color);
 }
 
 .ingreso-lateral__item-head {
@@ -89,7 +100,7 @@
 .ingreso-lateral__codigo {
   font-weight: 600;
   font-size: 0.9rem;
-  color: inherit;
+  color: var(--p-text-color);
 }
 
 .ingreso-lateral__tipo-badge {
@@ -103,10 +114,22 @@
   white-space: nowrap;
 }
 
-.ingreso-lateral__item--selected .ingreso-lateral__tipo-badge {
-  background: color-mix(in srgb, var(--p-primary-color) 18%, transparent);
-  color: var(--p-highlight-color);
-  border-color: color-mix(in srgb, var(--p-primary-color) 35%, transparent);
+.ingreso-lateral__tipo-badge--lote {
+  background: color-mix(in srgb, #64748b 22%, transparent);
+  color: #94a3b8;
+  border-color: color-mix(in srgb, #64748b 40%, transparent);
+}
+
+.ingreso-lateral__tipo-badge--casa {
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  color: #4ade80;
+  border-color: color-mix(in srgb, #22c55e 40%, transparent);
+}
+
+.ingreso-lateral__tipo-badge--prefab {
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+  color: #fbbf24;
+  border-color: color-mix(in srgb, #f59e0b 40%, transparent);
 }
 
 .ingreso-lateral__meta {
@@ -114,7 +137,26 @@
   color: var(--p-text-muted-color);
 }
 
-.ingreso-lateral__item--selected .ingreso-lateral__meta {
-  color: inherit;
-  opacity: 0.85;
+/* Keep lib-estado-badge inline colors intact when item is selected */
+.ingreso-lateral__item lib-estado-badge,
+.ingreso-lateral__item--selected lib-estado-badge {
+  color: unset;
+}
+
+.ingreso-lateral__item--selected .ingreso-lateral__tipo-badge--lote {
+  background: color-mix(in srgb, #64748b 28%, transparent);
+  color: #cbd5e1;
+  border-color: color-mix(in srgb, #64748b 50%, transparent);
+}
+
+.ingreso-lateral__item--selected .ingreso-lateral__tipo-badge--casa {
+  background: color-mix(in srgb, #22c55e 24%, transparent);
+  color: #86efac;
+  border-color: color-mix(in srgb, #22c55e 50%, transparent);
+}
+
+.ingreso-lateral__item--selected .ingreso-lateral__tipo-badge--prefab {
+  background: color-mix(in srgb, #f59e0b 24%, transparent);
+  color: #fcd34d;
+  border-color: color-mix(in srgb, #f59e0b 50%, transparent);
 }

@@ -1,22 +1,19 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
 }
 
 .barrio-ingreso-page {
-  --ingreso-panel-height: calc(100vh - 352px);
   flex: 1 1 auto;
   min-height: 0;
+  height: calc(100vh - 112px);
+  max-height: calc(100vh - 112px);
   overflow: hidden;
-  padding-bottom: 1rem;
-}
-
-.barrio-ingreso-page > .ingreso-contenedor-1 {
-  flex: 0 0 auto;
-  min-height: auto;
-  max-height: none;
-  overflow: visible;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .barrio-ingreso-c1-header {
@@ -38,9 +35,17 @@
   white-space: nowrap;
 }
 
+.barrio-ingreso-paso1-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
 .barrio-ingreso-paso1-form__actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.5rem;
   margin-top: 1rem;
 }
 
@@ -48,56 +53,133 @@
   height: 30px;
 }
 
-.ingreso-split {
+.ingreso-state-a,
+.ingreso-state-b {
   display: grid;
-  grid-template-columns: minmax(0, 65%) minmax(0, 35%);
   gap: 1rem;
-  flex: 0 0 auto;
-  height: var(--ingreso-panel-height);
-  min-height: var(--ingreso-panel-height);
-  max-height: var(--ingreso-panel-height);
+  flex: 1 1 auto;
+  min-height: 0;
   align-items: stretch;
 }
 
-.ingreso-split__form {
-  display: flex;
-  flex-direction: column;
+.ingreso-state-a {
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.ingreso-state-a__form,
+.ingreso-state-b__form,
+.ingreso-state-b__rail,
+.ingreso-state-a__side,
+.ingreso-state-b__side {
   min-height: 0;
   height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   margin: 0;
-  overflow: hidden;
 }
 
-.ingreso-split__form app-ingreso-form-panel {
+.ingreso-state-a__form {
+  overflow: auto;
+}
+
+.ingreso-state-b {
+  grid-template-columns: 260px minmax(0, 1fr) 300px;
+}
+
+.ingreso-state-b__form app-ingreso-form-panel,
+.ingreso-state-a__side app-ingreso-panel-lateral,
+.ingreso-state-b__side app-ingreso-panel-lateral {
   flex: 1 1 auto;
   min-height: 0;
 }
 
-.ingreso-split__cards {
-  min-height: 0;
-  height: 100%;
+.ingreso-state-b__rail > .barrio-ingreso-volver {
+  margin-bottom: 0.65rem;
+  align-self: flex-start;
+}
+
+.ingreso-state-b__side,
+.ingreso-state-a__side {
+  align-self: stretch;
+}
+
+.ingreso-state-b__rail {
+  overflow: auto;
+}
+
+:host ::ng-deep .ingreso-barrio-drawer.p-drawer {
+  width: min(720px, 95vw);
+}
+
+:host ::ng-deep .ingreso-barrio-drawer .p-drawer-content {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
+  padding: 1rem 1.25rem 1.25rem;
 }
 
-.ingreso-split__cards app-ingreso-panel-lateral {
-  flex: 1 1 auto;
-  min-height: 0;
+:host ::ng-deep .ingreso-barrio-drawer .ingreso-geo-picker__map {
+  width: 100%;
+  height: 16rem;
+  min-height: 14rem;
+}
+
+/* Drawer is narrower than the full page: force 2-col form instead of xl:5 */
+:host ::ng-deep .ingreso-barrio-drawer .barrio-ingreso-paso1-form .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+:host ::ng-deep .ingreso-barrio-drawer .barrio-ingreso-paso1-form .col-span-full,
+:host ::ng-deep .ingreso-barrio-drawer .barrio-ingreso-paso1-form .lg\:col-span-2 {
+  grid-column: 1 / -1;
+}
+
+:host ::ng-deep .ingreso-barrio-drawer .barrio-ingreso-c1-header {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.35rem;
+}
+
+:host ::ng-deep .ingreso-barrio-drawer .barrio-ingreso-paso1-form__actions {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-content-border-color);
+  gap: 0.75rem;
+}
+
+@media (max-width: 1279px) {
+  .ingreso-state-a {
+    grid-template-columns: 1fr;
+  }
+
+  .ingreso-state-b {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .ingreso-state-b__rail {
+    grid-column: 1 / -1;
+    height: auto;
+    overflow: visible;
+  }
+
+  .ingreso-state-a__side,
+  .ingreso-state-b__side {
+    min-height: 16rem;
+  }
 }
 
 @media (max-width: 1024px) {
   .barrio-ingreso-page {
     overflow: auto;
+    height: auto;
+    max-height: none;
   }
 
-  .ingreso-split {
+  .ingreso-state-a,
+  .ingreso-state-b {
     grid-template-columns: 1fr;
     flex: 0 1 auto;
-  }
-
-  .ingreso-split__form,
-  .ingreso-split__cards {
-    min-height: 16rem;
   }
 }

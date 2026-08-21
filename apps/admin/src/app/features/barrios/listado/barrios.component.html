@@ -72,6 +72,7 @@
         [class.barrios-list-panel--table]="viewMode() === 'table'"
     >
         <p-toast />
+        <p-menu #rowMenu [model]="rowMenuItems" [popup]="true" appendTo="body" />
 
         <div class="default-height__header flex justify-between items-center" [class.mb-4]="viewMode() === 'table'">
             <h5 class="m-0">Barrios</h5>
@@ -95,6 +96,34 @@
             </div>
         </div>
 
+        @if (canCreateComparativa() && selectedCount() > 0) {
+            <div
+                class="barrios-selection-bar"
+                [class.barrios-selection-bar--active]="selectedCount() > 0"
+                aria-hidden="{{ selectedCount() === 0 }}"
+            >
+                <span class="barrios-selection-bar__count">{{ selectionLabel() }}</span>
+                <button
+                    pButton
+                    type="button"
+                    icon="pi pi-link"
+                    [label]="comparativaBarriosLabel()"
+                    class="p-button-outlined p-button-sm"
+                    [loading]="creatingComparativa()"
+                    [disabled]="creatingComparativa() || selectedCount() === 0"
+                    (click)="crearComparativaDesdeSeleccion()"
+                ></button>
+                <button
+                    pButton
+                    type="button"
+                    label="Limpiar"
+                    class="p-button-text p-button-sm"
+                    [disabled]="selectedCount() === 0"
+                    (click)="clearSelection()"
+                ></button>
+            </div>
+        }
+
         @if (viewMode() === 'table') {
             <div class="default-height__scroll">
                 <p-table
@@ -104,40 +133,143 @@
                     scrollHeight="flex"
                     [rows]="10"
                     [paginator]="rows().length > 10"
+                    sortMode="single"
+                    dataKey="id"
                 >
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>Nombre</th>
-                            <th>Zona / Departamento</th>
-                            <th>Cant. unidades</th>
-                            <th>Tipos</th>
-                            <th class="buttons-col"></th>
+                            <th class="barrios-col-check">
+                                <p-checkbox
+                                    [binary]="true"
+                                    [ngModel]="allVisibleSelected()"
+                                    [indeterminate]="someVisibleSelected()"
+                                    (ngModelChange)="toggleSelectAll($event)"
+                                    inputId="sel-all-barrios"
+                                    [attr.aria-label]="'Seleccionar todos los barrios visibles'"
+                                />
+                            </th>
+                            <th class="barrios-col-nombre" pSortableColumn="nombre">
+                                Nombre
+                                <p-sortIcon field="nombre" />
+                            </th>
+                            <th class="barrios-col-zona">Zona / Departamento</th>
+                            <th class="barrios-col-unidades" pSortableColumn="unidadesCount">
+                                Unidades
+                                <p-sortIcon field="unidadesCount" />
+                            </th>
+                            <th class="barrios-col-tipos">Tipos</th>
+                            <th class="barrios-col-web">Web</th>
+                            <th class="buttons-col barrios-actions-col"></th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-barrio>
-                        <tr>
-                            <td>{{ barrio.nombre }}</td>
-                            <td>{{ geoLabel(barrio) }}</td>
-                            <td>{{ barrio.unidadesCount }}</td>
-                            <td>
-                                <span class="text-sm text-muted-color">{{ tiposLabel(barrio) }}</span>
+                        <tr class="barrios-row" (click)="onRowClick(barrio)">
+                            <td class="barrios-col-check" (click)="$event.stopPropagation()">
+                                <p-checkbox
+                                    [binary]="true"
+                                    [ngModel]="isSelected(barrio)"
+                                    (ngModelChange)="toggleSelect(barrio, $event)"
+                                    [inputId]="'sel-' + barrio.id"
+                                />
                             </td>
-                            <td class="buttons-col">
+                            <td class="barrios-col-nombre">
+                                <span class="barrios-row__name">{{ barrio.nombre }}</span>
+                            </td>
+                            <td class="barrios-col-zona">{{ geoLabel(barrio) }}</td>
+                            <td class="barrios-col-unidades">
+                                @if (!barrio.unidadesCount) {
+                                    <span class="barrios-empty-units">
+                                        Sin unidades —
+                                        <button
+                                            type="button"
+                                            class="barrios-link-cta"
+                                            (click)="cargarUnidades(barrio, $event)"
+                                        >
+                                            ＋ cargar unidades
+                                        </button>
+                                    </span>
+                                } @else {
+                                    <div class="barrios-units-cell">
+                                        <div class="barrios-stack-bar" aria-hidden="true">
+                                            @if (barSegWidths(barrio).disp > 0) {
+                                                <i class="barrios-stack-bar__seg barrios-stack-bar__seg--disp" [style.width.%]="barSegWidths(barrio).disp"></i>
+                                            }
+                                            @if (barSegWidths(barrio).res > 0) {
+                                                <i class="barrios-stack-bar__seg barrios-stack-bar__seg--res" [style.width.%]="barSegWidths(barrio).res"></i>
+                                            }
+                                            @if (barSegWidths(barrio).vend > 0) {
+                                                <i class="barrios-stack-bar__seg barrios-stack-bar__seg--vend" [style.width.%]="barSegWidths(barrio).vend"></i>
+                                            }
+                                        </div>
+                                        <span class="barrios-counts">
+                                            @for (p of countsParts(barrio); track p.key; let i = $index) {
+                                                @if (i > 0) {
+                                                    <span class="barrios-counts__sep">·</span>
+                                                }
+                                                <em [class]="'barrios-counts__' + p.key">{{ p.n }}</em>
+                                                <span>{{ p.label }}</span>
+                                            }
+                                        </span>
+                                    </div>
+                                }
+                            </td>
+                            <td class="barrios-col-tipos">
+                                @let chips = tipoChipsVisible(barrio, 2);
+                                <div class="barrios-chips">
+                                    @for (chip of chips.shown; track chip) {
+                                        <span class="barrios-chip">{{ chip }}</span>
+                                    }
+                                    @if (chips.extra > 0) {
+                                        <span
+                                            class="barrios-chip barrios-chip--more"
+                                            [pTooltip]="tipoChips(barrio).slice(2).join(' · ')"
+                                            tooltipPosition="top"
+                                        >＋{{ chips.extra }}</span>
+                                    }
+                                    @if (!chips.shown.length) {
+                                        <span class="text-muted-color">—</span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="barrios-col-web">
+                                @let badge = pubBadge(barrio);
+                                <span class="barrios-pub-pill" [attr.data-kind]="badge.kind">{{ badge.label }}</span>
+                            </td>
+                            <td class="buttons-col barrios-actions-col" (click)="$event.stopPropagation()">
                                 <button
                                     pButton
                                     type="button"
                                     icon="pi pi-eye"
                                     label="Ver"
-                                    class="p-button-secondary p-button-text"
+                                    class="p-button-secondary p-button-text p-button-sm"
                                     [attr.aria-label]="'Ver barrio ' + barrio.nombre"
-                                    (click)="verBarrio(barrio)"
+                                    (click)="verBarrio(barrio, $event)"
                                 ></button>
+                                <button
+                                    pButton
+                                    type="button"
+                                    icon="pi pi-pencil"
+                                    label="Editar"
+                                    class="p-button-text p-button-sm"
+                                    [attr.aria-label]="'Editar barrio ' + barrio.nombre"
+                                    (click)="editarBarrio(barrio, $event)"
+                                ></button>
+                                @if (canDeleteBarrio() || canPublishWeb()) {
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-ellipsis-v"
+                                        class="p-button-text p-button-sm"
+                                        [attr.aria-label]="'Más acciones ' + barrio.nombre"
+                                        (click)="openRowMenu(barrio, $event)"
+                                    ></button>
+                                }
                             </td>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="emptymessage">
                         <tr>
-                            <td colspan="5">
+                            <td colspan="7">
                                 @if (hasActiveFilters()) {
                                     No hay barrios que coincidan con los filtros.
                                 } @else {
@@ -168,31 +300,87 @@
             } @else {
                 <div class="barrios-cards">
                     @for (barrio of rows(); track barrio.id) {
-                        <article class="barrios-card card !m-0">
-                            <header class="barrios-card__header">
+                        @let badge = pubBadge(barrio);
+                        @let chips = tipoChipsVisible(barrio, 2);
+                        <article class="barrios-card" (click)="onRowClick(barrio)">
+                            <div
+                                class="barrios-card__img"
+                                [class.barrios-card__img--ph]="!portadaUrl(barrio)"
+                                [style.background-image]="portadaUrl(barrio) ? 'url(' + portadaUrl(barrio) + ')' : null"
+                            >
+                                <div class="barrios-card__img-top" (click)="$event.stopPropagation()">
+                                    <p-checkbox
+                                        [binary]="true"
+                                        [ngModel]="isSelected(barrio)"
+                                        (ngModelChange)="toggleSelect(barrio, $event)"
+                                        [inputId]="'card-sel-' + barrio.id"
+                                    />
+                                    <span class="barrios-pub-pill" [attr.data-kind]="badge.kind">{{ badge.label }}</span>
+                                </div>
+                                @if (!portadaUrl(barrio)) {
+                                    <span class="barrios-card__ph-label">sin imagen</span>
+                                }
+                            </div>
+                            <div class="barrios-card__bd">
                                 <h6 class="barrios-card__title">{{ barrio.nombre }}</h6>
-                                <button
-                                    pButton
-                                    type="button"
-                                    icon="pi pi-eye"
-                                    label="Ver"
-                                    class="p-button-text p-button-sm"
-                                    [attr.aria-label]="'Ver barrio ' + barrio.nombre"
-                                    (click)="verBarrio(barrio)"
-                                ></button>
-                            </header>
-                            <div class="barrios-card__body">
-                                <div class="barrios-card__row">
-                                    <span class="barrios-card__label">Zona / Departamento</span>
-                                    <span class="barrios-card__value">{{ geoLabel(barrio) }}</span>
-                                </div>
-                                <div class="barrios-card__row">
-                                    <span class="barrios-card__label">Tipos</span>
-                                    <span class="barrios-card__value">{{ tiposLabel(barrio) }}</span>
-                                </div>
-                                <div class="barrios-card__row">
-                                    <span class="barrios-card__label">Cantidad unidades</span>
-                                    <span class="barrios-card__value">{{ barrio.unidadesCount }}</span>
+                                <div class="barrios-card__zona">{{ geoLabel(barrio) }}</div>
+                                @if (!barrio.unidadesCount) {
+                                    <button
+                                        type="button"
+                                        class="barrios-link-cta"
+                                        (click)="cargarUnidades(barrio, $event)"
+                                    >
+                                        ＋ Cargar unidades
+                                    </button>
+                                } @else {
+                                    <div class="barrios-stack-bar" aria-hidden="true">
+                                        @if (barSegWidths(barrio).disp > 0) {
+                                            <i class="barrios-stack-bar__seg barrios-stack-bar__seg--disp" [style.width.%]="barSegWidths(barrio).disp"></i>
+                                        }
+                                        @if (barSegWidths(barrio).res > 0) {
+                                            <i class="barrios-stack-bar__seg barrios-stack-bar__seg--res" [style.width.%]="barSegWidths(barrio).res"></i>
+                                        }
+                                        @if (barSegWidths(barrio).vend > 0) {
+                                            <i class="barrios-stack-bar__seg barrios-stack-bar__seg--vend" [style.width.%]="barSegWidths(barrio).vend"></i>
+                                        }
+                                    </div>
+                                    <span class="barrios-counts">
+                                        @for (p of countsParts(barrio); track p.key; let i = $index) {
+                                            @if (i > 0) {
+                                                <span class="barrios-counts__sep">·</span>
+                                            }
+                                            <em [class]="'barrios-counts__' + p.key">{{ p.n }}</em>
+                                            <span>{{ p.label }}</span>
+                                        }
+                                    </span>
+                                }
+                                <div class="barrios-card__foot">
+                                    <div class="barrios-chips">
+                                        @for (chip of chips.shown; track chip) {
+                                            <span class="barrios-chip">{{ chip }}</span>
+                                        }
+                                        @if (chips.extra > 0) {
+                                            <span class="barrios-chip">＋{{ chips.extra }}</span>
+                                        }
+                                    </div>
+                                    <div class="barrios-card__actions" (click)="$event.stopPropagation()">
+                                        <button
+                                            pButton
+                                            type="button"
+                                            icon="pi pi-eye"
+                                            class="p-button-text p-button-sm"
+                                            [attr.aria-label]="'Ver ' + barrio.nombre"
+                                            (click)="verBarrio(barrio, $event)"
+                                        ></button>
+                                        <button
+                                            pButton
+                                            type="button"
+                                            icon="pi pi-pencil"
+                                            class="p-button-text p-button-sm"
+                                            [attr.aria-label]="'Editar ' + barrio.nombre"
+                                            (click)="editarBarrio(barrio, $event)"
+                                        ></button>
+                                    </div>
                                 </div>
                             </div>
                         </article>
@@ -210,3 +398,48 @@
     (deleted)="onBarrioEliminado()"
     (unidadesChanged)="onBarrioUnidadesChanged()"
 />
+
+<p-dialog
+    header="Eliminar barrio"
+    [modal]="true"
+    [style]="{ width: '28rem' }"
+    [visible]="deleteConfirmVisible()"
+    (visibleChange)="!$event && cancelDeleteConfirm()"
+    [draggable]="false"
+>
+    @if (deleteTarget(); as target) {
+        <p class="mb-3 text-sm">
+            Para confirmar, escribí el nombre del barrio:
+            <strong>{{ target.nombre }}</strong>
+        </p>
+        <input
+            pInputText
+            type="text"
+            class="w-full"
+            placeholder="Nombre del barrio"
+            [ngModel]="deleteNameInput()"
+            (ngModelChange)="deleteNameInput.set($event)"
+            autocomplete="off"
+        />
+        <div class="flex justify-end gap-2 mt-4">
+            <button
+                pButton
+                type="button"
+                label="Cancelar"
+                class="p-button-text"
+                [disabled]="deleting()"
+                (click)="cancelDeleteConfirm()"
+            ></button>
+            <button
+                pButton
+                type="button"
+                label="Eliminar"
+                icon="pi pi-trash"
+                class="p-button-danger"
+                [loading]="deleting()"
+                [disabled]="!deleteNameMatches() || deleting()"
+                (click)="confirmDeleteBarrio()"
+            ></button>
+        </div>
+    }
+</p-dialog>

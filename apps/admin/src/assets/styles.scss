@@ -4,6 +4,7 @@
  */
 @use 'primeicons/primeicons.css';
 @use '@/assets/layout/layout.scss';
+@use '@/assets/barrios-listado.scss';
 
 @import 'leaflet/dist/leaflet.css';
 
@@ -11,3 +12,4 @@
 .leaflet-container img {
   max-width: none !important;
 }
+

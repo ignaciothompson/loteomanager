@@ -1,4 +1,4 @@
-import { Component, computed, inject, model, signal } from '@angular/core';
+import { Component, computed, inject, model, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -36,6 +36,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { TextareaModule } from 'primeng/textarea';
 import { TabsModule } from 'primeng/tabs';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { DrawerModule } from 'primeng/drawer';
 import {
   emptyUnidadForm,
   type IngresoFormMode,
@@ -44,6 +45,7 @@ import {
 } from './ingreso-unidades.types';
 import { IngresoFormPanelComponent } from './panel-listado/ingreso-form-panel.component';
 import { IngresoPanelLateralComponent, type IngresoLateralTab } from './panel-tabs/ingreso-panel-lateral.component';
+import { BarrioResumenRailComponent } from './rail/barrio-resumen-rail.component';
 import {
   IngresoGeoPickerComponent,
   type IngresoGeoLocation,
@@ -94,8 +96,10 @@ const TIPO_EXTRA_KEYS: Record<TipoUnidadIngreso, readonly string[]> = {
     TextareaModule,
     TabsModule,
     ToggleSwitchModule,
+    DrawerModule,
     IngresoFormPanelComponent,
     IngresoPanelLateralComponent,
+    BarrioResumenRailComponent,
     IngresoGeoPickerComponent,
     IngresoImagenesDialogComponent,
     IngresoPlantillaNombreDialogComponent,
@@ -106,6 +110,7 @@ const TIPO_EXTRA_KEYS: Record<TipoUnidadIngreso, readonly string[]> = {
   styleUrl: './barrio-ingreso-page.component.css'
 })
 export class BarrioIngresoPageComponent {
+  @ViewChild(IngresoFormPanelComponent) private formPanel?: IngresoFormPanelComponent;
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -147,6 +152,9 @@ export class BarrioIngresoPageComponent {
   readonly imagenesDialogVisible = model(false);
   readonly plantillaDialogVisible = model(false);
   readonly plantillaNombreDraft = model('');
+  readonly editandoBarrio = signal(false);
+  private unidadCleanKey = '';
+  private barrioCleanKey = '';
 
   readonly isNuevo = computed(() => this.routeId() === 'nuevo');
   readonly barrioGuardado = computed(() => !!this.barrio()?.id && !this.isNuevo());
@@ -203,7 +211,7 @@ export class BarrioIngresoPageComponent {
     let n = 0;
     if (d.planoNombre || d.planoFile) n++;
     if (d.imagenNombre || d.imagenFile) n++;
-    if (n === 0) return 'Sin archivos';
+    if (n === 0) return 'Sin imágenes';
     if (n === 1) return '1 imagen';
     return `${n} imágenes`;
   });
@@ -261,6 +269,8 @@ export class BarrioIngresoPageComponent {
 
     if (id === 'nuevo') {
       this.loading.set(false);
+      this.markBarrioClean();
+      this.markUnidadClean();
       return;
     }
 
@@ -296,15 +306,57 @@ export class BarrioIngresoPageComponent {
       this.barrioExtras.set(this.parseExtrasPersistidos(full.extras, 'barrios'));
       this.publicadoWeb.set(full.publicado ?? false);
       this.previousPublicado = full.publicado ?? false;
+      this.markBarrioClean();
+      this.markUnidadClean();
 
       await this.reloadUnidades();
       await this.reloadPlantillas();
+      this.applyQueryParams();
     } catch {
       this.messages.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el barrio' });
       void this.router.navigate(['/barrios']);
     } finally {
       this.loading.set(false);
+      this.focusCodigoSoon();
     }
+  }
+
+  /** Deep-links desde listado / dialog Ver: ?unidad=<id> | ?focus=unidad */
+  private applyQueryParams(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    const unidadId = qp.get('unidad');
+    const focus = qp.get('focus');
+
+    if (unidadId) {
+      const u = this.unidades().find((x) => x.id === unidadId);
+      if (u) {
+        this.applySelectUnidad(u);
+        return;
+      }
+    }
+
+    if (focus === 'unidad') {
+      this.lateralTab.set('listado');
+      this.resetUnidadForm();
+      this.focusCodigoSoon();
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { focus: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    }
+  }
+
+  private clearUnidadQueryParam(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    if (!qp.has('unidad') && !qp.has('focus')) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { unidad: null, focus: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   private async reloadUnidades(): Promise<void> {
@@ -330,6 +382,8 @@ export class BarrioIngresoPageComponent {
     this.plantillaActiva.set(null);
     this.usandoPlantilla.set(false);
     this.unidadForm.set(emptyUnidadForm());
+    this.markUnidadClean();
+    this.clearUnidadQueryParam();
   }
 
   limpiarForm(): void {
@@ -337,8 +391,11 @@ export class BarrioIngresoPageComponent {
   }
 
   nuevaUnidad(): void {
-    this.lateralTab.set('listado');
-    this.resetUnidadForm();
+    this.confirmIfUnidadDirty(() => {
+      this.lateralTab.set('listado');
+      this.resetUnidadForm();
+      this.focusCodigoSoon();
+    });
   }
 
   cancelarForm(): void {
@@ -372,6 +429,14 @@ export class BarrioIngresoPageComponent {
   }
 
   selectUnidad(u: UnidadesResponse): void {
+    this.confirmIfUnidadDirty(() => this.applySelectUnidad(u));
+  }
+
+  selectPlantilla(p: PlantillasUnidadResponse): void {
+    this.confirmIfUnidadDirty(() => this.applySelectPlantilla(p));
+  }
+
+  private applySelectUnidad(u: UnidadesResponse): void {
     const extrasArr = this.parseExtrasPersistidos(u.extras, 'unidades');
     const extrasRecord = this.extrasAsRecord(u.extras);
     const num = (code: string): number | null => {
@@ -413,9 +478,17 @@ export class BarrioIngresoPageComponent {
       anio_construccion: num('anio_construccion'),
       extras: this.splitUnidadExtrasPersistidos(extrasArr, u.tipo_unidad as TipoUnidadIngreso)
     });
+    this.markUnidadClean();
+    this.focusCodigoSoon();
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { unidad: u.id, focus: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
-  selectPlantilla(p: PlantillasUnidadResponse): void {
+  private applySelectPlantilla(p: PlantillasUnidadResponse): void {
     this.lateralTab.set('plantillas');
     this.selectedPlantillaId.set(p.id);
     this.selectedUnidadId.set(null);
@@ -424,6 +497,7 @@ export class BarrioIngresoPageComponent {
     this.formTab.set(p.tipo_unidad as TipoUnidadIngreso);
     this.formMode.set('nuevo');
     this.unidadForm.set(this.formFromPlantilla(p, ''));
+    this.markUnidadClean();
   }
 
   onGeoLocationChange(loc: IngresoGeoLocation): void {
@@ -579,6 +653,7 @@ export class BarrioIngresoPageComponent {
         if (opts?.showToast !== false) {
           this.messages.add({ severity: 'success', summary: 'Éxito', detail: 'Barrio guardado' });
         }
+        this.markBarrioClean();
         return existingId;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Error al guardar barrio';
@@ -610,6 +685,9 @@ export class BarrioIngresoPageComponent {
       if (opts?.showToast !== false) {
         this.messages.add({ severity: 'success', summary: 'Éxito', detail: 'Barrio creado' });
       }
+      this.markBarrioClean();
+      this.markUnidadClean();
+      this.focusCodigoSoon();
       return created.id;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al guardar barrio';
@@ -635,7 +713,218 @@ export class BarrioIngresoPageComponent {
 
   async guardarBarrio(): Promise<void> {
     if (this.savingBarrio()) return;
-    await this.persistirBarrio({ showToast: true });
+    const id = await this.persistirBarrio({ showToast: true });
+    if (id) this.cerrarDrawer();
+  }
+
+  private unidadStateKey(): string {
+    return JSON.stringify(this.unidadForm());
+  }
+
+  private barrioStateKey(): string {
+    const d = this.barrioDraft();
+    return JSON.stringify({
+      form: this.paso1Form.getRawValue(),
+      draft: {
+        descripcion: d.descripcion,
+        lat: d.lat,
+        lng: d.lng,
+        ubicacion_texto: d.ubicacion_texto,
+        plano: d.planoNombre,
+        imagen: d.imagenNombre,
+        planoFile: !!d.planoFile,
+        imagenFile: !!d.imagenFile,
+      },
+      extras: this.barrioExtras(),
+      publicado: this.publicadoWeb(),
+    });
+  }
+
+  private focusCodigoSoon(): void {
+    setTimeout(() => this.formPanel?.focusCodigo(), 0);
+  }
+
+  private markUnidadClean(): void {
+    this.unidadCleanKey = this.unidadStateKey();
+  }
+
+  private markBarrioClean(): void {
+    this.barrioCleanKey = this.barrioStateKey();
+    this.paso1Form.markAsPristine();
+  }
+
+  private unidadDirty(): boolean {
+    return this.unidadStateKey() !== this.unidadCleanKey;
+  }
+
+  private barrioDirty(): boolean {
+    return this.barrioStateKey() !== this.barrioCleanKey;
+  }
+
+  private confirmIfUnidadDirty(action: () => void): void {
+    if (!this.unidadDirty()) {
+      action();
+      return;
+    }
+    this.confirmationSvc.confirm({
+      message: 'Hay cambios sin guardar en la unidad. ¿Descartarlos?',
+      header: 'Cambios sin guardar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Descartar',
+      rejectLabel: 'Seguir editando',
+      accept: () => action(),
+    });
+  }
+
+  private confirmIfBarrioDirty(action: () => void): void {
+    if (!this.barrioDirty()) {
+      action();
+      return;
+    }
+    this.confirmationSvc.confirm({
+      message: 'Hay cambios sin guardar en el barrio. ¿Descartarlos?',
+      header: 'Cambios sin guardar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Descartar',
+      rejectLabel: 'Seguir editando',
+      accept: () => action(),
+    });
+  }
+
+  private cerrarDrawer(revert = false): void {
+    if (revert) this.revertBarrioFromSaved();
+    this.editandoBarrio.set(false);
+  }
+
+  private revertBarrioFromSaved(): void {
+    const full = this.barrio();
+    if (!full) return;
+    const zonaExpand = (full as BarriosResponse & {
+      expand?: { zona_id?: { id: string; departamento_id?: string } };
+    }).expand?.zona_id;
+    this.patchBarrioForm(full, zonaExpand);
+    this.barrioDraft.set({
+      descripcion: typeof full.descripcion === 'string' ? full.descripcion : '',
+      planoFile: null,
+      imagenFile: null,
+      planoNombre: full.plano_general || undefined,
+      imagenNombre: full.imagen_portada || undefined,
+      lat: full.lat ?? null,
+      lng: full.lng ?? null,
+      ubicacion_texto: full.ubicacion_texto ?? '',
+    });
+    this.barrioExtras.set(this.parseExtrasPersistidos(full.extras, 'barrios'));
+    this.publicadoWeb.set(full.publicado ?? false);
+    this.markBarrioClean();
+  }
+
+  private async habilitarTipoEnBarrio(tipo: TipoUnidadIngreso): Promise<void> {
+    const current = this.paso1Form.controls.tipos_unidad.value;
+    if (current.includes(tipo)) {
+      this.formTab.set(tipo);
+      this.focusCodigoSoon();
+      return;
+    }
+    const previous = [...current];
+    this.paso1Form.controls.tipos_unidad.setValue([...current, tipo]);
+    const id = await this.persistirBarrio({ showToast: false });
+    if (!id) {
+      this.paso1Form.controls.tipos_unidad.setValue(previous);
+      return;
+    }
+    this.formTab.set(tipo);
+    this.focusCodigoSoon();
+  }
+
+  abrirEdicionBarrio(): void {
+    this.editandoBarrio.set(true);
+  }
+
+  onDrawerVisibleChange(visible: boolean): void {
+    if (visible) {
+      this.editandoBarrio.set(true);
+      return;
+    }
+    if (!this.barrioDirty()) {
+      this.cerrarDrawer();
+      return;
+    }
+    this.editandoBarrio.set(true);
+    this.confirmIfBarrioDirty(() => this.cerrarDrawer(true));
+  }
+
+  cancelarDrawer(): void {
+    this.confirmIfBarrioDirty(() => this.cerrarDrawer(true));
+  }
+
+  deptoLabel(): string {
+    const id = this.paso1Form.controls.departamento_id.value;
+    return this.departamentos().find((d) => d.id === id)?.nombre ?? '';
+  }
+
+  zonaLabel(): string {
+    const id = this.paso1Form.controls.zona_id.value;
+    return this.zonas().find((z) => z.id === id)?.nombre ?? '';
+  }
+
+  async onRailPublicado(want: boolean): Promise<void> {
+    this.publicadoWeb.set(want);
+    const id = this.barrio()?.id;
+    if (!id) return;
+    try {
+      await this.applyPublicacionToggle(id);
+      const refreshed = await this.barriosSvc.getAsync(id);
+      this.barrio.set(refreshed);
+      this.previousPublicado = refreshed.publicado ?? false;
+      this.publicadoWeb.set(refreshed.publicado ?? false);
+      this.markBarrioClean();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'No se pudo actualizar la publicación';
+      this.messages.add({ severity: 'error', summary: 'Error', detail: msg });
+      this.publicadoWeb.set(this.previousPublicado);
+    }
+  }
+
+  onTipoTabRequest(tipo: TipoUnidadIngreso): void {
+    if (!this.unidadDirty()) {
+      this.formTab.set(tipo);
+      this.focusCodigoSoon();
+      return;
+    }
+    this.confirmationSvc.confirm({
+      message: 'Hay cambios sin guardar en la unidad. ¿Descartarlos?',
+      header: 'Cambios sin guardar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Descartar',
+      rejectLabel: 'Seguir editando',
+      accept: () => {
+        this.resetUnidadForm();
+        this.formTab.set(tipo);
+        this.focusCodigoSoon();
+      },
+    });
+  }
+
+  async onHabilitarTipo(tipo: TipoUnidadIngreso): Promise<void> {
+    if (!this.unidadDirty()) {
+      void this.habilitarTipoEnBarrio(tipo);
+      return;
+    }
+    this.confirmationSvc.confirm({
+      message: 'Hay cambios sin guardar en la unidad. ¿Descartarlos?',
+      header: 'Cambios sin guardar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Descartar',
+      rejectLabel: 'Seguir editando',
+      accept: () => {
+        this.resetUnidadForm();
+        void this.habilitarTipoEnBarrio(tipo);
+      },
+    });
+  }
+
+  async guardarYCargarOtra(): Promise<void> {
+    await this.guardarUnidad({ cargarOtra: true });
   }
 
   abrirDialogPlantilla(): void {
@@ -726,7 +1015,7 @@ export class BarrioIngresoPageComponent {
     }
   }
 
-  async guardarUnidad(): Promise<void> {
+  async guardarUnidad(opts?: { cargarOtra?: boolean }): Promise<void> {
     const tipo = this.formTab();
     if (this.savingUnidad()) return;
 
@@ -770,7 +1059,19 @@ export class BarrioIngresoPageComponent {
         });
         await this.reloadUnidades();
         this.lateralTab.set('listado');
-        this.resetUnidadForm();
+        if (opts?.cargarOtra) {
+          this.formMode.set('nuevo');
+          this.selectedUnidadId.set(null);
+          this.selectedPlantillaId.set(null);
+          this.plantillaActiva.set(null);
+          this.usandoPlantilla.set(false);
+          this.unidadForm.update((f) => ({ ...f, codigo: '' }));
+          this.markUnidadClean();
+          this.clearUnidadQueryParam();
+          this.focusCodigoSoon();
+        } else {
+          this.resetUnidadForm();
+        }
       } else {
         await this.unidadesSvc.crearIndividual(
           {
@@ -791,8 +1092,20 @@ export class BarrioIngresoPageComponent {
           responsableId
         );
         await this.reloadUnidades();
-        if (desdePlantilla) {
+        if (opts?.cargarOtra) {
+          this.formMode.set('nuevo');
+          this.selectedUnidadId.set(null);
+          this.selectedPlantillaId.set(null);
+          this.plantillaActiva.set(null);
+          this.usandoPlantilla.set(false);
+          this.unidadForm.update((f) => ({ ...f, codigo: '' }));
+          this.markUnidadClean();
+          this.clearUnidadQueryParam();
+          this.focusCodigoSoon();
+        } else if (desdePlantilla) {
           this.reloadFormFromPlantilla();
+          this.markUnidadClean();
+          this.clearUnidadQueryParam();
         } else {
           this.lateralTab.set('listado');
           this.resetUnidadForm();

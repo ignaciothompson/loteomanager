@@ -54,6 +54,8 @@ export class ComparativaFormDialogComponent {
   visible = input(false);
   interesados = input<InteresadosResponse[]>([]);
   unidadesDisponibles = input<UnidadesResponse[]>([]);
+  /** IDs precargados (p.ej. desde query `unidades_ids`). */
+  initialUnidadesIds = input<string[]>([]);
 
   visibleChange = output<boolean>();
   save = output<ComparativaFormSavePayload>();
@@ -78,14 +80,23 @@ export class ComparativaFormDialogComponent {
 
   constructor() {
     effect(() => {
-      if (this.visible()) {
-        this.form.reset({
-          interesadoId: '',
-          unidades_ids: [],
-          mensaje_personalizado: ''
-        });
-        this.saving.set(false);
+      if (!this.visible()) return;
+      const available = new Set(this.unidadesDisponibles().map((u) => u.id));
+      const preselected = this.initialUnidadesIds().filter((id) => available.has(id));
+      // Solo seed al abrir / cuando llegan opciones y el form aún no tiene interesado elegido
+      const current = this.form.getRawValue();
+      if (current.interesadoId) {
+        if (!current.unidades_ids.length && preselected.length) {
+          this.form.controls.unidades_ids.setValue(preselected);
+        }
+        return;
       }
+      this.form.reset({
+        interesadoId: '',
+        unidades_ids: preselected,
+        mensaje_personalizado: current.mensaje_personalizado || ''
+      });
+      this.saving.set(false);
     });
   }
 

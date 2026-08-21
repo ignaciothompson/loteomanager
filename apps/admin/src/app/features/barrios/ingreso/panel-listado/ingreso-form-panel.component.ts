@@ -3,8 +3,11 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
+  inject,
   input,
   model,
+  output,
   signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -14,6 +17,7 @@ import { ExtrasEditorComponent } from '@loteomanager/shared-ui';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import type { IngresoFormMode, IngresoUnidadForm } from '../ingreso-unidades.types';
 
@@ -35,6 +39,7 @@ const ORIENTACION_OPTS: { label: string; value: UnidadesOrientacionOptions }[] =
     CommonModule,
     FormsModule,
     TabsModule,
+    ButtonModule,
     InputTextModule,
     InputNumberModule,
     SelectModule,
@@ -52,8 +57,12 @@ export class IngresoFormPanelComponent {
   disabled = input(false);
   /** Tipos habilitados en el barrio; vacío = todos. */
   tiposUnidad = input<TipoUnidadIngreso[]>([]);
+  tipoTabRequest = output<TipoUnidadIngreso>();
+  habilitarTipo = output<TipoUnidadIngreso>();
 
   readonly extrasFilter = signal('');
+  readonly addTipoOpen = signal(false);
+  private host = inject(ElementRef<HTMLElement>);
 
   readonly formTabs = computed(() => {
     const allowed = this.tiposUnidad();
@@ -61,6 +70,12 @@ export class IngresoFormPanelComponent {
     const set = new Set(allowed);
     const filtered = FORM_TABS.filter((t) => set.has(t.value));
     return filtered.length ? filtered : FORM_TABS;
+  });
+
+  readonly tiposRestantes = computed(() => {
+    const allowed = new Set(this.tiposUnidad());
+    if (!allowed.size) return [];
+    return FORM_TABS.filter((t) => !allowed.has(t.value));
   });
 
   readonly orientacionOpts = ORIENTACION_OPTS;
@@ -76,6 +91,24 @@ export class IngresoFormPanelComponent {
       if (tabs.length && !tabs.some((t) => t.value === current)) {
         this.formTab.set(tabs[0].value);
       }
+    });
+  }
+
+  onTipoTab(value: TipoUnidadIngreso): void {
+    if (value === this.formTab()) return;
+    this.tipoTabRequest.emit(value);
+  }
+
+  pedirHabilitarTipo(tipo: TipoUnidadIngreso): void {
+    this.addTipoOpen.set(false);
+    this.habilitarTipo.emit(tipo);
+  }
+
+  focusCodigo(): void {
+    requestAnimationFrame(() => {
+      const el = this.host.nativeElement.querySelector('.js-codigo-unidad') as HTMLInputElement | null;
+      el?.focus();
+      el?.select();
     });
   }
 

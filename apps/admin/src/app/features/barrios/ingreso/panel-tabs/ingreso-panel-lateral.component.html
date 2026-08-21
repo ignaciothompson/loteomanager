@@ -1,23 +1,40 @@
 <div class="ingreso-lateral">
   <p-tabs [value]="lateralTab()" (valueChange)="lateralTab.set($any($event))" class="ingreso-lateral__tabs">
     <p-tablist>
-      <p-tab value="listado">Listado</p-tab>
+      <p-tab value="listado">Listado ({{ unidadesDelTipo().length }})</p-tab>
       <p-tab value="plantillas">Plantillas</p-tab>
     </p-tablist>
   </p-tabs>
 
   @if (lateralTab() === 'listado') {
-
+    @if (barrioGuardado()) {
+      <div class="ingreso-lateral__filter">
+        <input
+          pInputText
+          type="search"
+          class="w-full"
+          placeholder="Filtrar por código…"
+          [ngModel]="codigoFiltro()"
+          (ngModelChange)="codigoFiltro.set($event)"
+        />
+      </div>
+    }
     <div class="ingreso-lateral__scroll">
       @if (!barrioGuardado()) {
-        <p class="ingreso-lateral__empty">
-          Las unidades aparecerán acá al guardar. Si el barrio es nuevo, se crea automáticamente al guardar la primera unidad.
+        <p class="ingreso-lateral__empty ingreso-lateral__empty--hero">
+          Guardá el barrio para<br />empezar a cargar unidades
         </p>
       } @else if (!unidadesFiltradas().length) {
-        <p class="ingreso-lateral__empty">No hay unidades de este tipo. Completá el formulario y guardá una unidad.</p>
+        <p class="ingreso-lateral__empty">
+          @if (codigoFiltro().trim()) {
+            No hay unidades que coincidan con el filtro.
+          } @else {
+            No hay unidades de este tipo. Completá el formulario y guardá una unidad.
+          }
+        </p>
       } @else {
-        @for (u of unidadesFiltradas(); track u.id) {        
-        <button
+        @for (u of unidadesFiltradas(); track u.id) {
+          <button
             type="button"
             class="ingreso-lateral__item"
             [class.ingreso-lateral__item--selected]="selectedUnidadId() === u.id"
@@ -26,7 +43,12 @@
             <div class="ingreso-lateral__item-head">
               <span class="ingreso-lateral__codigo">{{ codigo(u) }}</span>
               <div class="flex gap-1 flex-wrap justify-end">
-                <span class="ingreso-lateral__tipo-badge">{{ tipoLabel(u.tipo_unidad) }}</span>
+                <span
+                  class="ingreso-lateral__tipo-badge"
+                  [class.ingreso-lateral__tipo-badge--lote]="u.tipo_unidad === 'lote_vacio'"
+                  [class.ingreso-lateral__tipo-badge--casa]="u.tipo_unidad === 'casa_construida'"
+                  [class.ingreso-lateral__tipo-badge--prefab]="u.tipo_unidad === 'casa_prefabricada'"
+                >{{ tipoLabel(u.tipo_unidad) }}</span>
                 <lib-estado-badge [code]="u.estado" [entidad]="'unidades'" />
               </div>
             </div>
@@ -38,15 +60,19 @@
   } @else {
     <div class="ingreso-lateral__scroll">
       @if (!barrioGuardado()) {
-        <p class="ingreso-lateral__empty">
+        <p class="ingreso-lateral__empty ingreso-lateral__empty--hero">
           Las plantillas aparecerán acá después de guardar el barrio (se crea automáticamente al guardar la primera unidad o plantilla).
         </p>
-      } @else if (!plantillas().length) {
+      } @else if (!plantillasFiltradas().length) {
         <p class="ingreso-lateral__empty">
-          No hay plantillas guardadas. Completá el formulario y hacé clic en "Guardar como plantilla".
+          @if (!plantillas().length) {
+            No hay plantillas guardadas. Completá el formulario y hacé clic en "Guardar como plantilla".
+          } @else {
+            No hay plantillas de este tipo.
+          }
         </p>
       } @else {
-        @for (p of plantillas(); track p.id) {
+        @for (p of plantillasFiltradas(); track p.id) {
           <button
             type="button"
             class="ingreso-lateral__item"
@@ -55,7 +81,12 @@
           >
             <div class="ingreso-lateral__item-head">
               <span class="ingreso-lateral__codigo">{{ p.nombre }}</span>
-              <span class="ingreso-lateral__tipo-badge">{{ tipoLabel(p.tipo_unidad) }}</span>
+              <span
+                class="ingreso-lateral__tipo-badge"
+                [class.ingreso-lateral__tipo-badge--lote]="p.tipo_unidad === 'lote_vacio'"
+                [class.ingreso-lateral__tipo-badge--casa]="p.tipo_unidad === 'casa_construida'"
+                [class.ingreso-lateral__tipo-badge--prefab]="p.tipo_unidad === 'casa_prefabricada'"
+              >{{ tipoLabel(p.tipo_unidad) }}</span>
             </div>
             <span class="ingreso-lateral__meta">{{ plantillaMeta(p) }}</span>
           </button>

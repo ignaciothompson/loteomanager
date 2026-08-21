@@ -1,0 +1,644 @@
+/* Barrios listado + Ver dialog (extracted for component style budget) */
+
+.barrios-metrics__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.25rem;
+}
+
+.barrios-metrics__label {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.barrios-metrics__value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.barrios-filters {
+  display: grid;
+  grid-template-columns: 12rem 12rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.barrios-filters__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.barrios-filters .p-select {
+  width: 100%;
+}
+
+.barrios-view-toggle {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+}
+
+.barrios-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.barrios-selection-bar--active {
+  border-color: var(--p-content-border-color);
+  background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.barrios-selection-bar__count {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+  margin-right: auto;
+}
+
+app-barrios .default-height > .card.barrios-list-panel--table {
+  min-height: calc(100vh - 280px);
+  max-height: calc(100vh - 280px);
+}
+
+app-barrios .default-height > .card.barrios-list-panel--cards {
+  flex: 0 0 auto;
+  min-height: auto;
+  max-height: none;
+  overflow: visible;
+  margin-bottom: 0.75rem;
+}
+
+app-barrios .default-height > .barrios-cards-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 0 1rem;
+}
+
+.barrios-row {
+  cursor: pointer;
+}
+
+.barrios-row > td {
+  vertical-align: middle !important;
+}
+
+.barrios-row__name {
+  font-weight: 600;
+}
+
+/* Full-width table: nombre absorbs leftover space */
+app-barrios .barrios-list-panel .p-datatable-table {
+  width: 100% !important;
+  table-layout: fixed;
+}
+
+.barrios-col-check {
+  width: 2.75rem !important;
+}
+
+.barrios-col-nombre {
+  width: auto;
+}
+
+.barrios-col-zona {
+  width: 16%;
+}
+
+.barrios-col-unidades {
+  width: 18%;
+}
+
+.barrios-col-tipos {
+  width: 14%;
+  overflow: hidden;
+}
+
+.barrios-col-web {
+  width: 8rem;
+}
+
+.barrios-actions-col {
+  width: 14rem !important;
+  min-width: 14rem !important;
+  max-width: 14rem !important;
+  height: 40px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  white-space: nowrap;
+  vertical-align: middle !important;
+  text-align: right !important;
+}
+
+.barrios-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+}
+
+.barrios-units-cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 11rem;
+}
+
+.barrios-stack-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  gap: 2px;
+  min-width: 72px;
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.barrios-stack-bar__seg {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.barrios-stack-bar__seg--disp {
+  background: #199e70;
+}
+
+.barrios-stack-bar__seg--res {
+  background: #c98500;
+}
+
+.barrios-stack-bar__seg--vend {
+  background: #3987e5;
+}
+
+.barrios-counts {
+  font-size: 0.7rem;
+  color: var(--p-text-muted-color);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2rem;
+}
+
+.barrios-counts__sep {
+  margin: 0 0.15rem;
+  color: var(--p-text-muted-color);
+}
+
+.barrios-counts em {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.barrios-counts__d {
+  color: #199e70;
+}
+
+.barrios-counts__r {
+  color: #c98500;
+}
+
+.barrios-counts__v {
+  color: #3987e5;
+}
+
+.barrios-empty-units {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+}
+
+.barrios-link-cta {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #199e70;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.barrios-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.barrios-chip {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 99px;
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.barrios-chip--more {
+  cursor: default;
+}
+
+.barrios-card .barrios-chips {
+  flex-wrap: wrap;
+}
+
+.barrios-pub-pill,
+.barrio-ver-pub-pill {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.8rem;
+  border-radius: 99px;
+  font-weight: 500;
+  height: fit-content;
+}
+
+.barrios-pub-pill[data-kind='publicado'],
+.barrio-ver-pub-pill[data-kind='publicado'] {
+  color: #2fbf71;
+  background: rgba(47, 191, 113, 0.14);
+}
+
+.barrios-pub-pill[data-kind='sin_publicar'],
+.barrio-ver-pub-pill[data-kind='sin_publicar'] {
+  color: var(--p-text-muted-color);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.barrios-pub-pill[data-kind='pendiente'],
+.barrio-ver-pub-pill[data-kind='pendiente'] {
+  color: #c98500;
+  background: rgba(201, 133, 0, 0.16);
+}
+
+.barrios-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.25rem;
+}
+
+.barrios-cards-empty {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--p-text-muted-color);
+}
+
+.barrios-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.barrios-card__img {
+  position: relative;
+  height: 74px;
+  background: #1e2b33 center/cover no-repeat;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 0.4rem;
+}
+
+.barrios-card__img--ph {
+  background: repeating-linear-gradient(45deg, #1a1a1d, #1a1a1d 8px, #1d1d20 8px, #1d1d20 16px);
+  align-items: center;
+  justify-content: center;
+}
+
+.barrios-card__img-top {
+  position: absolute;
+  inset: 0.4rem;
+  display: flex;
+  justify-content: space-between;
+  z-index: 1;
+}
+
+.barrios-card__ph-label {
+  font-size: 0.65rem;
+  color: var(--p-text-muted-color);
+}
+
+.barrios-card__bd {
+  padding: 0.65rem 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.barrios-card__title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barrios-card__zona {
+  color: var(--p-text-muted-color);
+  font-size: 0.7rem;
+  margin-top: -0.2rem;
+}
+
+.barrios-card__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.barrios-card__actions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1440px) {
+  .barrios-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .barrios-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .barrios-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .barrios-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Ver dialog --- */
+
+.barrio-ver-dialog__shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(85vh - 7rem);
+}
+
+.barrio-ver-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-top: 0.35rem;
+}
+
+.barrio-ver-dialog__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.barrio-ver-dialog__meta {
+  margin-top: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.barrio-ver-stats {
+  display: flex;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.barrio-ver-stat {
+  flex: 1 1 0;
+  min-width: 7.5rem;
+  background: var(--p-content-hover-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+
+.barrio-ver-stat__label {
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+}
+
+.barrio-ver-stat__value {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+.barrio-ver-stat__value--disp {
+  color: #199e70;
+}
+
+.barrio-ver-stat__value--res {
+  color: #c98500;
+}
+
+.barrio-ver-stat__value--precio {
+  font-size: 1.15rem;
+}
+
+.barrio-ver-dialog__toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.barrio-ver-dialog__tabs {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.barrio-ver-dialog__tabs .p-tab {
+  font-size: 0.95rem;
+}
+
+.barrio-ver-dialog__filters {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.barrio-ver-fchip {
+  font-size: 0.85rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 99px;
+  padding: 0.4rem 0.9rem;
+  color: var(--p-text-muted-color);
+  background: transparent;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.barrio-ver-fchip--on {
+  border-color: #199e70;
+  color: #199e70;
+  background: rgba(25, 158, 112, 0.12);
+}
+
+.barrio-ver-dialog__agrupar {
+  flex: 0 0 10rem;
+  min-width: 9rem;
+}
+
+.barrio-ver-dialog__agrupar .p-select {
+  width: 100%;
+}
+
+.barrio-ver-dialog__body,
+.barrio-ver-dialog__table-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.barrio-ver-dialog__table-wrap {
+  padding: 0;
+  overflow: hidden;
+  font-size: 0.95rem;
+}
+
+.barrio-ver-row--muted {
+  opacity: 0.55;
+}
+
+.barrio-ver-grupos {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.barrio-ver-dialog__empty {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--p-text-muted-color);
+}
+
+.barrio-ver-table__actions {
+  width: auto;
+  min-width: 3rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.barrio-ver-table__actions,
+.barrio-ver-grupos__body .barrio-ver-table__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem;
+  flex-wrap: nowrap;
+}
+
+.barrio-ver-grupos__head,
+.barrio-ver-grupos__body {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.barrio-ver-grupos__head th,
+.barrio-ver-grupos__body td {
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--p-content-border-color);
+  font-size: 0.875rem;
+}
+
+.barrio-ver-grupos__head th {
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+  background: var(--p-content-hover-background);
+}
+
+.barrio-ver-grupos__toggle-col {
+  width: 2rem;
+}
+
+.barrio-ver-grupo__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-bottom: 1px solid var(--p-content-border-color);
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+  cursor: pointer;
+  text-align: left;
+}
+
+.barrio-ver-grupo__label {
+  font-weight: 600;
+}
+
+.barrio-ver-grupo__count {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+}
+
+.barrio-ver-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.barrio-ver-footer__spacer {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 768px) {
+  .barrio-ver-dialog__agrupar {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+}

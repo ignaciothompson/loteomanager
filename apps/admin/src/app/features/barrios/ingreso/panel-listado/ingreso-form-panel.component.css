@@ -27,8 +27,51 @@
   padding-top: 1rem;
 }
 
-.ingreso-form-panel__mode {
+.ingreso-form-panel__tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   margin-bottom: 1rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.ingreso-form-panel__tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ingreso-form-panel__add-tipo {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.ingreso-form-panel__add-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 5;
+  min-width: 8rem;
+  padding: 0.35rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-content-border-radius);
+  background: var(--p-content-background);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.ingreso-form-panel__add-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.ingreso-form-panel__add-menu button:hover {
+  background: var(--p-content-hover-background);
 }
 
 .ingreso-form-panel__mode-badge {

@@ -7,8 +7,7 @@
             <i class="pi pi-spin pi-spinner text-2xl" aria-hidden="true"></i>
         </div>
     } @else {
-        <!-- C1: datos del barrio -->
-        <div class="card mb-4 ingreso-contenedor-1">
+        <ng-template #barrioDatos>
             <div class="barrio-ingreso-c1-header">
                 <p-tabs [value]="barrioTab()" (valueChange)="barrioTab.set($any($event))" class="barrio-ingreso-tabs">
                     <p-tablist>
@@ -17,18 +16,20 @@
                         }
                     </p-tablist>
                 </p-tabs>
-                <button pButton
-                        type="button"
-                        icon="pi pi-arrow-left"
-                        label="Volver a listado barrios"
-                        class="p-button-text barrio-ingreso-volver"
-                        (click)="volver()"></button>
+                @if (!barrioGuardado()) {
+                    <button pButton
+                            type="button"
+                            icon="pi pi-arrow-left"
+                            label="Volver a listado barrios"
+                            class="p-button-text barrio-ingreso-volver"
+                            (click)="volver()"></button>
+                }
             </div>
 
             <form [formGroup]="paso1Form" class="barrio-ingreso-paso1-form">
                 @switch (barrioTab()) {
                     @case ('basicos') {
-                        <div class="grid grid-cols-5 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
                             <div class="lm-field">
                                 <label for="ingreso-nombre" class="lm-field-label">
                                     Nombre <span class="lm-required">*</span>
@@ -129,7 +130,7 @@
                                     placeholder="Se completa al buscar o al marcar en el mapa"
                                 />
                             </div>
-                            <div class="lm-field col-span-5">
+                            <div class="lm-field col-span-full">
                                 <label class="lm-field-label">Geolocalización</label>
                                 <app-ingreso-geo-picker
                                     [lat]="barrioDraft().lat ?? null"
@@ -138,7 +139,7 @@
                                     (locationChange)="onGeoLocationChange($event)"
                                 />
                             </div>
-                            @if (puedePublicarWeb()) {
+                            @if (puedePublicarWeb() && !barrioGuardado()) {
                                 <div class="lm-field">
                                     <label for="ingreso-publicado" class="lm-field-label">Publicado en la web</label>
                                     <p-toggleswitch
@@ -173,6 +174,17 @@
                 }
 
                 <div class="barrio-ingreso-paso1-form__actions">
+                    @if (editandoBarrio()) {
+                        <button
+                            pButton
+                            type="button"
+                            label="Cancelar"
+                            icon="pi pi-times"
+                            class="p-button-text"
+                            [disabled]="savingBarrio()"
+                            (click)="cancelarDrawer()"
+                        ></button>
+                    }
                     <button
                         pButton
                         type="button"
@@ -185,80 +197,152 @@
                     ></button>
                 </div>
             </form>
-        </div>
+        </ng-template>
 
-        <!-- C2 + C3 -->
-        <div class="ingreso-split">
-            <div class="card ingreso-split__form">
-                <app-ingreso-form-panel
-                    [(formTab)]="formTab"
-                    [formMode]="formMode()"
-                    [usandoPlantilla]="usandoPlantilla()"
-                    [(unidadForm)]="unidadForm"
-                    [estadoOpts]="estadoOpts()"
-                    [tiposUnidad]="paso1Form.controls.tipos_unidad.value"
-                >
-                    <div formActions class="flex flex-wrap justify-end gap-2">
-                        <button
-                            pButton
-                            type="button"
-                            [label]="usandoPlantilla() ? 'Limpiar' : 'Cancelar'"
-                            [icon]="usandoPlantilla() ? 'pi pi-eraser' : 'pi pi-times'"
-                            class="p-button-text"
-                            [disabled]="savingUnidad() || savingPlantilla() || savingBarrio()"
-                            (click)="cancelarForm()"
-                        ></button>
-                        @if (!usandoPlantilla()) {
+        @if (!barrioGuardado()) {
+            <div class="ingreso-state-a">
+                <div class="card ingreso-state-a__form">
+                    <ng-container *ngTemplateOutlet="barrioDatos" />
+                </div>
+                <div class="card ingreso-state-a__side">
+                    <app-ingreso-panel-lateral
+                        [(lateralTab)]="lateralTab"
+                        [tipoUnidad]="formTab()"
+                        [unidades]="unidades()"
+                        [plantillas]="plantillas()"
+                        [selectedUnidadId]="selectedUnidadId()"
+                        [selectedPlantillaId]="selectedPlantillaId()"
+                        [barrioGuardado]="false"
+                        (selectUnidad)="selectUnidad($event)"
+                        (selectPlantilla)="selectPlantilla($event)"
+                        (nueva)="nuevaUnidad()"
+                    />
+                </div>
+            </div>
+        } @else {
+            <div class="ingreso-state-b">
+                <aside class="card ingreso-state-b__rail">
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-arrow-left"
+                        label="Volver"
+                        class="p-button-text p-button-sm barrio-ingreso-volver"
+                        (click)="volver()"
+                    ></button>
+                    <app-barrio-resumen-rail
+                        [nombre]="paso1Form.controls.nombre.value"
+                        [slug]="paso1Form.controls.slug.value"
+                        [zonaLabel]="zonaLabel()"
+                        [deptoLabel]="deptoLabel()"
+                        [tipos]="paso1Form.controls.tipos_unidad.value"
+                        [unidadesCount]="unidades().length"
+                        [imagenesLabel]="imagenesCountLabel()"
+                        [lat]="barrioDraft().lat ?? null"
+                        [lng]="barrioDraft().lng ?? null"
+                        [publicado]="publicadoWeb()"
+                        [puedePublicar]="puedePublicarWeb()"
+                        (edit)="abrirEdicionBarrio()"
+                        (publicadoChange)="onRailPublicado($event)"
+                    />
+                </aside>
+
+                <div class="card ingreso-state-b__form">
+                    <app-ingreso-form-panel
+                        [(formTab)]="formTab"
+                        [formMode]="formMode()"
+                        [usandoPlantilla]="usandoPlantilla()"
+                        [(unidadForm)]="unidadForm"
+                        [estadoOpts]="estadoOpts()"
+                        [tiposUnidad]="paso1Form.controls.tipos_unidad.value"
+                        (tipoTabRequest)="onTipoTabRequest($event)"
+                        (habilitarTipo)="onHabilitarTipo($event)"
+                    >
+                        <div formActions class="flex flex-wrap justify-end gap-2">
                             <button
                                 pButton
                                 type="button"
-                                label="Guardar como plantilla"
-                                icon="pi pi-bookmark"
+                                [label]="usandoPlantilla() ? 'Limpiar' : 'Cancelar'"
+                                [icon]="usandoPlantilla() ? 'pi pi-eraser' : 'pi pi-times'"
+                                class="p-button-text"
+                                [disabled]="savingUnidad() || savingPlantilla() || savingBarrio()"
+                                (click)="cancelarForm()"
+                            ></button>
+                            @if (!usandoPlantilla()) {
+                                <button
+                                    pButton
+                                    type="button"
+                                    label="Guardar como plantilla"
+                                    icon="pi pi-bookmark"
+                                    class="p-button-outlined"
+                                    [loading]="savingPlantilla()"
+                                    [disabled]="savingPlantilla() || savingUnidad() || deletingPlantilla() || savingBarrio()"
+                                    (click)="abrirDialogPlantilla()"
+                                ></button>
+                            }
+                            @if (selectedPlantillaId()) {
+                                <button
+                                    pButton
+                                    type="button"
+                                    label="Eliminar plantilla"
+                                    icon="pi pi-trash"
+                                    class="p-button-outlined p-button-danger"
+                                    [loading]="deletingPlantilla()"
+                                    [disabled]="savingUnidad() || savingPlantilla() || deletingPlantilla() || savingBarrio()"
+                                    (click)="confirmarEliminarPlantilla()"
+                                ></button>
+                            }
+                            <button
+                                pButton
+                                type="button"
+                                label="Guardar y cargar otra"
+                                icon="pi pi-plus"
                                 class="p-button-outlined"
-                                [loading]="savingPlantilla()"
-                                [disabled]="savingPlantilla() || savingUnidad() || deletingPlantilla() || savingBarrio()"
-                                (click)="abrirDialogPlantilla()"
+                                [loading]="savingUnidad()"
+                                [disabled]="savingUnidad() || savingPlantilla() || savingBarrio()"
+                                (click)="guardarYCargarOtra()"
                             ></button>
-                        }
-                        @if (selectedPlantillaId()) {
                             <button
                                 pButton
                                 type="button"
-                                label="Eliminar plantilla"
-                                icon="pi pi-trash"
-                                class="p-button-outlined p-button-danger"
-                                [loading]="deletingPlantilla()"
-                                [disabled]="savingUnidad() || savingPlantilla() || deletingPlantilla() || savingBarrio()"
-                                (click)="confirmarEliminarPlantilla()"
+                                label="Guardar unidad"
+                                icon="pi pi-check"
+                                [loading]="savingUnidad()"
+                                [disabled]="savingUnidad() || savingPlantilla() || savingBarrio()"
+                                (click)="guardarUnidad()"
                             ></button>
-                        }
-                        <button
-                            pButton
-                            type="button"
-                            label="Guardar unidad"
-                            icon="pi pi-check"
-                            [loading]="savingUnidad()"
-                            [disabled]="savingUnidad() || savingPlantilla() || savingBarrio()"
-                            (click)="guardarUnidad()"
-                        ></button>
-                    </div>
-                </app-ingreso-form-panel>
+                        </div>
+                    </app-ingreso-form-panel>
+                </div>
+
+                <div class="card ingreso-state-b__side">
+                    <app-ingreso-panel-lateral
+                        [(lateralTab)]="lateralTab"
+                        [tipoUnidad]="formTab()"
+                        [unidades]="unidades()"
+                        [plantillas]="plantillas()"
+                        [selectedUnidadId]="selectedUnidadId()"
+                        [selectedPlantillaId]="selectedPlantillaId()"
+                        [barrioGuardado]="true"
+                        (selectUnidad)="selectUnidad($event)"
+                        (selectPlantilla)="selectPlantilla($event)"
+                        (nueva)="nuevaUnidad()"
+                    />
+                </div>
             </div>
-            <div class="ingreso-split__cards">
-                <app-ingreso-panel-lateral
-                    [(lateralTab)]="lateralTab"
-                    [tipoUnidad]="formTab()"
-                    [unidades]="unidades()"
-                    [plantillas]="plantillas()"
-                    [selectedUnidadId]="selectedUnidadId()"
-                    [selectedPlantillaId]="selectedPlantillaId()"
-                    [barrioGuardado]="barrioGuardado()"
-                    (selectUnidad)="selectUnidad($event)"
-                    (selectPlantilla)="selectPlantilla($event)"
-                    (nueva)="nuevaUnidad()"
-                />
-            </div>
-        </div>
+
+            <p-drawer
+                [visible]="editandoBarrio()"
+                (visibleChange)="onDrawerVisibleChange($event)"
+                [header]="'Editar barrio'"
+                position="left"
+                [modal]="true"
+                [style]="{ width: 'min(720px, 95vw)' }"
+                styleClass="ingreso-barrio-drawer"
+            >
+                <ng-container *ngTemplateOutlet="barrioDatos" />
+            </p-drawer>
+        }
 
         <app-ingreso-imagenes-dialog
             [(visible)]="imagenesDialogVisible"
