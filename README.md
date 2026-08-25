@@ -659,3 +659,6 @@ Este proyecto es de uso privado. Ver `LICENSE` para más detalles.
 ## Contacto
 
 Desarrollado por [Ignacio Thompson](https://ignaciothompson.com).
+
+## Badges
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ignaciothompson/loteomanager)
