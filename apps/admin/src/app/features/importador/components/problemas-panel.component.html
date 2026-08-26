@@ -1,0 +1,41 @@
+<div class="imp-panel" [class.imp-panel--ok]="!problemas.length" [class.imp-panel--amber]="problemas.length > 0">
+  @if (!problemas.length) {
+    <p class="m-0 text-sm" style="color: var(--p-green-400, #4ade80)">
+      <i class="pi pi-check mr-2"></i>
+      Sin problemas pendientes
+    </p>
+  } @else {
+    <h6 class="mt-0 mb-3">Problemas</h6>
+    <div class="flex flex-col">
+      @for (p of problemas; track p.codigo + (p.campo ?? '')) {
+        <div class="imp-problema">
+          <div class="font-medium text-sm mb-1">
+            <i class="pi pi-exclamation-triangle mr-2" style="color: #c98500"></i>
+            {{ p.mensaje }}
+          </div>
+          @if (p.barrios.length) {
+            <p class="text-xs text-500 mt-0 mb-2">
+              {{ barriosLinea(p.barrios) }}
+            </p>
+          }
+          <div class="flex flex-wrap gap-1">
+            @for (a of p.acciones; track a.codigo + (a.campo ?? ''); let i = $index) {
+              <p-button
+                [label]="a.label"
+                size="small"
+                [outlined]="i > 0"
+                (click)="accion.emit({ problema: p, accion: a })"
+              />
+            }
+            <p-button
+              label="Ver"
+              size="small"
+              [text]="true"
+              (click)="ver.emit(p)"
+            />
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

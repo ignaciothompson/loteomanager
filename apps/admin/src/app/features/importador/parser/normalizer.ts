@@ -1,104 +1,237 @@
-import type { BarrioNormalizado, UnidadNormalizado } from './types';
+import type { TipoUnidadIngreso } from '@loteomanager/shared-types';
+import type { EstadoDefinicion } from '@loteomanager/shared-types';
+import type { BarriosResponse } from '@loteomanager/shared-types';
+import { toSlug } from '@loteomanager/shared-utils';
+import type { CabezalBarrio, CorreccionSugerida, FilaLote, MonedaImportacion } from './types';
+import { TIPOS_UNIDAD_VALIDOS } from './types';
+import { cellStr } from './text';
+import {
+  monedaEsValida,
+  sugerirEstado,
+  sugerirMoneda,
+  sugerirNumero,
+  sugerirOrientacion,
+  sugerirTrim,
+} from './autocorrect';
 
-export function slugify(s: string): string {
-  return s
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
-}
-
-export function parseNumber(val: unknown): number | null {
-  if (val === null || val === undefined || val === '') return null;
-  if (typeof val === 'number') return isNaN(val) ? null : val;
-  const n = Number(String(val).replace(/,/g, '.'));
-  return isNaN(n) ? null : n;
-}
-
-export function str(val: unknown): string {
-  if (val === null || val === undefined) return '';
-  return String(val).trim();
-}
-
-export function normalizeBarrioRow(
-  data: Record<string, unknown>,
-  numeroFila: number
-): { data: BarrioNormalizado; errores: string[]; ref_barrio: string } {
+export function normalizeCabezal(
+  raw: Record<string, string>,
+  nombreHoja: string,
+  existingBarrios: BarriosResponse[],
+  barrioDestino?: BarriosResponse | null
+): { data: CabezalBarrio; errores: string[]; advertencias: string[] } {
   const errores: string[] = [];
-  const prefix = `Fila ${numeroFila}:`;
+  const advertencias: string[] = [];
 
-  const ref_barrio = str(data['codigo']);
-  if (!ref_barrio) errores.push(`${prefix} "codigo" es obligatorio para filas barrio.`);
+  const nombre = cellStr(raw['nombre']);
+  if (!nombre) errores.push('Falta "Nombre del barrio".');
+  if (nombre.length > 120) errores.push('El nombre del barrio no puede superar 120 caracteres.');
 
-  const nombre = str(data['nombre']);
-  if (!nombre) errores.push(`${prefix} "nombre" es obligatorio.`);
+  const slug = nombre ? toSlug(nombre) : '';
+  const existing = slug ? existingBarrios.find((b) => b.slug === slug) : undefined;
 
-  const slugExplicit = str(data['slug']);
-  const slug = slugExplicit || (nombre ? slugify(nombre) : '');
-  if (!slug) errores.push(`${prefix} no se pudo generar slug.`);
+  const departamento_excel = cellStr(raw['departamento']);
+  const zona_excel = cellStr(raw['zona']);
+  if (!departamento_excel) errores.push('Falta "Departamento".');
+  if (!zona_excel) errores.push('Falta "Zona".');
 
-  const descripcion = str(data['descripcion']) || undefined;
-  const zona = str(data['zona']) || undefined;
+  const tipos_unidad = parseTiposUnidad(raw['tipos_unidad']);
+  const monedaRaw = cellStr(raw['moneda_default']);
+  const monedaSug = sugerirMoneda(monedaRaw || 'USD');
+  const moneda_default: MonedaImportacion = monedaSug.valor;
 
-  return {
-    ref_barrio,
-    data: {
-      nombre,
-      slug,
-      tipos_unidad: ['lote_vacio'],
-      descripcion,
-      zona,
-    },
-    errores,
+  const estado_default = cellStr(raw['estado_default']) || 'disponible';
+
+  let advertencia_nombre_destino = false;
+  if (barrioDestino && nombre && toSlug(nombre) !== barrioDestino.slug) {
+    advertencia_nombre_destino = true;
+    advertencias.push(
+      `El nombre del archivo ("${nombre}") no coincide con el barrio destino ("${barrioDestino.nombre}"). Manda el barrio destino.`
+    );
+  }
+
+  const data: CabezalBarrio = {
+    nombre,
+    slug,
+    departamento_excel,
+    zona_excel,
+    tipos_unidad,
+    descripcion: cellStr(raw['descripcion']) || undefined,
+    ubicacion_texto: cellStr(raw['ubicacion_texto']) || undefined,
+    moneda_default,
+    estado_default,
+    barrio_existente: !!existing || !!barrioDestino,
+    barrio_resuelto_id: barrioDestino?.id ?? existing?.id ?? null,
+    nombre_hoja: nombreHoja,
+    plantilla_nombre: nombre || undefined,
+    advertencia_nombre_destino,
   };
+
+  return { data, errores, advertencias };
 }
 
-export function normalizeUnidadRow(
-  data: Record<string, unknown>,
-  numeroFila: number
-): { data: UnidadNormalizado; errores: string[]; ref_barrio: string } {
+export function parseTiposUnidad(raw?: string): TipoUnidadIngreso[] {
+  const parts = cellStr(raw)
+    .split(/[,;]/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (!parts.length) return ['lote_vacio'];
+  const valid = new Set<string>(TIPOS_UNIDAD_VALIDOS);
+  const out: TipoUnidadIngreso[] = [];
+  for (const p of parts) {
+    const key = p.replace(/\s+/g, '_') as TipoUnidadIngreso;
+    if (valid.has(key) && !out.includes(key)) out.push(key);
+  }
+  return out.length ? out : ['lote_vacio'];
+}
+
+export interface NormalizeLoteResult {
+  data: FilaLote;
+  errores: string[];
+  advertencias: string[];
+  correcciones: CorreccionSugerida[];
+  codigos: string[];
+}
+
+export function normalizeLote(
+  raw: Record<string, unknown>,
+  cabezal: CabezalBarrio,
+  estados: EstadoDefinicion[]
+): NormalizeLoteResult {
   const errores: string[] = [];
-  const prefix = `Fila ${numeroFila}:`;
+  const advertencias: string[] = [];
+  const correcciones: CorreccionSugerida[] = [];
+  const codigos: string[] = [];
 
-  const ref_barrio = str(data['codigo_barrio']);
-  if (!ref_barrio) {
-    errores.push(`${prefix} "codigo_barrio" es obligatorio.`);
+  const trimSug = sugerirTrim(raw['numero_lote'], 'numero_lote');
+  const numeroRaw = cellStr(raw['numero_lote']);
+  const codigo = numeroRaw.trim();
+  if (trimSug) correcciones.push(trimSug);
+  if (!codigo) {
+    errores.push('Falta numero_lote.');
+    codigos.push('FALTA_NUMERO_LOTE');
   }
 
-  const numero_lote = str(data['numero_lote']);
-  if (!numero_lote) errores.push(`${prefix} "numero_lote" es obligatorio.`);
-
-  const metros = parseNumber(data['metros_cuadrados']);
-  if (metros === null) {
-    errores.push(`${prefix} "metros_cuadrados" debe ser un número.`);
+  const metrosRaw = raw['metros_cuadrados'];
+  const metrosSug = sugerirNumero(metrosRaw);
+  let metros = 0;
+  if (cellStr(metrosRaw) === '' && (metrosRaw === null || metrosRaw === undefined || metrosRaw === '')) {
+    errores.push('Falta metros_cuadrados.');
+    codigos.push('FALTA_METROS');
+  } else if (!metrosSug) {
+    errores.push('metros_cuadrados no es un número.');
+    codigos.push('METROS_NO_NUMERICO');
+  } else {
+    metros = metrosSug.valor;
+    if (metrosSug.motivo) {
+      correcciones.push({
+        campo: 'metros_cuadrados',
+        valor_original: cellStr(metrosRaw),
+        valor_sugerido: metrosSug.sugerido,
+        motivo: metrosSug.motivo,
+      });
+      errores.push('metros_cuadrados no es un número.');
+      codigos.push('METROS_NO_NUMERICO');
+      metros = 0;
+    } else if (metros <= 0) {
+      errores.push('metros_cuadrados debe ser mayor a 0.');
+      codigos.push('FALTA_METROS');
+    }
   }
 
-  const precio = parseNumber(data['precio']);
-  if (precio === null) {
-    errores.push(`${prefix} "precio" debe ser un número.`);
+  const precioRaw = raw['precio'];
+  const precioSug = sugerirNumero(precioRaw);
+  let precio = 0;
+  if (cellStr(precioRaw) === '' && (precioRaw === null || precioRaw === undefined || precioRaw === '')) {
+    errores.push('Falta precio.');
+    codigos.push('FALTA_PRECIO');
+  } else if (!precioSug) {
+    errores.push('precio no es un número.');
+    codigos.push('PRECIO_NO_NUMERICO');
+  } else {
+    precio = precioSug.valor;
+    if (precioSug.motivo) {
+      correcciones.push({
+        campo: 'precio',
+        valor_original: cellStr(precioRaw),
+        valor_sugerido: precioSug.sugerido,
+        motivo: precioSug.motivo,
+      });
+      errores.push('precio no es un número.');
+      codigos.push('PRECIO_NO_NUMERICO');
+      precio = 0;
+    } else if (precio <= 0) {
+      errores.push('precio debe ser mayor a 0.');
+      codigos.push('FALTA_PRECIO');
+    }
   }
 
-  const monedaRaw = str(data['moneda'] || 'USD').toUpperCase();
-  const moneda: 'USD' | 'ARS' = monedaRaw === 'ARS' ? 'ARS' : 'USD';
+  const monedaCell = cellStr(raw['moneda']);
+  const monedaInput = monedaCell || cabezal.moneda_default;
+  const monedaRes = sugerirMoneda(monedaInput);
+  let moneda: MonedaImportacion = monedaRes.valor;
+  if (monedaCell && !monedaEsValida(monedaCell)) {
+    errores.push(`moneda "${monedaCell}" no válida.`);
+    codigos.push('MONEDA_INVALIDA');
+  } else if (monedaRes.arsConvertida) {
+    moneda = 'USD';
+    advertencias.push('ARS discontinuada — se convierte a USD.');
+    if (monedaRes.sugerido) correcciones.push(monedaRes.sugerido);
+  } else if (monedaRes.sugerido && monedaCell) {
+    correcciones.push(monedaRes.sugerido);
+    errores.push(`moneda "${monedaCell}" no válida.`);
+    codigos.push('MONEDA_INVALIDA');
+    moneda = cabezal.moneda_default;
+  }
 
-  const estado = str(data['estado'] || 'disponible') || 'disponible';
-  const orientacion = str(data['orientacion']) || undefined;
+  const estadoCell = cellStr(raw['estado']);
+  const estadoInput = estadoCell || cabezal.estado_default;
+  const estadoRes = sugerirEstado(estadoInput, estados);
+  let estado = estadoRes.code ?? estadoInput;
+  if (!estadoRes.code) {
+    errores.push(`estado "${estadoInput}" no válido.`);
+    codigos.push('ESTADO_DESCONOCIDO');
+  } else if (estadoRes.sugerido && estadoCell) {
+    correcciones.push(estadoRes.sugerido);
+    errores.push(`estado "${estadoCell}" no válido.`);
+    codigos.push('ESTADO_DESCONOCIDO');
+    estado = estadoInput;
+  } else if (estadoRes.sugerido && !estadoCell) {
+    estado = estadoRes.code;
+  }
+
+  const oriCell = cellStr(raw['orientacion']);
+  const oriRes = sugerirOrientacion(oriCell);
+  let orientacion: string | undefined;
+  if (!oriCell) {
+    orientacion = undefined;
+  } else if (oriRes.desconocida) {
+    orientacion = oriCell;
+    advertencias.push(`orientación "${oriCell}" no reconocida.`);
+    codigos.push('ORIENTACION_INVALIDA');
+  } else if (oriRes.sugerido) {
+    correcciones.push(oriRes.sugerido);
+    orientacion = oriCell;
+    advertencias.push(`orientación "${oriCell}" — se sugiere ${oriRes.sugerido.valor_sugerido}.`);
+    codigos.push('ORIENTACION_INVALIDA');
+  } else {
+    orientacion = oriRes.valor || undefined;
+  }
 
   return {
-    ref_barrio,
     data: {
-      codigo: numero_lote,
+      codigo,
       tipo_unidad: 'lote_vacio',
-      area_m2: metros ?? 0,
-      metros_cuadrados: metros ?? 0,
-      precio: precio ?? 0,
+      area_m2: metros,
+      metros_cuadrados: metros,
+      precio,
       moneda,
       estado,
       orientacion,
     },
     errores,
+    advertencias,
+    correcciones,
+    codigos,
   };
 }

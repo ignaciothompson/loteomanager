@@ -33,6 +33,7 @@ export class IngresoPanelLateralComponent {
   selectedUnidadId = input<string | null>(null);
   selectedPlantillaId = input<string | null>(null);
   barrioGuardado = input(true);
+  puedeImportar = input(false);
   readonly codigoFiltro = signal('');
 
   readonly unidadesDelTipo = computed(() =>
@@ -53,6 +54,7 @@ export class IngresoPanelLateralComponent {
   selectUnidad = output<UnidadesResponse>();
   selectPlantilla = output<PlantillasUnidadResponse>();
   nueva = output<void>();
+  importarLotes = output<void>();
 
   tipoLabel(tipo: TipoUnidadIngreso | string): string {
     return TIPO_UNIDAD_LABELS[tipo as TipoUnidadIngreso] ?? tipo;

@@ -1,0 +1,97 @@
+@if (todoResuelto) {
+  <div class="imp-panel imp-panel--ok">
+    <p class="m-0 text-sm" style="color: var(--p-green-400, #4ade80)">
+      <i class="pi pi-check mr-2"></i>
+      Geografía resuelta
+    </p>
+  </div>
+} @else {
+  <div class="imp-panel" id="imp-geo-panel">
+    <div class="flex justify-between items-baseline mb-2">
+      <h6 class="m-0">Departamentos y zonas</h6>
+      @if (pendientes > 0) {
+        <span class="text-xs" style="color: #c98500">{{ pendientes }} sin resolver</span>
+      }
+    </div>
+
+    @for (d of mapeo.departamentos; track d.valor_excel) {
+      <div
+        class="imp-geo-row"
+        [class.imp-geo-row--ok]="d.estado === 'confirmado'"
+        [class.imp-geo-row--sugerencia]="d.estado === 'sugerencia'"
+        [class.imp-geo-row--sin]="d.estado === 'sin_resolver'"
+      >
+        <div class="flex items-center gap-2 flex-wrap">
+          @if (d.estado === 'confirmado') {
+            <i class="pi pi-check text-sm" style="color: var(--p-green-400, #4ade80)"></i>
+          }
+          <span class="font-medium">«{{ d.valor_excel }}»</span>
+          <span class="text-xs text-500">{{ usosLabel(d.usos) }}</span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs text-500">→</span>
+          <p-select
+            [options]="departamentoOpts"
+            [ngModel]="d.departamento_id"
+            (ngModelChange)="onDepto(d, $event)"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccioná departamento"
+            appendTo="body"
+            [showClear]="true"
+            styleClass="w-16rem"
+          />
+          @if (d.estado === 'sugerencia') {
+            <span class="text-xs" style="color: #c98500">¿Es esta?</span>
+            <p-button label="Confirmar" size="small" (click)="confirmarDepto(d)" />
+          }
+        </div>
+      </div>
+    }
+
+    @for (z of mapeo.zonas; track z.departamento_excel + z.valor_excel) {
+      <div
+        class="imp-geo-row"
+        [class.imp-geo-row--ok]="z.estado === 'confirmado'"
+        [class.imp-geo-row--sugerencia]="z.estado === 'sugerencia'"
+        [class.imp-geo-row--sin]="z.estado === 'sin_resolver'"
+      >
+        <div class="flex items-center gap-2 flex-wrap">
+          @if (z.estado === 'confirmado') {
+            <i class="pi pi-check text-sm" style="color: var(--p-green-400, #4ade80)"></i>
+          }
+          <span class="font-medium">«{{ z.valor_excel }}»</span>
+          <span class="text-xs text-500">{{ usosLabel(z.usos) }}</span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs text-500">→</span>
+          <p-select
+            [options]="zonaOpts(z.departamento_excel)"
+            [ngModel]="z.zona_id"
+            (ngModelChange)="onZona(z, $event)"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccioná zona"
+            appendTo="body"
+            [showClear]="true"
+            [disabled]="!zonaOpts(z.departamento_excel).length"
+            styleClass="w-16rem"
+          />
+          @if (z.estado === 'sugerencia') {
+            <span class="text-xs" style="color: #c98500">¿Es esta?</span>
+            <p-button label="Confirmar" size="small" (click)="confirmarZona(z)" />
+          }
+        </div>
+        @if (puedeCrearZona(z)) {
+          <p-button
+            [label]="'Crear zona «' + z.valor_excel + '» en ' + deptoNombre(z.departamento_excel)"
+            icon="pi pi-plus"
+            [text]="true"
+            size="small"
+            (click)="crearZona.emit(z)"
+          />
+        }
+      </div>
+    }
+  </div>
+}

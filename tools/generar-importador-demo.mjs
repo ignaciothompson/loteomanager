@@ -12,185 +12,86 @@ const root = join(__dirname, '..');
 const outDir = join(root, 'apps/admin/src/app/features/importador/demos');
 const outFile = join(outDir, 'importador-demo-barrios-lotes.xlsx');
 
-const HEADERS = [
-  'tipo',
-  'codigo',
-  'nombre',
-  'slug',
-  'zona',
-  'descripcion',
-  'codigo_barrio',
-  'numero_lote',
-  'metros_cuadrados',
-  'precio',
-  'moneda',
-  'estado',
-  'orientacion',
-];
-
-const ROWS = [
-  {
-    tipo: 'barrio',
-    codigo: 'B001',
-    nombre: 'Barrio Las Acacias',
-    slug: 'barrio-las-acacias',
-    zona: 'Pocitos',
-    descripcion: 'Demo — barrio norte, lotes en manzana A y B',
-    codigo_barrio: '',
-    numero_lote: '',
-    metros_cuadrados: '',
-    precio: '',
-    moneda: '',
-    estado: '',
-    orientacion: '',
-  },
-  {
-    tipo: 'barrio',
-    codigo: 'B002',
-    nombre: 'Residencial El Roble',
-    slug: 'residencial-el-roble',
-    zona: 'Carrasco',
-    descripcion: 'Demo — barrio sur, lotes esquina',
-    codigo_barrio: '',
-    numero_lote: '',
-    metros_cuadrados: '',
-    precio: '',
-    moneda: '',
-    estado: '',
-    orientacion: '',
-  },
-  // Las Acacias — 4 lotes
-  {
-    tipo: 'unidad',
-    codigo: '',
-    nombre: '',
-    slug: '',
-    zona: '',
-    descripcion: '',
-    codigo_barrio: 'B001',
-    numero_lote: 'A-001',
-    metros_cuadrados: 320,
-    precio: 52000,
-    moneda: 'USD',
-    estado: 'disponible',
-    orientacion: 'Norte',
-  },
-  {
-    tipo: 'unidad',
-    codigo: '',
-    nombre: '',
-    slug: '',
-    zona: '',
-    descripcion: '',
-    codigo_barrio: 'B001',
-    numero_lote: 'A-002',
-    metros_cuadrados: 300,
-    precio: 48500,
-    moneda: 'USD',
-    estado: 'disponible',
-    orientacion: 'Norte',
-  },
-  {
-    tipo: 'unidad',
-    codigo: '',
-    nombre: '',
-    slug: '',
-    zona: '',
-    descripcion: '',
-    codigo_barrio: 'B001',
-    numero_lote: 'B-001',
-    metros_cuadrados: 280,
-    precio: 45000,
-    moneda: 'USD',
-    estado: 'reservado',
-    orientacion: 'Este',
-  },
-  {
-    tipo: 'unidad',
-    codigo: '',
-    nombre: '',
-    slug: '',
-    zona: '',
-    descripcion: '',
-    codigo_barrio: 'B001',
-    numero_lote: 'B-002',
-    metros_cuadrados: 295,
-    precio: 47200,
-    moneda: 'USD',
-    estado: 'disponible',
-    orientacion: 'Oeste',
-  },
-  // El Roble — 3 lotes
-  {
-    tipo: 'unidad',
-    codigo: '',
-    nombre: '',
-    slug: '',
-    zona: '',
-    descripcion: '',
-    codigo_barrio: 'B002',
-    numero_lote: 'L-101',
-    metros_cuadrados: 400,
-    precio: 68000,
-    moneda: 'USD',
-    estado: 'disponible',
-    orientacion: 'Sur',
-  },
-  {
-    tipo: 'unidad',
-    codigo: '',
-    nombre: '',
-    slug: '',
-    zona: '',
-    descripcion: '',
-    codigo_barrio: 'B002',
-    numero_lote: 'L-102',
-    metros_cuadrados: 380,
-    precio: 65000,
-    moneda: 'USD',
-    estado: 'disponible',
-    orientacion: 'Noreste',
-  },
-  {
-    tipo: 'unidad',
-    codigo: '',
-    nombre: '',
-    slug: '',
-    zona: '',
-    descripcion: '',
-    codigo_barrio: 'B002',
-    numero_lote: 'L-103',
-    metros_cuadrados: 350,
-    precio: 61000,
-    moneda: 'ARS',
-    estado: 'disponible',
-    orientacion: 'Noroeste',
-  },
-];
+function addHoja(wb, barrio) {
+  const sheet = wb.addWorksheet(barrio.sheet, { views: [{ state: 'frozen', ySplit: 15 }] });
+  sheet.getColumn(1).width = 28;
+  sheet.getColumn(2).width = 28;
+  sheet.getCell('A1').value = 'LOTEOMANAGER · IMPORTACIÓN DE BARRIO';
+  sheet.getCell('F1').value = 'fmt v3';
+  const rows = [
+    [3, 'Nombre del barrio', barrio.nombre],
+    [4, 'Departamento', barrio.departamento],
+    [5, 'Zona', barrio.zona],
+    [6, 'Tipos de unidad', 'lote_vacio'],
+    [7, 'Descripción', barrio.descripcion],
+    [8, 'Ubicación (texto)', barrio.ubicacion ?? ''],
+    [11, 'Moneda por defecto', 'USD'],
+    [12, 'Estado por defecto', 'disponible'],
+  ];
+  for (const [r, label, value] of rows) {
+    sheet.getCell(`A${r}`).value = label;
+    sheet.getCell(`B${r}`).value = value;
+  }
+  sheet.getCell('A10').value = '── Valores por defecto de los lotes ──';
+  sheet.getCell('A14').value = 'LOTES';
+  const headers = ['numero_lote', 'metros_cuadrados', 'precio', 'moneda', 'estado', 'orientacion'];
+  headers.forEach((h, i) => {
+    sheet.getCell(15, i + 1).value = h;
+  });
+  for (const lote of barrio.lotes) {
+    sheet.addRow(lote);
+  }
+}
 
 const wb = new ExcelJS.Workbook();
 wb.creator = 'LoteoManager';
-const sheet = wb.addWorksheet('Datos', { views: [{ state: 'frozen', ySplit: 1 }] });
-
-sheet.columns = HEADERS.map((h) => ({ header: h, key: h, width: h === 'descripcion' ? 36 : 16 }));
-const headerRow = sheet.getRow(1);
-headerRow.font = { bold: true };
-headerRow.fill = {
-  type: 'pattern',
-  pattern: 'solid',
-  fgColor: { argb: 'FFE8EEF5' },
-};
-
-for (const row of ROWS) {
-  sheet.addRow(row);
-}
 
 const instr = wb.addWorksheet('Instrucciones');
 instr.getColumn(1).width = 22;
 instr.getColumn(2).width = 72;
-instr.addRow(['Archivo demo', '2 barrios (B001, B002) + 7 lotes vacíos para probar /importador/nueva']);
-instr.addRow(['Re-importar', 'Segunda carga → barrios/lotes quedan duplicado/omitir']);
-instr.addRow(['Error de prueba', 'Cambiar codigo_barrio a B999 en una fila unidad para ver error de join']);
+instr.addRow(['Archivo demo v3', '3 hojas de barrio + esta de instrucciones (se ignora)']);
+instr.addRow(['Valores por defecto', 'Moneda USD / estado disponible si la fila los deja vacíos']);
+instr.addRow(['Re-importar', 'Segunda carga → lotes existentes se omiten; el barrio se reutiliza']);
+
+addHoja(wb, {
+  sheet: 'Las Acacias',
+  nombre: 'Barrio Las Acacias',
+  departamento: 'Montevideo',
+  zona: 'Pocitos',
+  descripcion: 'Demo — barrio norte',
+  ubicacion: 'Av. Italia 4500',
+  lotes: [
+    ['A-001', 320, 52000, '', '', 'Norte'],
+    ['A-002', 300, 48500, '', '', 'Norte'],
+    ['B-001', 280, 45000, '', 'reservado', 'Este'],
+    ['B-002', 295, 47200, '', '', 'Oeste'],
+  ],
+});
+
+addHoja(wb, {
+  sheet: 'El Roble',
+  nombre: 'Residencial El Roble',
+  departamento: 'Montevideo',
+  zona: 'Carrasco',
+  descripcion: 'Demo — barrio sur',
+  lotes: [
+    ['L-101', 400, 68000, '', '', 'Sur'],
+    ['L-102', 380, 65000, '', '', 'Noreste'],
+    ['L-103', 350, 61000, '', '', 'Noroeste'],
+  ],
+});
+
+addHoja(wb, {
+  sheet: 'Los Pinos',
+  nombre: 'Los Pinos',
+  departamento: 'Canelones',
+  zona: 'Solymar',
+  descripcion: 'Tercer barrio de la demo',
+  lotes: [
+    ['P-01', 250, 39000, '', '', ''],
+    ['P-02', 260, 40500, 'UYU', '', 'Este'],
+  ],
+});
 
 await mkdir(outDir, { recursive: true });
 const buffer = await wb.xlsx.writeBuffer();

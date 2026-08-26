@@ -1,0 +1,18 @@
+:host {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:host .default-height > .card:last-child {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: var(--default-height-viewport);
+  max-height: var(--default-height-viewport);
+  margin-bottom: 0;
+  overflow: hidden;
+  border-bottom: none;
+  max-height: 610px;
+  min-height: 610px;
+}

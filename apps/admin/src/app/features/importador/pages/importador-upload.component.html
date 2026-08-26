@@ -1,7 +1,7 @@
 <p-toast />
 
 <div class="card">
-  <div class="flex align-items-center gap-3 mb-4">
+  <div class="flex items-center gap-3 mb-3">
     <p-button
       icon="pi pi-arrow-left"
       [text]="true"
@@ -9,50 +9,64 @@
       (click)="irAtras()"
       pTooltip="Volver"
     />
-    <h5 class="m-0">Nueva importación — Paso 1: Subir archivo</h5>
+    <h5 class="m-0">Nueva importación</h5>
   </div>
 
-  <!-- Section 1: Download template -->
-  <div class="mb-5 p-3 border-round surface-50 border-1 surface-border">
-    <h6 class="mt-0 mb-2">
-      <i class="pi pi-file-excel mr-2 text-green-600"></i>
-      Descargar plantilla
-    </h6>
-    <p class="text-500 text-sm mt-0 mb-3">
-      Si es la primera vez, descargá la plantilla Excel con el formato correcto.
-    </p>
+  @if (barrioDestinoNombre()) {
+    <div class="imp-context">
+      <p class="m-0 font-semibold">
+        Importando lotes a:
+        <a [routerLink]="['/barrios', barrioDestinoId()]">{{ barrioDestinoNombre() }}</a>
+      </p>
+      <p class="m-0 text-sm text-500 mt-1">
+        La plantilla trae el cabezal de este barrio.
+        <button type="button" class="p-button-link p-0 text-sm" (click)="cambiarBarrio()">Cambiar</button>
+      </p>
+    </div>
+  }
+
+  <div class="imp-plantilla-row">
+    <span>Si es la primera vez, bajá la plantilla con el formato correcto.</span>
     <p-button
       label="Descargar plantilla Excel"
       icon="pi pi-download"
-      severity="info"
+      [outlined]="true"
+      severity="secondary"
+      size="small"
       [loading]="loading()"
       (click)="descargarPlantilla()"
     />
+    <p-button
+      label="¿Cómo se arma el archivo?"
+      [text]="true"
+      size="small"
+      (click)="ayuda.toggle($event)"
+    />
+    <p-popover #ayuda>
+      <div class="imp-help">
+        <p class="mt-0"><strong>Una hoja por barrio.</strong> El nombre del barrio, departamento y zona van en el cabezal (arriba). Los lotes, debajo.</p>
+        <p>Moneda por defecto <code>USD</code> y estado <code>disponible</code> evitan repetir lo mismo en cada lote.</p>
+        <p class="mb-0">Departamento y zona tienen que existir en el sistema (o los mapeás al revisar).</p>
+      </div>
+    </p-popover>
   </div>
 
-  <!-- Section 2: Drag & Drop / File picker -->
   <div class="mb-4">
-    <h6 class="mt-0 mb-2">
-      <i class="pi pi-upload mr-2"></i>
-      Seleccionar archivo
-    </h6>
-
     @if (!archivoSeleccionado()) {
       <div
-        class="border-2 border-dashed border-round p-6 text-center cursor-pointer surface-hover transition-colors transition-duration-200"
-        style="border-color: var(--surface-border);"
+        class="imp-dropzone"
+        [class.imp-dropzone--off]="analizando()"
         (click)="triggerFileInput()"
         (drop)="onDrop($event)"
         (dragover)="onDragOver($event)"
       >
-        <i class="pi pi-cloud-upload text-5xl text-400 mb-3 block"></i>
-        <p class="text-600 mb-1">Arrastrá tu archivo <strong>.xlsx</strong> aquí</p>
-        <p class="text-400 text-sm mb-3">o hacé click para seleccionar</p>
-        <p class="text-400 text-xs">Máximo 10 MB — solo .xlsx / .xls</p>
+        <i class="pi pi-upload text-3xl text-400 mb-2 block"></i>
+        <p class="mb-1">Arrastrá tu archivo <strong>.xlsx</strong></p>
+        <p class="text-400 text-xs m-0">máx. 10 MB</p>
       </div>
     } @else {
-      <div class="flex align-items-center gap-3 p-3 border-round border-1 surface-border surface-50">
-        <i class="pi pi-file-excel text-2xl text-green-600"></i>
+      <div class="imp-file-row">
+        <i class="pi pi-file-excel text-2xl text-green-400"></i>
         <div class="flex-1">
           <div class="font-semibold">{{ archivoSeleccionado()!.name }}</div>
           <div class="text-500 text-sm">{{ archivoSize() }}</div>
@@ -61,6 +75,7 @@
           label="Cambiar archivo"
           [text]="true"
           severity="secondary"
+          [disabled]="analizando()"
           (click)="limpiarArchivo()"
         />
       </div>
@@ -74,24 +89,37 @@
       (change)="onFileSelected($event)"
       style="display: none;"
     />
+
+    @if (errorFormato(); as err) {
+      <div class="imp-error">
+        <p class="m-0 mb-2">{{ err.message }}</p>
+        @if (err.ofrecePlantilla) {
+          <p-button
+            label="Descargar plantilla Excel"
+            icon="pi pi-download"
+            [outlined]="true"
+            severity="secondary"
+            size="small"
+            [loading]="loading()"
+            (click)="descargarPlantilla()"
+          />
+        }
+      </div>
+    }
   </div>
 
-  <!-- Section 3: Analyze button -->
-  <div class="flex flex-column gap-3">
+  <div class="flex flex-col gap-3">
     <p-button
-      label="Analizar archivo"
+      [label]="analizando() ? 'Analizando…' : 'Analizar archivo'"
       icon="pi pi-check"
-      severity="primary"
-      styleClass="w-full"
+      severity="success"
+      styleClass="w-full imp-analyze"
       [disabled]="!archivoSeleccionado() || analizando()"
       [loading]="analizando()"
       (click)="subirYAnalizar()"
     />
     @if (analizando()) {
-      <div class="flex align-items-center gap-2 justify-content-center text-500 text-sm">
-        <i class="pi pi-spin pi-spinner"></i>
-        <span>{{ progreso() }}</span>
-      </div>
+      <p class="text-center text-500 text-sm m-0">{{ progreso() }}</p>
     }
     <p-button
       label="Cancelar"

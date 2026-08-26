@@ -1,21 +1,13 @@
 import type { EstadoDefinicion } from '@loteomanager/shared-types';
+import { sugerirEstado } from './autocorrect';
 
+/** @deprecated Usar sugerirEstado / analyze. Se mantiene por compat de imports. */
 export function validateEstadoUnidad(
   estado: string,
   estadosValidos: EstadoDefinicion[],
   numeroFila: number
 ): string | null {
-  const codes = new Set([
-    ...estadosValidos.map((e) => e.code),
-    'disponible',
-    'bloqueado',
-    'reservado',
-    'sena',
-    'vendido',
-    'escriturado',
-  ]);
-  if (!codes.has(estado)) {
-    return `Fila ${numeroFila}: estado "${estado}" no válido.`;
-  }
+  const r = sugerirEstado(estado, estadosValidos);
+  if (!r.code) return `Fila ${numeroFila}: estado "${estado}" no válido.`;
   return null;
 }

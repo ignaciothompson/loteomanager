@@ -1,68 +1,263 @@
 <p-toast />
+<p-confirmDialog />
+<p-menu #rowMenu [model]="rowMenuItems" [popup]="true" appendTo="body" />
 
-<div class="card">
-  <div class="flex justify-between items-center mb-4">
-    <h5 class="m-0">Importaciones</h5>
-    <p-button
-      label="Nueva importación"
-      icon="pi pi-plus"
-      severity="success"
-      (click)="nuevaImportacion()"
-    />
+<div class="default-height">
+  <div class="card">
+    <div class="default-height__header flex justify-between items-center flex-wrap gap-3">
+      <h5 class="m-0">Importaciones</h5>
+      <div class="flex items-center gap-2 flex-wrap">
+        <p-button
+          label="Descargar plantilla Excel"
+          icon="pi pi-download"
+          [outlined]="true"
+          severity="secondary"
+          [loading]="loadingPlantilla()"
+          (click)="descargarPlantilla()"
+        />
+        <p-button
+          [label]="mostrarUpload() ? 'Cerrar' : 'Nueva importación'"
+          [icon]="mostrarUpload() ? 'pi pi-times' : 'pi pi-plus'"
+          [severity]="mostrarUpload() ? 'secondary' : 'success'"
+          [outlined]="mostrarUpload()"
+          (click)="toggleUpload()"
+        />
+      </div>
+    </div>
   </div>
 
-  <p-table
-    [value]="importaciones()"
-    [paginator]="true"
-    [rows]="10"
-    [rowHover]="true"
-    responsiveLayout="scroll"
-  >
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Archivo</th>
-        <th>Tipo</th>
-        <th>Estado</th>
-        <th>Filas</th>
-        <th>Fecha</th>
-        <th>Acciones</th>
-      </tr>
-    </ng-template>
+  @if (mostrarUpload()) {
+    <div class="card">
+      <div class="flex justify-between items-center mb-3 gap-2 flex-wrap">
+        <h6 class="m-0">Subir archivo</h6>
+        <p-button
+          label="¿Cómo se arma el archivo?"
+          [text]="true"
+          size="small"
+          (click)="ayuda.toggle($event)"
+        />
+        <p-popover #ayuda>
+          <div class="imp-help">
+            <p class="mt-0"><strong>Una hoja por barrio.</strong> El nombre del barrio, departamento y zona van en el cabezal (arriba). Los lotes, debajo.</p>
+            <p>Moneda por defecto <code>USD</code> y estado <code>disponible</code> evitan repetir lo mismo en cada lote.</p>
+            <p class="mb-0">Departamento y zona tienen que existir en el sistema (o los mapeás al revisar).</p>
+          </div>
+        </p-popover>
+      </div>
 
-    <ng-template pTemplate="body" let-imp>
-      <tr>
-        <td>{{ getNombreArchivo(imp) }}</td>
-        <td>{{ imp.tipo }}</td>
-        <td>
-          <p-tag
-            [value]="imp.estado"
-            [severity]="getEstadoSeverity(imp.estado)"
-          />
-        </td>
-        <td>
-          <span class="text-sm">
-            {{ imp.total_filas ?? 0 }} total /
-            <span class="text-green-600">{{ imp.filas_ok ?? 0 }} ok</span> /
-            <span class="text-red-500">{{ imp.filas_error ?? 0 }} err</span>
-          </span>
-        </td>
-        <td>{{ imp.created | date: 'dd/MM/yyyy HH:mm' }}</td>
-        <td>
+      @if (!archivoSeleccionado()) {
+        <div
+          class="imp-dropzone"
+          [class.imp-dropzone--off]="analizando()"
+          (click)="triggerFileInput()"
+          (drop)="onDrop($event)"
+          (dragover)="onDragOver($event)"
+        >
+          <i class="pi pi-upload text-3xl text-400 mb-2 block"></i>
+          <p class="mb-1">Arrastrá tu archivo <strong>.xlsx</strong></p>
+          <p class="text-400 text-xs m-0">máx. 10 MB</p>
+        </div>
+      } @else {
+        <div class="imp-file-row">
+          <i class="pi pi-file-excel text-2xl text-green-400"></i>
+          <div class="flex-1">
+            <div class="font-semibold">{{ archivoSeleccionado()!.name }}</div>
+            <div class="text-500 text-sm">{{ archivoSize() }}</div>
+          </div>
           <p-button
-            label="Ver revisión"
-            icon="pi pi-eye"
+            label="Cambiar archivo"
             [text]="true"
-            severity="info"
-            (click)="verRevision(imp)"
+            severity="secondary"
+            [disabled]="analizando()"
+            (click)="limpiarArchivo()"
           />
-        </td>
-      </tr>
-    </ng-template>
+        </div>
+      }
 
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="6" class="text-center text-500 py-6">No hay importaciones registradas.</td>
-      </tr>
-    </ng-template>
-  </p-table>
+      <input
+        id="file-input-list"
+        type="file"
+        accept=".xlsx,.xls"
+        class="hidden"
+        (change)="onFileSelected($event)"
+        style="display: none;"
+      />
+
+      @if (errorFormato(); as err) {
+        <div class="imp-error">
+          <p class="m-0 mb-2">{{ err.message }}</p>
+          @if (err.ofrecePlantilla) {
+            <p-button
+              label="Descargar plantilla Excel"
+              icon="pi pi-download"
+              [outlined]="true"
+              severity="secondary"
+              size="small"
+              [loading]="loadingPlantilla()"
+              (click)="descargarPlantilla()"
+            />
+          }
+        </div>
+      }
+
+      <div class="flex flex-col gap-2 mt-4">
+        <p-button
+          [label]="analizando() ? 'Analizando…' : 'Analizar archivo'"
+          icon="pi pi-check"
+          severity="success"
+          styleClass="w-full imp-analyze"
+          [disabled]="!archivoSeleccionado() || analizando()"
+          [loading]="analizando()"
+          (click)="subirYAnalizar()"
+        />
+        @if (analizando()) {
+          <p class="text-center text-500 text-sm m-0">{{ progreso() }}</p>
+        }
+      </div>
+    </div>
+  }
+
+  @if (loadingList()) {
+    <div class="card flex justify-center py-6">
+      <p-progressSpinner ariaLabel="Cargando importaciones" strokeWidth="4" [style]="{ width: '40px', height: '40px' }" />
+    </div>
+  } @else {
+    @if (pendientes().length || historial().length || highlightId()) {
+      <div class="card" [class.imp-retomar-card]="pendientes().length">
+        <div class="flex justify-between items-center mb-3 gap-2 flex-wrap">
+          <div>
+            <h6 class="m-0">Retomar importación</h6>
+            <p class="text-sm text-500 m-0 mt-1">
+              @if (pendientes().length) {
+                Saliste sin confirmar — retomá desde acá.
+              } @else {
+                Acá aparecen las que dejaste a medias.
+              }
+            </p>
+          </div>
+          @if (pendientes().length) {
+            <span class="text-sm text-500">{{ pendientes().length }} pendiente{{ pendientes().length === 1 ? '' : 's' }}</span>
+          }
+        </div>
+
+        @if (pendientes().length) {
+          <div class="flex flex-col gap-2">
+            @for (imp of pendientes(); track imp.id) {
+              <div
+                class="imp-retomar-row"
+                [class.imp-retomar-row--hl]="highlightId() === imp.id"
+              >
+                <div class="min-w-0 flex-1">
+                  <div class="font-semibold truncate">{{ getNombreArchivo(imp) }}</div>
+                  <div class="text-sm text-500">
+                    {{ contenido(imp) }}
+                    ·
+                    <span [pTooltip]="fechaAbsoluta(fechaCreacion(imp))">{{ fechaRelativa(fechaCreacion(imp)) }}</span>
+                  </div>
+                </div>
+                <p-tag [value]="labelEstado(imp.estado)" [severity]="getEstadoSeverity(imp.estado)" />
+                <p-button
+                  label="Continuar"
+                  icon="pi pi-arrow-right"
+                  iconPos="right"
+                  severity="success"
+                  size="small"
+                  (click)="verRevision(imp)"
+                />
+                <p-button
+                  icon="pi pi-trash"
+                  [text]="true"
+                  severity="danger"
+                  [rounded]="true"
+                  [attr.aria-label]="'Descartar'"
+                  pTooltip="Descartar"
+                  (click)="pedirDescartar(imp)"
+                />
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="text-sm text-500 m-0">Ninguna pendiente ahora.</p>
+        }
+      </div>
+    }
+
+    <div class="card">
+      @if (!historial().length && !pendientes().length && !mostrarUpload()) {
+        <div class="imp-empty">
+          <i class="pi pi-file-import" aria-hidden="true"></i>
+          <h5>Todavía no importaste nada</h5>
+          <p>
+            Subí una planilla con una hoja por barrio, revisá lo que se va a crear y recién ahí confirmá.
+            Nada se crea antes de confirmar.
+          </p>
+        </div>
+      } @else if (!historial().length) {
+        <p class="text-500 text-sm m-0 py-2">Sin importaciones confirmadas todavía.</p>
+      } @else {
+        <div class="default-height__header flex justify-between items-center mb-3">
+          <h6 class="m-0">Historial</h6>
+        </div>
+        <div class="default-height__scroll">
+          <p-table
+            [value]="historial()"
+            [paginator]="historial().length > 8"
+            [rows]="20"
+            [rowHover]="true"
+            [scrollable]="true"
+            scrollHeight="flex"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Archivo</th>
+                <th>Estado</th>
+                <th>Contenido</th>
+                <th>Fecha</th>
+                <th class="buttons-col"></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-imp>
+              <tr class="cursor-pointer" (click)="verRevision(imp)">
+                <td>{{ getNombreArchivo(imp) }}</td>
+                <td>
+                  <p-tag
+                    [value]="labelEstado(imp.estado)"
+                    [severity]="getEstadoSeverity(imp.estado)"
+                  />
+                </td>
+                <td>
+                  <div class="text-sm">{{ contenido(imp) }}</div>
+                  @if (resultado(imp); as r) {
+                    <div class="text-xs text-500 mt-1">{{ r }}</div>
+                  }
+                </td>
+                <td>
+                  <span [pTooltip]="fechaAbsoluta(fechaCreacion(imp))">{{ fechaRelativa(fechaCreacion(imp)) }}</span>
+                </td>
+                <td class="buttons-col" (click)="$event.stopPropagation()">
+                  <p-button
+                    icon="pi pi-eye"
+                    [text]="true"
+                    [rounded]="true"
+                    [attr.aria-label]="'Ver ' + getNombreArchivo(imp)"
+                    pTooltip="Ver"
+                    (click)="verRevision(imp)"
+                  />
+                  @if (puedeDescartar(imp)) {
+                    <p-button
+                      icon="pi pi-ellipsis-v"
+                      [text]="true"
+                      [rounded]="true"
+                      [attr.aria-label]="'Más acciones'"
+                      (click)="openRowMenu($event, imp)"
+                    />
+                  }
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      }
+    </div>
+  }
 </div>

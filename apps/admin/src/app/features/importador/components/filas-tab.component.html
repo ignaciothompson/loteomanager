@@ -1,95 +1,271 @@
-<div>
-  <div class="flex flex-wrap align-items-center gap-2 mb-3">
-    @for (op of filtroTipoOpciones; track op.value) {
-      <p-button
-        [label]="op.label"
-        [severity]="filtroTipo() === op.value ? 'primary' : 'secondary'"
-        [outlined]="filtroTipo() !== op.value"
-        size="small"
-        (click)="filtroTipo.set(op.value)"
-      />
-    }
-    <span class="mx-2 text-400">|</span>
-    @for (op of filtroEstadoOpciones; track op.value) {
-      <p-button
-        [label]="op.label"
-        [severity]="filtroEstado() === op.value ? 'primary' : 'secondary'"
-        [outlined]="filtroEstado() !== op.value"
-        size="small"
-        (click)="filtroEstado.set(op.value)"
-      />
-    }
-    <span class="ml-auto text-sm text-500">{{ filasFiltradas().length }} filas</span>
+@if (selectedIds().length && !readonly) {
+  <div class="imp-selbar">
+    <span class="text-sm">{{ selectedIds().length }} lotes seleccionados</span>
+    <p-button label="Asignar estado" size="small" [outlined]="true" (click)="mass.emit({ kind: 'estado', ids: selectedIds() })" />
+    <p-button label="Asignar moneda" size="small" [outlined]="true" (click)="mass.emit({ kind: 'moneda', ids: selectedIds() })" />
+    <p-button label="Omitir" size="small" [outlined]="true" (click)="omitirSel()" />
+    <p-button label="Limpiar" size="small" [text]="true" (click)="selectedIds.set([])" />
   </div>
+}
 
-  <p-table
-    [value]="filasFiltradas()"
-    [paginator]="true"
-    [rows]="25"
-    [rowHover]="true"
-    styleClass="p-datatable-sm"
-  >
-    <ng-template pTemplate="header">
-      <tr>
-        <th>#</th>
-        <th>Tipo</th>
-        <th>Código</th>
-        <th>Nombre / Nro lote</th>
-        <th>Estado</th>
-        <th>Mensaje</th>
-        <th>Decisión</th>
-        <th></th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-fila>
-      <tr [class.opacity-60]="fila.aplicada">
-        <td class="font-mono text-sm">{{ fila.numero_fila }}</td>
-        <td class="text-sm capitalize">{{ fila.tipo_fila }}</td>
-        <td class="font-mono text-sm">{{ getCodigo(fila) }}</td>
-        <td class="text-sm">{{ getNombre(fila) }}</td>
-        <td>
-          <p-tag [value]="fila.estado_fila" [severity]="getEstadoSeverity(fila.estado_fila)" />
-        </td>
-        <td>
-          @if (getMensaje(fila)) {
-            <span class="text-sm" [class.text-red-600]="mensajeEsError(fila)">{{ getMensaje(fila) }}</span>
-          } @else {
-            <span class="text-500">—</span>
-          }
-        </td>
-        <td>
-          @if (showBarrioDuplicadoChip(fila)) {
-            <p-tag value="Barrio existente — se reutiliza" severity="warn" />
-          } @else if (showDecisionDropdown(fila)) {
-            <p-select
-              [options]="decisionUnidadDuplicada"
-              [ngModel]="fila.decision_usuario ?? 'omitir'"
-              (ngModelChange)="cambiarDecision(fila, $event)"
-              optionLabel="label"
-              optionValue="value"
-              appendTo="body"
-              styleClass="w-full"
-            />
-          } @else {
-            <span class="text-500 text-sm">—</span>
-          }
-        </td>
-        <td>
+<div class="flex flex-col gap-3">
+  @for (h of hojasVisibles(); track h.ref) {
+    @let c = cabezal(h.cabezal);
+    <section class="imp-hoja">
+      <div class="imp-hoja__head" (click)="toggle(h.ref)">
+        <i [class]="isOpen(h) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></i>
+        <span class="imp-hoja__name">{{ c.nombre || h.ref }}</span>
+        <span
+          class="imp-chip"
+          [class.imp-chip--existente]="c.barrio_existente"
+          [class.imp-chip--nuevo]="!c.barrio_existente"
+          [pTooltip]="c.barrio_existente ? 'Se le agregan los lotes; no se modifican sus datos.' : ''"
+        >
+          {{ c.barrio_existente ? 'Existente' : 'Nuevo' }}
+        </span>
+        <span class="imp-hoja__geo">{{ geoLabel(c) }}</span>
+        <span class="imp-hoja__meta">{{ h.lotes.length }} lotes</span>
+        @if (warnCount(h); as w) {
+          <span class="imp-chip imp-chip--revisar">⚠ {{ w }}</span>
+        } @else {
+          <span></span>
+        }
+        @if (!readonly) {
           <p-button
             icon="pi pi-pencil"
-            [rounded]="true"
             [text]="true"
-            severity="secondary"
-            pTooltip="Ver / editar"
-            (click)="filaClick.emit(fila)"
+            [rounded]="true"
+            size="small"
+            pTooltip="Editar cabezal"
+            (click)="openCabezal($event, h)"
           />
-        </td>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="8" class="text-center text-500 py-4">Sin filas para el filtro seleccionado.</td>
-      </tr>
-    </ng-template>
-  </p-table>
+        } @else {
+          <span></span>
+        }
+      </div>
+
+      @if (plantillaLote(h); as pl) {
+        <p class="text-xs text-500 px-3 mb-2 mt-0">
+          Plantilla «{{ c.plantilla_nombre || c.nombre }}» ·
+          {{ pl.metros_cuadrados }} m² ·
+          {{ formatPrecio(pl.precio, pl.moneda) }} ·
+          {{ pl.estado }} ·
+          patrón {{ patron(pl.codigo) }}
+        </p>
+      }
+
+      @if (cabezalMsgs(h); as msgs) {
+        @if (msgs.length) {
+          <p class="text-sm px-3 mb-2 mt-0" style="color: var(--p-red-400, #f87171)">{{ msgs.join(' ') }}</p>
+        }
+      }
+
+      @if (isOpen(h)) {
+        <p-table
+          [value]="h.lotes"
+          dataKey="id"
+          styleClass="p-datatable-sm imp-table"
+          [rowHover]="true"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              @if (!readonly) {
+                <th class="imp-col-check"></th>
+              }
+              <th class="imp-col-status"></th>
+              <th class="imp-col-lote">Lote</th>
+              <th class="imp-col-m2">m²</th>
+              <th class="imp-col-precio">Precio</th>
+              <th class="imp-col-moneda">Moneda</th>
+              <th class="imp-col-estado">Estado</th>
+              <th class="imp-col-ori">Orientación</th>
+              <th class="imp-col-plantilla"></th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila let-i="rowIndex">
+            @let u = lote(fila);
+            @let st = rowStatus(fila);
+            <tr
+              [class.imp-row--revisar]="st === 'revisar'"
+              [class.imp-row--error]="st === 'error'"
+              [class.imp-row--omitir]="st === 'omitir'"
+            >
+              @if (!readonly) {
+                <td class="imp-col-check">
+                  <p-checkbox
+                    [binary]="true"
+                    [ngModel]="isSelected(fila.id)"
+                    (ngModelChange)="toggleSelect(fila.id, $event, i, h.lotes)"
+                    [inputId]="'sel-' + fila.id"
+                  />
+                </td>
+              }
+              <td class="imp-col-status">
+                @if (st === 'revisar') {
+                  <i class="pi pi-exclamation-circle" style="color: #c98500" [pTooltip]="problemaTip(fila)"></i>
+                } @else if (st === 'error') {
+                  <i class="pi pi-times-circle" style="color: var(--p-red-400, #f87171)" [pTooltip]="problemaTip(fila)"></i>
+                } @else if (st === 'omitir') {
+                  <i class="pi pi-minus-circle text-500" pTooltip="Se omite"></i>
+                }
+              </td>
+              <td class="imp-col-lote" [class.imp-cell--warn]="campoMal(fila, 'numero_lote')" [pTooltip]="cellTip(fila, 'numero_lote')">
+                @if (readonly) {
+                  {{ u.codigo }}
+                } @else {
+                  <input
+                    pInputText
+                    [(ngModel)]="u.codigo"
+                    (focus)="selectAll($event)"
+                    (change)="patch(fila.id, { numero_lote: u.codigo })"
+                  />
+                }
+                @if (st === 'omitir' && !readonly) {
+                  <p-button label="Incluir" [text]="true" size="small" (click)="incluir(fila.id)" />
+                }
+              </td>
+              <td class="imp-col-m2 imp-nums" [class.imp-cell--warn]="campoMal(fila, 'metros_cuadrados')" [pTooltip]="cellTip(fila, 'metros_cuadrados')">
+                @if (readonly) {
+                  {{ u.metros_cuadrados || '—' }}
+                } @else {
+                  <p-inputNumber
+                    [(ngModel)]="u.metros_cuadrados"
+                    (onFocus)="selectAll($event)"
+                    (onBlur)="patch(fila.id, { metros_cuadrados: u.metros_cuadrados })"
+                    [minFractionDigits]="0"
+                    [maxFractionDigits]="2"
+                    [useGrouping]="false"
+                    styleClass="w-full"
+                  />
+                }
+              </td>
+              <td class="imp-col-precio imp-nums" [class.imp-cell--warn]="campoMal(fila, 'precio')" [pTooltip]="cellTip(fila, 'precio')">
+                @if (readonly) {
+                  {{ formatPrecio(u.precio) }}
+                } @else {
+                  <p-inputNumber
+                    [(ngModel)]="u.precio"
+                    (onFocus)="selectAll($event)"
+                    (onBlur)="patch(fila.id, { precio: u.precio })"
+                    [minFractionDigits]="0"
+                    [maxFractionDigits]="2"
+                    [useGrouping]="false"
+                    styleClass="w-full"
+                  />
+                }
+              </td>
+              <td class="imp-col-moneda" [class.imp-cell--warn]="campoMal(fila, 'moneda')">
+                <p-select
+                  [options]="monedaOpts"
+                  [ngModel]="u.moneda"
+                  (ngModelChange)="patch(fila.id, { moneda: $event })"
+                  optionLabel="label"
+                  optionValue="value"
+                  appendTo="body"
+                  styleClass="w-full"
+                  [disabled]="readonly"
+                />
+              </td>
+              <td class="imp-col-estado" [class.imp-cell--warn]="campoMal(fila, 'estado')">
+                <div class="imp-estado-cell">
+                  @if (readonly) {
+                    <lib-estado-badge [code]="u.estado || '—'" entidad="unidades" />
+                  } @else {
+                    <p-select
+                      [options]="estadoOpts"
+                      [ngModel]="u.estado"
+                      (ngModelChange)="patch(fila.id, { estado: $event })"
+                      optionLabel="label"
+                      optionValue="value"
+                      appendTo="body"
+                      styleClass="w-full"
+                      placeholder="Estado"
+                    />
+                  }
+                </div>
+              </td>
+              <td class="imp-col-ori" [class.imp-cell--warn]="campoMal(fila, 'orientacion')" [pTooltip]="cellTip(fila, 'orientacion')">
+                <p-select
+                  [options]="orientacionOpts"
+                  [ngModel]="u.orientacion || ''"
+                  (ngModelChange)="patch(fila.id, { orientacion: $event })"
+                  optionLabel="label"
+                  optionValue="value"
+                  appendTo="body"
+                  styleClass="w-full"
+                  [disabled]="readonly"
+                />
+              </td>
+              <td class="imp-col-plantilla">
+                <p-button
+                  [icon]="plantillaId(c) === fila.id ? 'pi pi-star-fill' : 'pi pi-star'"
+                  [text]="true"
+                  [rounded]="true"
+                  pTooltip="Usar como plantilla del barrio"
+                  [disabled]="readonly || fila.estado_fila === 'error' || fila.estado_fila === 'duplicado'"
+                  (click)="togglePlantilla(h.cabezal.id, fila.id, c)"
+                />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="readonly ? 8 : 9" class="text-center text-500 py-3">Esta hoja no tiene lotes.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    </section>
+  }
 </div>
+
+<p-popover #cabPop>
+  @if (cabezalEdit(); as h) {
+    @let c = cabezal(h.cabezal);
+    <div class="flex flex-col gap-3" style="width: 18rem">
+      <div>
+        <label class="text-xs font-semibold block mb-1">Nombre del barrio</label>
+        <input
+          pInputText
+          class="w-full"
+          [ngModel]="c.nombre"
+          (change)="patch(h.cabezal.id, { nombre: $any($event.target).value })"
+          [disabled]="!!c.barrio_resuelto_id && c.barrio_existente"
+        />
+      </div>
+      <div>
+        <label class="text-xs font-semibold block mb-1">Moneda por defecto</label>
+        <p-select
+          [options]="monedaOpts"
+          [ngModel]="c.moneda_default"
+          (ngModelChange)="patch(h.cabezal.id, { moneda_default: $event })"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          styleClass="w-full"
+        />
+      </div>
+      <div>
+        <label class="text-xs font-semibold block mb-1">Estado por defecto</label>
+        <p-select
+          [options]="estadoOpts"
+          [ngModel]="c.estado_default"
+          (ngModelChange)="patch(h.cabezal.id, { estado_default: $event })"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          styleClass="w-full"
+        />
+      </div>
+      <div>
+        <label class="text-xs font-semibold block mb-1">Nombre de plantilla</label>
+        <input
+          pInputText
+          class="w-full"
+          [ngModel]="c.plantilla_nombre || c.nombre"
+          (change)="patch(h.cabezal.id, { plantilla_nombre: $any($event.target).value })"
+        />
+      </div>
+    </div>
+  }
+</p-popover>

@@ -38,9 +38,23 @@ export class AppMenu {
                 routerLink: ['/barrios']
             },
         ];
+        if (role === 'admin' || this.permisos.can('importador.use')) {
+            inventarioItems.push(
+                {
+                    label: 'Importador',
+                    icon: 'pi pi-fw pi-file-import',
+                    routerLink: ['/importador']
+                },
+                {
+                    label: 'Exportador',
+                    icon: 'pi pi-fw pi-download',
+                    routerLink: ['/exportador']
+                }
+            );
+        }
         if (this.permisos.can('web.publish')) {
             inventarioItems.push({
-                label: 'Actualizacion Web',
+                label: 'Actualización Web',
                 icon: 'pi pi-fw pi-cloud-upload',
                 routerLink: ['/actualizacion-web']
             });
@@ -120,16 +134,6 @@ export class AppMenu {
                         label: 'Usuarios',
                         icon: 'pi pi-fw pi-user',
                         routerLink: ['/usuarios']
-                    },
-                    {
-                        label: 'Importador',
-                        icon: 'pi pi-fw pi-cloud-upload',
-                        routerLink: ['/importador']
-                    },
-                    {
-                        label: 'Exportador',
-                        icon: 'pi pi-fw pi-download',
-                        routerLink: ['/exportador']
                     }
                 ]
             });
@@ -164,19 +168,6 @@ export class AppMenu {
                     items: organizarItems
                 },
             ];
-            if (this.permisos.can('importador.use')) {
-                configItems.push({
-                    label: 'Importador',
-                    icon: 'pi pi-fw pi-cloud-upload',
-                    routerLink: ['/importador']
-                });
-                configItems.push({
-                    label: 'Exportador',
-                    icon: 'pi pi-fw pi-download',
-                    routerLink: ['/exportador']
-                });
-            }
-
             this.model.push({
                 label: 'Configuración',
                 icon: 'pi pi-fw pi-cog',

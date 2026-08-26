@@ -1,84 +1,193 @@
 <p-toast />
 <p-confirmDialog />
 
-<div class="card">
-  <div class="flex align-items-center gap-3 mb-4">
-    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (click)="irAtras()" />
-    <div class="flex-1">
-      <h5 class="m-0">Revisión: {{ getNombreArchivo() }}</h5>
-      @if (importacion()) {
-        <div class="flex align-items-center gap-2 mt-1">
-          <p-tag [value]="importacion()!.estado" [severity]="getEstadoSeverity(importacion()!.estado)" />
-          <span class="text-400 text-sm">{{ $any(importacion()).created | date: 'dd/MM/yyyy HH:mm' }}</span>
-        </div>
-      }
-    </div>
-  </div>
-
+<div class="imp-review" [class.imp-review--footer]="!readonly() && !resultadoVista() && !loading()">
   @if (loading()) {
     <div class="flex justify-center py-8">
       <p-progressSpinner ariaLabel="Cargando revisión" />
     </div>
   } @else if (loadError()) {
-    <p class="text-red-600">{{ loadError() }}</p>
-  } @else {
-  <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))">
-    <p-tablist>
-      <p-tab value="0">Resumen</p-tab>
-      <p-tab value="1">Filas</p-tab>
-      <p-tab value="2">Detalle</p-tab>
-    </p-tablist>
-    <p-tabpanels>
-      <p-tabpanel value="0">
-        <app-resumen-tab [importacion]="importacion()" [filas]="filas()" />
-      </p-tabpanel>
-      <p-tabpanel value="1">
-        <p class="text-sm text-600 mb-3">
-          Revisá cada fila. Si todo está OK, confirmá abajo. Para corregir un dato, usá el lápiz.
-        </p>
-        <app-filas-tab
-          [filas]="filas()"
-          (filaClick)="verDetalle($event)"
-          (filasChanged)="recargarDatos()"
-        />
-      </p-tabpanel>
-      <p-tabpanel value="2">
-        @if (selectedFila()) {
-          <p class="text-sm text-600">
-            Fila #{{ selectedFila()!.numero_fila }} — {{ selectedFila()!.tipo_fila }}.
-            <p-button label="Abrir editor" [text]="true" size="small" (click)="showDetalle.set(true)" />
-          </p>
-        } @else {
-          <p class="text-500">Seleccioná una fila en la pestaña Filas.</p>
-        }
-      </p-tabpanel>
-    </p-tabpanels>
-  </p-tabs>
+    <p class="text-red-400">{{ loadError() }}</p>
+  } @else if (resultadoVista(); as r) {
+    <div class="card imp-review__head">
+      <div class="imp-review__head-row">
+        <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (click)="irAtras()" pTooltip="Volver al listado" />
+        <h5 class="m-0 flex-1 min-w-0 truncate">{{ getNombreArchivo() }}</h5>
+        <p-tag value="Confirmada" severity="success" />
+      </div>
+    </div>
+    <div class="card imp-result">
+      <div class="imp-result__icon" aria-hidden="true">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <h5 class="imp-result__title mt-0 mb-2">Listo — se crearon {{ fraseResultado(r) }}</h5>
+      <p class="imp-result__sub text-500 m-0 mb-4">
+        Ya están en el sistema. Podés abrirlos o seguir importando.
+      </p>
 
-  <div class="flex justify-between align-items-center mt-4 pt-3 border-top-1 surface-border">
-    <p-button
-      label="Descartar"
-      icon="pi pi-trash"
-      severity="danger"
-      [outlined]="true"
-      [disabled]="loadingCommit()"
-      (click)="descartarImportacion()"
-    />
-    <p-button
-      label="Confirmar importación"
-      icon="pi pi-check"
-      severity="success"
-      [disabled]="!puedeConfirmar() || loadingCommit()"
-      [loading]="loadingCommit()"
-      (click)="confirmarImportacion()"
-    />
-  </div>
+      @if (r.omisiones.length) {
+        <div class="imp-result__omit">
+          <p class="text-sm font-semibold m-0 mb-2">No entró ({{ r.omisiones.length }})</p>
+          <ul class="text-sm pl-4 m-0">
+            @for (o of r.omisiones; track o.codigo + o.motivo) {
+              <li>{{ o.codigo }} — {{ o.motivo }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (r.plantillas_guardadas) {
+        <p class="text-sm text-500 mb-3">Se guardaron {{ r.plantillas_guardadas }} plantillas de formulario.</p>
+      }
+
+      @if (r.barrios.length) {
+        <div class="imp-result__barrios">
+          @for (b of r.barrios; track b.id) {
+            <p-button
+              [label]="'Ir a ' + b.nombre"
+              icon="pi pi-map"
+              severity="success"
+              (click)="irABarrio(b.id)"
+            />
+          }
+        </div>
+      }
+
+      <div class="imp-result__actions">
+        <p-button label="Nueva importación" icon="pi pi-plus" [outlined]="true" (click)="nuevaImportacion()" />
+        <p-button label="Volver al listado" [text]="true" (click)="irAtras()" />
+      </div>
+    </div>
+  } @else {
+    <div class="card imp-review__head">
+      <div class="imp-review__head-row">
+        <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (click)="irAtras()" />
+        <div class="imp-review__title min-w-0">
+          <h5 class="m-0 truncate">Revisión · {{ getNombreArchivo() }}</h5>
+        </div>
+        @if (importacion()) {
+          <p-tag [value]="labelEstado(importacion()!.estado)" [severity]="getEstadoSeverity(importacion()!.estado)" />
+        }
+      </div>
+
+      <div class="imp-result-bar" [class.imp-result-bar--ok]="todoListo()">
+        <span class="imp-result-bar__frase">{{ fraseBarra() }}</span>
+        @if (resumen().aRevisar > 0) {
+          <button type="button" class="imp-chip imp-chip--revisar imp-chip--click" (click)="setFiltro('revisar')">
+            <i class="pi pi-exclamation-circle"></i>
+            {{ resumen().aRevisar }} a revisar
+          </button>
+        }
+        @if (resumen().seOmiten > 0) {
+          <button type="button" class="imp-chip imp-chip--omitir imp-chip--click" (click)="setFiltro('omitir')">
+            {{ resumen().seOmiten }} se omiten
+          </button>
+        }
+        @if (resumen().sugerencias > 0) {
+          <button type="button" class="imp-chip imp-chip--sugerencia imp-chip--click" (click)="setFiltro('sugerencias')">
+            {{ resumen().sugerencias }} sugerencias
+          </button>
+          <p-button label="Aplicar todas" size="small" [text]="true" (click)="aplicarTodas()" />
+        }
+        @if (filtroTabla() !== 'todos') {
+          <p-button label="Ver todos" size="small" [text]="true" (click)="setFiltro('todos')" />
+        }
+      </div>
+    </div>
+
+    <div class="imp-review__scroll">
+      <div class="imp-review__body">
+        <aside class="imp-review__paneles">
+          @if (showGeo()) {
+            <app-geo-mapeo-panel
+              [mapeo]="mapeo()"
+              [departamentoOpts]="departamentoOpts()"
+              [zonas]="zonas()"
+              (mapeoChange)="onMapeoChange($event)"
+              (crearZona)="onCrearZona($event)"
+            />
+          }
+          <app-problemas-panel
+            [problemas]="problemas()"
+            (accion)="onAccion($event)"
+            (ver)="verProblema($event)"
+          />
+        </aside>
+        <div class="imp-review__tabla">
+          <app-filas-tab
+            [filas]="filas()"
+            [estadoOpts]="estadoOpts()"
+            [mapeo]="mapeo()"
+            [departamentos]="departamentos()"
+            [zonas]="zonas()"
+            [filtro]="filtroTabla()"
+            [filtroIds]="filtroIds()"
+            [readonly]="readonly()"
+            (filasChanged)="recargarDatos({ silent: true })"
+            (mass)="onMassTabla($event)"
+          />
+        </div>
+      </div>
+    </div>
+
+    @if (!readonly()) {
+      <div class="imp-review__footer card">
+        <p-button
+          label="Descartar"
+          icon="pi pi-trash"
+          severity="danger"
+          [text]="true"
+          [disabled]="loadingCommit()"
+          (click)="descartarImportacion()"
+        />
+        <div class="imp-review__footer-mid">
+          @if (canPublish()) {
+            <label class="flex items-center gap-2 text-sm">
+              <p-toggleswitch [ngModel]="publicarWeb()" (ngModelChange)="publicarWeb.set($event)" />
+              Publicar estos barrios en la web al confirmar
+            </label>
+            <span class="text-xs text-500">Si no, quedan pendientes de publicar desde Actualización Web.</span>
+          }
+        </div>
+        <span
+          [pTooltip]="bloqueadoMotivo()"
+          [tooltipDisabled]="puedeConfirmar()"
+          (click)="onBloqueadoClick()"
+        >
+          <p-button
+            [label]="labelConfirmar()"
+            icon="pi pi-check"
+            severity="success"
+            [disabled]="!puedeConfirmar() || loadingCommit()"
+            [loading]="loadingCommit()"
+            (click)="confirmarImportacion()"
+          />
+        </span>
+      </div>
+    }
   }
 </div>
 
-<app-detalle-drawer
-  [visible]="showDetalle()"
-  (visibleChange)="showDetalle.set($event)"
-  [fila]="selectedFila()"
-  (saved)="recargarDatos()"
-/>
+<p-dialog
+  header="Asignar valor"
+  [visible]="massVisible()"
+  (visibleChange)="massVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '24rem' }"
+  appendTo="body"
+>
+  @if (massKind() === 'numero') {
+    <label class="text-sm font-semibold block mb-2">{{ massCampo() }}</label>
+    <p-inputNumber [ngModel]="massNumero()" (ngModelChange)="massNumero.set($event)" [minFractionDigits]="0" [useGrouping]="false" styleClass="w-full" />
+  } @else if (massKind() === 'estado') {
+    <p-select [options]="estadoOpts()" [ngModel]="massSelect()" (ngModelChange)="massSelect.set($event)" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" placeholder="Estado" />
+  } @else if (massKind() === 'moneda') {
+    <p-select [options]="monedaOpts" [ngModel]="massSelect()" (ngModelChange)="massSelect.set($event)" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
+  } @else {
+    <p-select [options]="orientacionOpts" [ngModel]="massSelect()" (ngModelChange)="massSelect.set($event)" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
+  }
+  <div class="flex justify-end gap-2 mt-4">
+    <p-button label="Cancelar" [text]="true" (click)="massVisible.set(false)" />
+    <p-button label="Aplicar" icon="pi pi-check" (click)="aplicarMass()" />
+  </div>
+</p-dialog>

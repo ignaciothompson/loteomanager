@@ -9,6 +9,16 @@
   @if (lateralTab() === 'listado') {
     @if (barrioGuardado()) {
       <div class="ingreso-lateral__filter">
+        @if (puedeImportar()) {
+          <button
+            pButton
+            type="button"
+            icon="pi pi-upload"
+            label="Importar lotes"
+            class="p-button-outlined p-button-sm w-full mb-2"
+            (click)="importarLotes.emit()"
+          ></button>
+        }
         <input
           pInputText
           type="search"

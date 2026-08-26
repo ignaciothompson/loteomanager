@@ -1,0 +1,12 @@
+:host {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .imp-analyze.p-disabled,
+:host ::ng-deep .imp-analyze:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}

@@ -40,10 +40,8 @@ export class ImportacionesService extends BaseCollectionService<ImportacionesRes
           const isBarrio = normalizados['slug'] !== undefined;
           const targetCollection = isBarrio ? 'barrios' : 'unidades';
 
-          if (fila.decision_usuario === 'crear') {
+          if (fila.decision_usuario === 'crear' || fila.decision_usuario === 'pendiente') {
             await this.pb.collection(targetCollection).create(normalizados);
-          } else if (fila.decision_usuario === 'actualizar' && fila.registro_existente_id) {
-            await this.pb.collection(targetCollection).update(fila.registro_existente_id, normalizados);
           }
 
           // Mark as applied

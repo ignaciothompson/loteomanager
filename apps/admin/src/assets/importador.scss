@@ -1,0 +1,529 @@
+/* Shared importador UI — dark surfaces, no pastel cards */
+
+.imp-help {
+  max-width: 22rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--p-text-muted-color);
+}
+
+.imp-context {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+}
+
+.imp-plantilla-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.imp-dropzone {
+  border: 2px dashed var(--p-content-border-color);
+  border-radius: 8px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.imp-dropzone:hover {
+  border-color: var(--p-primary-color);
+}
+
+.imp-dropzone--off {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.imp-file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+}
+
+.imp-retomar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.imp-retomar-row--hl {
+  border-color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+}
+
+.imp-retomar-card {
+  border-color: color-mix(in srgb, var(--p-orange-400, #fb923c) 45%, var(--p-content-border-color));
+}
+
+.imp-error {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--p-red-500, #ef4444) 50%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--p-red-500, #ef4444) 10%, transparent);
+  font-size: 0.875rem;
+}
+
+.imp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  min-height: 22rem;
+}
+
+.imp-empty i {
+  font-size: 2.5rem;
+  color: var(--p-text-muted-color);
+  margin-bottom: 1rem;
+}
+
+.imp-empty h5 {
+  margin: 0 0 0.5rem;
+}
+
+.imp-empty p {
+  max-width: 28rem;
+  color: var(--p-text-muted-color);
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem;
+}
+
+.imp-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--p-content-border-color);
+  min-width: 5.5rem;
+  box-sizing: border-box;
+}
+
+.imp-chip--nuevo {
+  color: var(--p-blue-300, #93c5fd);
+  border-color: color-mix(in srgb, var(--p-blue-400, #60a5fa) 40%, transparent);
+}
+
+.imp-chip--existente {
+  color: #c98500;
+  border-color: color-mix(in srgb, #c98500 40%, transparent);
+}
+
+.imp-chip--click {
+  cursor: pointer;
+  min-width: 0;
+}
+
+.imp-chip--revisar {
+  color: #c98500;
+  border-color: color-mix(in srgb, #c98500 45%, transparent);
+  min-width: 0;
+}
+
+.imp-chip--omitir {
+  color: var(--p-text-muted-color);
+  min-width: 0;
+}
+
+.imp-chip--sugerencia {
+  color: var(--p-blue-300, #93c5fd);
+  border-color: color-mix(in srgb, var(--p-blue-400, #60a5fa) 40%, transparent);
+  min-width: 0;
+}
+
+.imp-chip--ok {
+  color: var(--p-green-400, #4ade80);
+  border-color: color-mix(in srgb, var(--p-green-400, #4ade80) 40%, transparent);
+}
+
+.imp-result-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  min-height: 2.75rem;
+  padding: 0.65rem 0 0;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--p-content-border-color);
+}
+
+.imp-result-bar__frase {
+  font-weight: 600;
+  margin-right: auto;
+}
+
+.imp-result-bar--ok .imp-result-bar__frase {
+  color: var(--p-green-400, #4ade80);
+}
+
+.imp-review {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 7rem);
+  min-height: 0;
+  max-width: none;
+  width: 100%;
+  position: relative;
+}
+
+.imp-review--footer {
+  padding-bottom: 4.5rem;
+}
+
+.imp-review__head {
+  flex: 0 0 auto;
+  margin-bottom: 0.75rem;
+}
+
+.imp-review__head-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.imp-review__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.imp-review__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.imp-review__body {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.imp-review__tabla {
+  min-width: 0;
+}
+
+.imp-review__footer {
+  position: fixed;
+  left: var(--imp-footer-left, 0);
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  box-shadow: 0 -4px 16px color-mix(in srgb, #000 35%, transparent);
+}
+
+.imp-review__footer-mid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 auto;
+  min-width: 12rem;
+}
+
+.imp-panel {
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  padding: 0.85rem;
+  margin-bottom: 0.75rem;
+  background: var(--p-content-background, var(--surface-card));
+}
+
+.imp-panel--amber {
+  border-color: color-mix(in srgb, #c98500 40%, transparent);
+}
+
+.imp-panel--ok {
+  border-color: color-mix(in srgb, var(--p-green-400, #4ade80) 40%, transparent);
+}
+
+.imp-geo-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--p-content-border-color);
+  margin-bottom: 0.5rem;
+}
+
+.imp-geo-row--sugerencia {
+  border-color: color-mix(in srgb, #c98500 50%, transparent);
+}
+
+.imp-geo-row--sin {
+  border-color: color-mix(in srgb, var(--p-red-500, #ef4444) 45%, transparent);
+}
+
+.imp-geo-row--ok {
+  border-color: color-mix(in srgb, var(--p-green-400, #4ade80) 35%, transparent);
+}
+
+.imp-problema {
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.imp-problema:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.imp-hoja {
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  background: var(--p-content-background, var(--surface-card));
+}
+
+.imp-hoja__head {
+  display: grid;
+  grid-template-columns: auto minmax(8rem, 1fr) 5.75rem minmax(8rem, 1.2fr) auto auto auto;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.imp-hoja__head:hover {
+  background: color-mix(in srgb, var(--p-primary-color) 6%, transparent);
+}
+
+.imp-hoja__name {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.imp-hoja__geo {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.imp-hoja__meta {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+  white-space: nowrap;
+  justify-self: end;
+}
+
+.imp-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.imp-table .imp-col-check {
+  width: 2.25rem;
+}
+
+.imp-table .imp-col-status {
+  width: 1.75rem;
+}
+
+.imp-table .imp-col-lote {
+  width: 7.5rem;
+}
+
+.imp-table .imp-col-m2 {
+  width: 6.5rem;
+}
+
+.imp-table .imp-col-precio {
+  width: 7.5rem;
+}
+
+.imp-table .imp-col-moneda {
+  width: 6rem;
+}
+
+.imp-table .imp-col-estado {
+  width: 11rem;
+}
+
+.imp-table .imp-col-ori {
+  width: 9rem;
+}
+
+.imp-table .imp-col-plantilla {
+  width: 2.75rem;
+}
+
+.imp-table td,
+.imp-table th {
+  vertical-align: middle;
+}
+
+.imp-table .p-inputtext,
+.imp-table .p-inputnumber,
+.imp-table .p-select {
+  width: 100%;
+}
+
+.imp-estado-cell {
+  width: 100%;
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.imp-estado-cell .p-select {
+  width: 100%;
+}
+
+.imp-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.imp-row--revisar {
+  box-shadow: inset 3px 0 0 #c98500;
+}
+
+.imp-row--error {
+  box-shadow: inset 3px 0 0 var(--p-red-500, #ef4444);
+}
+
+.imp-row--omitir {
+  box-shadow: inset 3px 0 0 var(--p-text-muted-color);
+  opacity: 0.55;
+}
+
+.imp-row--omitir .imp-col-lote {
+  text-decoration: line-through;
+}
+
+.imp-cell--warn {
+  text-decoration: underline wavy #c98500;
+  text-underline-offset: 3px;
+}
+
+.imp-selbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+}
+
+.imp-result {
+  text-align: left;
+  padding: 1.5rem 1.25rem;
+  max-width: 40rem;
+}
+
+.imp-result__icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  background: color-mix(in srgb, var(--p-green-400, #4ade80) 18%, transparent);
+  color: var(--p-green-400, #4ade80);
+  font-size: 1.35rem;
+}
+
+.imp-result__title {
+  color: var(--p-green-400, #4ade80);
+  font-size: 1.25rem;
+}
+
+.imp-result__sub {
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.imp-result__omit {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--p-content-border-color);
+  background: color-mix(in srgb, var(--p-content-border-color) 25%, transparent);
+}
+
+.imp-result__barrios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.imp-result__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--p-content-border-color);
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 1279px) {
+  .imp-review__body {
+    grid-template-columns: 1fr;
+  }
+
+  .imp-hoja__head {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .imp-hoja__geo {
+    grid-column: 2 / -1;
+  }
+}
+
+/* Footer aligns to main content when sidebar open */
+.layout-static:not(.layout-static-inactive) .imp-review__footer {
+  left: 22rem;
+}
+
+@media (max-width: 991px) {
+  .imp-review__footer {
+    left: 0 !important;
+  }
+}

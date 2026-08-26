@@ -277,7 +277,6 @@ export const ImportacionFilasDecisionUsuarioOptions = {
 	"pendiente": "pendiente",
 	"omitir": "omitir",
 	"crear": "crear",
-	"actualizar": "actualizar",
 } as const
 export type ImportacionFilasDecisionUsuarioOptions = typeof ImportacionFilasDecisionUsuarioOptions[keyof typeof ImportacionFilasDecisionUsuarioOptions]
 
@@ -286,9 +285,10 @@ export const ImportacionFilasTipoFilaOptions = {
 	"unidad": "unidad",
 } as const
 export type ImportacionFilasTipoFilaOptions = typeof ImportacionFilasTipoFilaOptions[keyof typeof ImportacionFilasTipoFilaOptions]
-export type ImportacionFilasRecord<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Tmensajes = unknown> = {
+export type ImportacionFilasRecord<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Tmensajes = unknown, Tcorrecciones_sugeridas = unknown> = {
 	aplicada?: boolean
 	barrio_resuelto_id?: string
+	correcciones_sugeridas?: null | Tcorrecciones_sugeridas
 	datos_normalizados?: null | Tdatos_normalizados
 	datos_originales?: null | Tdatos_originales
 	decision_usuario?: ImportacionFilasDecisionUsuarioOptions
@@ -326,7 +326,7 @@ export const ImportacionesEstadoOptions = {
 	"con_errores": "con_errores",
 } as const
 export type ImportacionesEstadoOptions = typeof ImportacionesEstadoOptions[keyof typeof ImportacionesEstadoOptions]
-export type ImportacionesRecord<Tmapeo_columnas = unknown, Tmapeo_extras = unknown> = {
+export type ImportacionesRecord<Tmapeo_columnas = unknown, Tmapeo_extras = unknown, Tmapeo_geografia = unknown> = {
 	archivo_origen?: FileNameString
 	confirmada_en?: IsoDateString
 	creado_por: RecordIdString
@@ -338,6 +338,7 @@ export type ImportacionesRecord<Tmapeo_columnas = unknown, Tmapeo_extras = unkno
 	id: string
 	mapeo_columnas?: null | Tmapeo_columnas
 	mapeo_extras?: null | Tmapeo_extras
+	mapeo_geografia?: null | Tmapeo_geografia
 	nombre_archivo?: string
 	origen: ImportacionesOrigenOptions
 	tipo: ImportacionesTipoOptions
@@ -564,8 +565,8 @@ export type ConfigResponse<Texpand = unknown> = Required<ConfigRecord> & BaseSys
 export type DepartamentosResponse<Texpand = unknown> = Required<DepartamentosRecord> & BaseSystemFields<Texpand>
 export type EstadosDefinicionesResponse<Texpand = unknown> = Required<EstadosDefinicionesRecord> & BaseSystemFields<Texpand>
 export type ExtrasDefinicionesResponse<Topciones = unknown, Texpand = unknown> = Required<ExtrasDefinicionesRecord<Topciones>> & BaseSystemFields<Texpand>
-export type ImportacionFilasResponse<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Tmensajes = unknown, Texpand = unknown> = Required<ImportacionFilasRecord<Tdatos_normalizados, Tdatos_originales, Tmensajes>> & BaseSystemFields<Texpand>
-export type ImportacionesResponse<Tmapeo_columnas = unknown, Tmapeo_extras = unknown, Texpand = unknown> = Required<ImportacionesRecord<Tmapeo_columnas, Tmapeo_extras>> & BaseSystemFields<Texpand>
+export type ImportacionFilasResponse<Tdatos_normalizados = unknown, Tdatos_originales = unknown, Tmensajes = unknown, Tcorrecciones_sugeridas = unknown, Texpand = unknown> = Required<ImportacionFilasRecord<Tdatos_normalizados, Tdatos_originales, Tmensajes, Tcorrecciones_sugeridas>> & BaseSystemFields<Texpand>
+export type ImportacionesResponse<Tmapeo_columnas = unknown, Tmapeo_extras = unknown, Tmapeo_geografia = unknown, Texpand = unknown> = Required<ImportacionesRecord<Tmapeo_columnas, Tmapeo_extras, Tmapeo_geografia>> & BaseSystemFields<Texpand>
 export type InteresadosResponse<Textras = unknown, Texpand = unknown> = Required<InteresadosRecord<Textras>> & BaseSystemFields<Texpand>
 export type PlantillasUnidadResponse<Texpand = unknown> = Required<PlantillasUnidadRecord> & BaseSystemFields<Texpand>
 export type PublicacionHistorialResponse<Tsnapshot = unknown, Texpand = unknown> = Required<PublicacionHistorialRecord<Tsnapshot>> & BaseSystemFields<Texpand>

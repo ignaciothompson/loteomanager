@@ -213,6 +213,7 @@
                         [selectedUnidadId]="selectedUnidadId()"
                         [selectedPlantillaId]="selectedPlantillaId()"
                         [barrioGuardado]="false"
+                        [puedeImportar]="false"
                         (selectUnidad)="selectUnidad($event)"
                         (selectPlantilla)="selectPlantilla($event)"
                         (nueva)="nuevaUnidad()"
@@ -324,9 +325,11 @@
                         [selectedUnidadId]="selectedUnidadId()"
                         [selectedPlantillaId]="selectedPlantillaId()"
                         [barrioGuardado]="true"
+                        [puedeImportar]="puedeImportarLotes()"
                         (selectUnidad)="selectUnidad($event)"
                         (selectPlantilla)="selectPlantilla($event)"
                         (nueva)="nuevaUnidad()"
+                        (importarLotes)="irAImportarLotes()"
                     />
                 </div>
             </div>

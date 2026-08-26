@@ -186,6 +186,9 @@ export class BarrioIngresoPageComponent {
 
   readonly publicadoWeb = signal(false);
   readonly puedePublicarWeb = computed(() => this.permisosSvc.can('web.publish'));
+  readonly puedeImportarLotes = computed(
+    () => this.permisosSvc.can('importador.use') && this.permisosSvc.can('unidades.create')
+  );
   private previousPublicado = false;
 
   readonly tipoOpts = TIPO_OPTS;
@@ -373,6 +376,12 @@ export class BarrioIngresoPageComponent {
 
   volver(): void {
     void this.router.navigate(['/barrios']);
+  }
+
+  irAImportarLotes(): void {
+    const id = this.barrio()?.id;
+    if (!id) return;
+    void this.router.navigate(['/importador', 'nueva'], { queryParams: { barrio: id } });
   }
 
   resetUnidadForm(): void {
