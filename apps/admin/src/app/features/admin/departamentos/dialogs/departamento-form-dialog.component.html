@@ -1,33 +1,47 @@
-<p-dialog
-  [visible]="visible()"
-  (visibleChange)="onVisibleChange($event)"
-  [header]="editingId() ? 'Editar departamento' : 'Nuevo departamento'"
-  [modal]="true"
-  [style]="dialogStyle"
-  appendTo="body"
->
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
-    <div class="flex flex-col gap-2">
-      <label for="dept-nombre" class="font-semibold">Nombre *</label>
-      <input pInputText id="dept-nombre" formControlName="nombre" class="w-full" />
-      @if (showError(form.get('nombre'))) {
-        <small class="text-red-500">Nombre requerido.</small>
-      }
-    </div>
-    <div class="flex flex-col gap-1">
-      <span class="text-500 text-sm">Slug (automático)</span>
-      <code>{{ slugPreview() || '—' }}</code>
-    </div>
-  </form>
-
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [text]="true" (click)="onCancel()" />
-    <p-button
-      [label]="editingId() ? 'Guardar' : 'Crear'"
-      icon="pi pi-check"
-      [loading]="saving()"
-      [disabled]="form.invalid"
-      (click)="onSubmit()"
+@if (formError()) {
+  <p class="org-abm-dialog-error">{{ formError() }}</p>
+}
+<form [formGroup]="form" (ngSubmit)="onSubmit(false)" class="org-abm-form">
+  <div class="flex flex-col gap-2">
+    <label for="dept-nombre" class="font-semibold">Nombre *</label>
+    <input
+      #nombreInput
+      pInputText
+      id="dept-nombre"
+      formControlName="nombre"
+      class="w-full"
     />
-  </ng-template>
-</p-dialog>
+    @if (showError(form.get('nombre'))) {
+      <small class="text-red-500">Nombre requerido.</small>
+    }
+  </div>
+</form>
+
+<div class="org-abm-dialog-footer">
+  @if (!editingId()) {
+    <button
+      type="button"
+      class="org-abm-link"
+      [disabled]="saving() || form.invalid"
+      (click)="onSubmit(true)"
+    >
+      Guardar y crear otro
+    </button>
+  }
+  <span class="org-abm-dialog-footer__spacer"></span>
+  <p-button
+    label="Cancelar"
+    icon="pi pi-times"
+    severity="secondary"
+    [text]="true"
+    [disabled]="saving()"
+    (click)="onCancel()"
+  />
+  <p-button
+    label="Guardar"
+    icon="pi pi-check"
+    [loading]="saving()"
+    [disabled]="form.invalid"
+    (click)="onSubmit(false)"
+  />
+</div>

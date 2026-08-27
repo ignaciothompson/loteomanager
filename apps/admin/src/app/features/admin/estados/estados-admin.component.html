@@ -1,131 +1,203 @@
-<div class="default-height">
-    <div class="card">
-        <div class="estados-admin-filters">
-            <div class="estados-admin-filters__field">
-                <input
-                    pInputText
-                    type="text"
-                    placeholder="Buscar por nombre…"
-                    class="w-full"
-                    [ngModel]="filterNombre()"
-                    (ngModelChange)="filterNombre.set($event)"
-                />
-            </div>
-            <div class="estados-admin-filters__field">
-                <input
-                    pInputText
-                    type="text"
-                    placeholder="Buscar por code…"
-                    class="w-full"
-                    [ngModel]="filterCode()"
-                    (ngModelChange)="filterCode.set($event)"
-                />
-            </div>
-            <div class="estados-admin-filters__actions">
-                @if (hasActiveFilters()) {
-                    <button
-                        pButton
-                        type="button"
-                        label="Limpiar"
-                        icon="pi pi-filter-slash"
-                        class="p-button-text"
-                        (click)="clearFilters()"
-                    ></button>
-                }
-            </div>
+<div class="org-abm-page">
+  <div class="org-abm org-abm--sm">
+    <div class="card org-abm__card">
+      <div class="org-abm__header">
+        <h5 class="org-abm__title">Estados</h5>
+        <span class="org-abm__total">{{ rows().length }}</span>
+        <div class="org-abm__search">
+          <input
+            pInputText
+            type="search"
+            placeholder="Buscar…"
+            [ngModel]="filterNombre()"
+            (ngModelChange)="onFilter($event)"
+          />
         </div>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          label="Nuevo estado"
+          class="p-button-success org-abm__cta"
+          (click)="openNew()"
+        ></button>
+      </div>
+
+      @if (loading()) {
+        <div class="org-abm-skel" aria-hidden="true">
+          <div class="org-abm-skel__row"></div>
+          <div class="org-abm-skel__row"></div>
+          <div class="org-abm-skel__row"></div>
+          <div class="org-abm-skel__row"></div>
+        </div>
+      } @else if (loadError()) {
+        <div class="org-abm-state">
+          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+          <h6>No se pudo cargar</h6>
+          <p>{{ loadError() }}</p>
+          <button pButton type="button" label="Reintentar" class="p-button-secondary mt-2" (click)="reload()"></button>
+        </div>
+      } @else if (!rows().length) {
+        <div class="org-abm-state">
+          <i class="pi pi-flag" aria-hidden="true"></i>
+          <h6>Todavía no hay estados propios</h6>
+          <p>Los estados del sistema siempre están; acá se agregan los tuyos.</p>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-plus"
+            label="Nuevo estado"
+            class="p-button-success mt-2"
+            (click)="openNew()"
+          ></button>
+        </div>
+      } @else if (!rowsFiltradas().length) {
+        <div class="org-abm-state">
+          <i class="pi pi-search" aria-hidden="true"></i>
+          <h6>Ningún resultado para «{{ filterNombre() }}»</h6>
+          <button
+            pButton
+            type="button"
+            label="Limpiar búsqueda"
+            class="p-button-secondary p-button-text mt-2"
+            (click)="onFilter('')"
+          ></button>
+        </div>
+      } @else {
+        <p-table [value]="pagedRows()" styleClass="org-abm__table" [tableStyle]="{ width: '100%' }">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Estado</th>
+              <th>Uso</th>
+              <th class="buttons-col"></th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr
+              [id]="'org-row-' + row.id"
+              tabindex="0"
+              [attr.aria-selected]="panel.selectedId() === row.id"
+              [class.org-abm-row--flash]="flashId() === row.id"
+              [class.org-abm-row--sel]="panel.selectedId() === row.id"
+              (click)="onRowClick(row)"
+            >
+              <td>
+                <span class="org-abm-name">
+                  <lib-estado-badge [code]="row.code" [entidad]="row.entidad" />
+                  @if (isCore(row)) {
+                    <span class="org-abm-sistema"><i class="pi pi-lock" aria-hidden="true"></i> Sistema</span>
+                  }
+                </span>
+              </td>
+              <td class="org-abm-uso" [class.org-abm-uso--empty]="!usoLoading() && usoLabel(row).empty">
+                @if (usoLoading()) {
+                  <span class="org-abm-skel__cell"></span>
+                } @else {
+                  {{ usoLabel(row).text }}
+                }
+              </td>
+              <td class="buttons-col" (click)="$event.stopPropagation()">
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-pencil"
+                  class="p-button-secondary p-button-text mr-2"
+                  [disabled]="isCore(row)"
+                  [pTooltip]="isCore(row) ? sistemaTip : 'Editar'"
+                  tooltipPosition="top"
+                  [attr.aria-label]="'Editar'"
+                  (click)="openEdit(row, $event)"
+                ></button>
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-trash"
+                  class="p-button-danger p-button-text"
+                  [disabled]="isCore(row)"
+                  [pTooltip]="isCore(row) ? sistemaTip : 'Eliminar'"
+                  tooltipPosition="top"
+                  [attr.aria-label]="'Eliminar'"
+                  (click)="tryDelete(row, $event)"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <div class="org-abm__footer">
+          <span class="org-abm__footer-count">{{ footerCount() }}</span>
+          @if (showPager()) {
+            <p-paginator
+              [rows]="pageSize"
+              [totalRecords]="rowsFiltradas().length"
+              [first]="page() * pageSize"
+              [showCurrentPageReport]="false"
+              (onPageChange)="onPage($event)"
+            />
+          }
+        </div>
+      }
     </div>
 
-    <div class="card">
-        <p-toast />
-
-        <div class="default-height__header flex justify-between items-center mb-4">
-            <h5 class="m-0">Estados configurables</h5>
-            <button
+    @if (panel.shown()) {
+      <div class="org-abm-scrim" (click)="requestClose()"></div>
+      <app-organizar-panel [title]="panelTitle()" [leaving]="panel.leaving()" (close)="requestClose()">
+        @if (formVisible()) {
+          <app-estado-form-dialog
+            [visible]="true"
+            (visibleChange)="onFormCancel()"
+            [editingId]="editingId()"
+            [currentEstado]="currentEstado()"
+            (save)="onSave($event)"
+          />
+        } @else if (selectedRow(); as row) {
+          <p class="org-abm-panel__sub">{{ row.entidad }} · {{ usoLabel(row).text }}</p>
+          @if (hanging().length) {
+            <ul class="org-abm-panel__list">
+              @for (item of hanging(); track item.id) {
+                <li>
+                  <a [routerLink]="item.link" [queryParams]="item.query || {}">{{ item.label }}</a>
+                </li>
+              }
+            </ul>
+            @if (hangingTotal() > 8) {
+              <span class="org-abm-panel__more">Ver los {{ hangingTotal() }}</span>
+            }
+          } @else {
+            <p class="org-abm-panel__empty">Nada usa este estado todavía. Se puede borrar sin consecuencias.</p>
+          }
+          @if (isCore(row)) {
+            <p class="org-abm-panel__sistema">Registro del sistema: no se edita ni se elimina.</p>
+          } @else {
+            <div class="org-abm-panel__actions">
+              <button
                 pButton
                 type="button"
-                icon="pi pi-plus"
-                label="Nuevo estado"
-                class="p-button-success"
-                (click)="openNew()"
-            ></button>
-        </div>
+                label="Eliminar"
+                class="p-button-danger p-button-text"
+                (click)="tryDelete(row)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Editar"
+                class="p-button-primary"
+                (click)="openEdit(row, $event)"
+              ></button>
+            </div>
+          }
+        }
+      </app-organizar-panel>
+    }
+  </div>
 
-        <div class="default-height__scroll">
-            <p-table
-                [value]="rowsFiltradas()"
-                [scrollable]="true"
-                scrollHeight="flex"
-                [rows]="20"
-                [paginator]="true"
-            >
-                <ng-template pTemplate="header">
-                    <tr>
-                        <th>Entidad</th>
-                        <th>Code</th>
-                        <th>Nombre</th>
-                        <th>Core</th>
-                        <th>Activo</th>
-                        <th class="buttons-col"></th>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-row>
-                    <tr>
-                        <td>{{ row.entidad }}</td>
-                        <td><code>{{ row.code }}</code></td>
-                        <td>{{ row.nombre }}</td>
-                        <td>{{ row.es_core ? 'Sí' : 'No' }}</td>
-                        <td>{{ row.activo ? 'Sí' : 'No' }}</td>
-                        <td class="buttons-col">
-                            <button
-                                pButton
-                                type="button"
-                                icon="pi pi-pencil"
-                                class="p-button-secondary p-button-text mr-2"
-                                [attr.aria-label]="'Editar'"
-                                (click)="openEdit(row)"
-                            ></button>
-                            @if (!row.es_core) {
-                                <button
-                                    pButton
-                                    type="button"
-                                    icon="pi pi-trash"
-                                    class="p-button-danger p-button-text"
-                                    [attr.aria-label]="'Eliminar'"
-                                    (click)="tryDelete(row)"
-                                ></button>
-                            }
-                        </td>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="emptymessage">
-                    <tr>
-                        <td colspan="6">
-                            @if (hasActiveFilters()) {
-                                No hay estados que coincidan con los filtros.
-                            } @else {
-                                No hay estados definidos.
-                            }
-                        </td>
-                    </tr>
-                </ng-template>
-            </p-table>
-        </div>
-    </div>
-</div>
-
-<app-estado-form-dialog
-    [visible]="formVisible()"
-    (visibleChange)="formVisible.set($event)"
-    [editingId]="editingId()"
-    [currentEstado]="currentEstado()"
-    (save)="onSave($event)"
-/>
-
-<app-estado-reemplazo-dialog
+  <p-toast />
+  <p-confirmdialog />
+  <app-estado-reemplazo-dialog
     [visible]="replaceVisible()"
     (visibleChange)="replaceVisible.set($event)"
     [options]="reemplazoOpts()"
     [(reemplazoId)]="reemplazoId"
     (confirm)="confirmReplace()"
-/>
+  />
+</div>

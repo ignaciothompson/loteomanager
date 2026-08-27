@@ -1,18 +1,7 @@
-<p-dialog
-  [visible]="visible()"
-  (visibleChange)="visibleChange.emit($event)"
-  [header]="editingId() ? 'Editar estado' : 'Nuevo estado'"
-  [style]="{ width: '90vw', maxWidth: '520px' }"
-  [modal]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [dismissableMask]="false"
-  [closable]="!saving()"
-  [closeOnEscape]="!saving()"
-  appendTo="body"
->
-  <ng-template pTemplate="content">
-    <form [formGroup]="form" class="lm-dialog-body" (ngSubmit)="onSubmit()">
+@if (formError()) {
+  <p class="org-abm-dialog-error">{{ formError() }}</p>
+}
+    <form [formGroup]="form" class="lm-dialog-body" (ngSubmit)="onSubmit(false)">
       <section class="lm-section">
         <header class="lm-section-header">
           <span class="lm-section-header-title">
@@ -46,7 +35,7 @@
             <label for="estado-nombre" class="lm-field-label">
               Nombre <span class="lm-required">*</span>
             </label>
-            <input pInputText id="estado-nombre" formControlName="nombre" class="w-full" />
+            <input #nombreInput pInputText id="estado-nombre" formControlName="nombre" class="w-full" />
             @if (showError(form.controls.nombre)) {
               <span class="lm-error">Nombre requerido.</span>
             }
@@ -69,6 +58,21 @@
             <label for="estado-orden" class="lm-field-label">Orden</label>
             <input pInputText id="estado-orden" type="number" formControlName="orden_display" class="w-full" />
           </div>
+          <div class="lm-field">
+            <span class="lm-field-label">Vista previa</span>
+            <div class="org-abm-preview">
+              <span
+                class="inline-flex items-center gap-1 px-2 py-1 border-round text-xs font-medium"
+                [style.background]="preview().bg"
+                [style.color]="preview().color"
+              >
+                @if (preview().iconClass) {
+                  <i [class]="preview().iconClass"></i>
+                }
+                {{ preview().label }}
+              </span>
+            </div>
+          </div>
           <div class="lm-toggle-row">
             <div class="lm-toggle-copy">
               <span class="lm-toggle-label">Activo</span>
@@ -78,13 +82,22 @@
         </div>
       </section>
     </form>
-  </ng-template>
-  <ng-template pTemplate="footer">
     <div class="lm-dialog-footer">
       @if (form.invalid && form.touched) {
         <span class="lm-footer-hint">Revisá los campos marcados.</span>
       }
-      <div class="lm-footer-actions">
+      <div class="lm-footer-actions org-abm-dialog-footer">
+        @if (!editingId()) {
+          <button
+            type="button"
+            class="org-abm-link"
+            [disabled]="saving() || form.invalid"
+            (click)="onSubmit(true)"
+          >
+            Guardar y crear otro
+          </button>
+        }
+        <span class="org-abm-dialog-footer__spacer"></span>
         <button
           pButton
           pRipple
@@ -102,9 +115,7 @@
           icon="pi pi-check"
           class="p-button-primary"
           [loading]="saving()"
-          (click)="onSubmit()"
+          (click)="onSubmit(false)"
         ></button>
       </div>
     </div>
-  </ng-template>
-</p-dialog>

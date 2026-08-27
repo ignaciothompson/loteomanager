@@ -29,7 +29,6 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { TabsModule } from 'primeng/tabs';
-import { TableModule } from 'primeng/table';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
@@ -71,7 +70,6 @@ const RESERVED = new Set(['reservado', 'sena']);
     ButtonModule,
     SelectModule,
     TabsModule,
-    TableModule,
     CheckboxModule,
     TooltipModule,
     InputTextModule,

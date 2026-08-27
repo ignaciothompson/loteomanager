@@ -1,6 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  ViewChild,
+  computed,
   effect,
   inject,
   input,
@@ -8,6 +11,8 @@ import {
   signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { startWith } from 'rxjs';
 import {
   FormBuilder,
   ReactiveFormsModule,
@@ -15,8 +20,6 @@ import {
   type AbstractControl
 } from '@angular/forms';
 import type { EntidadEstado, EstadoDefinicion } from '@loteomanager/shared-types';
-import { MessageService } from 'primeng/api';
-import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -26,6 +29,7 @@ import { RippleModule } from 'primeng/ripple';
 export type EstadoFormSavePayload = {
   id: string | null;
   body: Record<string, unknown>;
+  createAnother: boolean;
 };
 
 @Component({
@@ -35,7 +39,6 @@ export type EstadoFormSavePayload = {
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    DialogModule,
     ButtonModule,
     InputTextModule,
     SelectModule,
@@ -47,7 +50,6 @@ export type EstadoFormSavePayload = {
 })
 export class EstadoFormDialogComponent {
   private fb = inject(FormBuilder);
-  private toast = inject(MessageService);
 
   visible = input(false);
   editingId = input<string | null>(null);
@@ -57,6 +59,9 @@ export class EstadoFormDialogComponent {
   save = output<EstadoFormSavePayload>();
 
   saving = signal(false);
+  formError = signal<string | null>(null);
+
+  @ViewChild('nombreInput') nombreInput?: ElementRef<HTMLInputElement>;
 
   entidadesOpts = [
     { label: 'Unidades', value: 'unidades' as EntidadEstado },
@@ -73,6 +78,23 @@ export class EstadoFormDialogComponent {
     activo: [true]
   });
 
+  private formValue = toSignal(
+    this.form.valueChanges.pipe(startWith(this.form.getRawValue())),
+    { initialValue: this.form.getRawValue() }
+  );
+
+  preview = computed(() => {
+    const v = this.formValue();
+    const color = v.color || '#6366f1';
+    const icon = (v.icono || '').trim();
+    return {
+      label: (v.nombre || '').trim() || 'Estado',
+      color,
+      bg: color + '22',
+      iconClass: !icon ? '' : icon.startsWith('pi') ? icon : `pi ${icon}`
+    };
+  });
+
   constructor() {
     effect(() => {
       if (!this.visible()) return;
@@ -87,6 +109,8 @@ export class EstadoFormDialogComponent {
         orden_display: row.orden_display ?? 0,
         activo: row.activo !== false
       });
+      this.saving.set(false);
+      this.formError.set(null);
       if (id) {
         this.form.controls.entidad.disable();
         this.form.controls.code.disable();
@@ -97,11 +121,15 @@ export class EstadoFormDialogComponent {
     });
   }
 
+  isDirty(): boolean {
+    return this.form.dirty;
+  }
+
   showError(ctrl: AbstractControl | null): boolean {
     return !!ctrl && ctrl.invalid && (ctrl.dirty || ctrl.touched);
   }
 
-  onSubmit(): void {
+  onSubmit(createAnother = false): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -109,16 +137,14 @@ export class EstadoFormDialogComponent {
     const raw = this.form.getRawValue();
     const code = raw.code.trim();
     if (!this.editingId() && !/^[a-z][a-z0-9_]*$/.test(code)) {
-      this.toast.add({
-        severity: 'error',
-        summary: 'Code inválido',
-        detail: 'snake_case: letra minúscula inicial, luego letras/números/_'
-      });
+      this.formError.set('Code inválido. snake_case: letra minúscula inicial, luego letras/números/_');
       return;
     }
     this.saving.set(true);
+    this.formError.set(null);
     this.save.emit({
       id: this.editingId(),
+      createAnother,
       body: {
         entidad: raw.entidad,
         code,
@@ -132,7 +158,32 @@ export class EstadoFormDialogComponent {
   }
 
   onCancel(): void {
+    if (this.saving()) return;
     this.visibleChange.emit(false);
+  }
+
+  onShow(): void {
+    queueMicrotask(() => this.nombreInput?.nativeElement.focus());
+  }
+
+  setFormError(msg: string): void {
+    this.saving.set(false);
+    this.formError.set(msg);
+  }
+
+  resetForAnother(): void {
+    this.saving.set(false);
+    this.formError.set(null);
+    this.form.reset({
+      entidad: this.form.getRawValue().entidad,
+      code: '',
+      nombre: '',
+      color: '#6366f1',
+      icono: '',
+      orden_display: 0,
+      activo: true
+    });
+    queueMicrotask(() => this.nombreInput?.nativeElement.focus());
   }
 
   stopSaving(): void {

@@ -1,6 +1,8 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  ViewChild,
   computed,
   effect,
   inject,
@@ -10,7 +12,6 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
-import { MessageService } from 'primeng/api';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -20,7 +21,6 @@ import {
 } from '@angular/forms';
 import type { EntidadExtra, ExtraTipo, ExtrasDefinicion } from '@loteomanager/shared-types';
 import { slugify } from '@loteomanager/shared-utils';
-import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -30,6 +30,7 @@ import { RippleModule } from 'primeng/ripple';
 export type ExtraFormSavePayload = {
   id: string | null;
   body: Record<string, unknown>;
+  createAnother: boolean;
 };
 
 @Component({
@@ -39,7 +40,6 @@ export type ExtraFormSavePayload = {
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    DialogModule,
     ButtonModule,
     InputTextModule,
     SelectModule,
@@ -51,7 +51,8 @@ export type ExtraFormSavePayload = {
 })
 export class ExtraFormDialogComponent {
   private fb = inject(FormBuilder);
-  private toast = inject(MessageService);
+
+  @ViewChild('nombreInput') nombreInput?: ElementRef<HTMLInputElement>;
 
   visible = input(false);
   editingId = input<string | null>(null);
@@ -61,6 +62,7 @@ export class ExtraFormDialogComponent {
   save = output<ExtraFormSavePayload>();
 
   saving = signal(false);
+  formError = signal<string | null>(null);
   opcionesTexto = signal('');
 
   entidadesOpts = [
@@ -122,6 +124,8 @@ export class ExtraFormDialogComponent {
         visible_en_comparativa: !!row.visible_en_comparativa,
         activo: row.activo !== false
       });
+      this.saving.set(false);
+      this.formError.set(null);
       if (id) {
         this.form.controls.entidad.disable();
         this.form.controls.code.disable();
@@ -132,11 +136,15 @@ export class ExtraFormDialogComponent {
     });
   }
 
+  isDirty(): boolean {
+    return this.form.dirty;
+  }
+
   showError(ctrl: AbstractControl | null): boolean {
     return !!ctrl && ctrl.invalid && (ctrl.dirty || ctrl.touched);
   }
 
-  onSubmit(): void {
+  onSubmit(createAnother = false): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -144,11 +152,9 @@ export class ExtraFormDialogComponent {
     const raw = this.form.getRawValue();
     const code = raw.code.trim();
     if (!/^[a-z][a-z0-9_]*$/.test(code)) {
-      this.toast.add({
-        severity: 'error',
-        summary: 'Code inválido',
-        detail: 'Usá snake_case: empieza con letra y solo minúsculas, números o _.'
-      });
+      this.formError.set(
+        'Code inválido. Usá snake_case: empieza con letra y solo minúsculas, números o _.'
+      );
       return;
     }
     const body: Record<string, unknown> = {
@@ -174,11 +180,40 @@ export class ExtraFormDialogComponent {
       body['opciones'] = null;
     }
     this.saving.set(true);
-    this.save.emit({ id: this.editingId(), body });
+    this.formError.set(null);
+    this.save.emit({ id: this.editingId(), body, createAnother });
   }
 
   onCancel(): void {
+    if (this.saving()) return;
     this.visibleChange.emit(false);
+  }
+
+  onShow(): void {
+    queueMicrotask(() => this.nombreInput?.nativeElement.focus());
+  }
+
+  setFormError(msg: string): void {
+    this.saving.set(false);
+    this.formError.set(msg);
+  }
+
+  resetForAnother(): void {
+    this.saving.set(false);
+    this.formError.set(null);
+    this.opcionesTexto.set('');
+    this.form.reset({
+      entidad: this.form.getRawValue().entidad,
+      code: '',
+      nombre: '',
+      descripcion: '',
+      tipo: 'texto',
+      grupo: '',
+      visible_en_lista: false,
+      visible_en_comparativa: false,
+      activo: true
+    });
+    queueMicrotask(() => this.nombreInput?.nativeElement.focus());
   }
 
   stopSaving(): void {

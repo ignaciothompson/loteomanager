@@ -1,6 +1,8 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  ViewChild,
   effect,
   inject,
   input,
@@ -15,16 +17,14 @@ import {
   type AbstractControl
 } from '@angular/forms';
 import type { ZonasResponse } from '@loteomanager/shared-types';
-import { toSlug } from '@loteomanager/shared-utils';
-import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { RippleModule } from 'primeng/ripple';
 
 export type ZonaFormSavePayload = {
   id: string | null;
   body: { nombre: string; departamento_id: string };
+  createAnother: boolean;
 };
 
 @Component({
@@ -34,17 +34,16 @@ export type ZonaFormSavePayload = {
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    DialogModule,
     ButtonModule,
     InputTextModule,
-    SelectModule,
-    RippleModule
+    SelectModule
   ],
-  templateUrl: './zona-form-dialog.component.html',
-  styleUrl: './zona-form-dialog.component.scss'
+  templateUrl: './zona-form-dialog.component.html'
 })
 export class ZonaFormDialogComponent {
   private fb = inject(FormBuilder);
+
+  @ViewChild('nombreInput') nombreInput?: ElementRef<HTMLInputElement>;
 
   visible = input(false);
   editingId = input<string | null>(null);
@@ -55,9 +54,7 @@ export class ZonaFormDialogComponent {
   save = output<ZonaFormSavePayload>();
 
   saving = signal(false);
-  slugPreview = signal('');
-
-  readonly dialogStyle = { width: '90vw', maxWidth: '520px' };
+  formError = signal<string | null>(null);
 
   form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(120)]],
@@ -68,17 +65,18 @@ export class ZonaFormDialogComponent {
     effect(() => {
       if (!this.visible()) return;
       const row = this.current();
-      this.form.patchValue({
+      this.form.reset({
         nombre: row.nombre ?? '',
         departamento_id: row.departamento_id ?? this.departamentoOpts()[0]?.value ?? ''
       });
-      this.slugPreview.set(row.slug ?? toSlug(row.nombre ?? ''));
       this.saving.set(false);
+      this.formError.set(null);
+      queueMicrotask(() => this.nombreInput?.nativeElement.focus());
     });
+  }
 
-    this.form.get('nombre')?.valueChanges.subscribe((v) => {
-      this.slugPreview.set(toSlug(v ?? ''));
-    });
+  isDirty(): boolean {
+    return this.form.dirty;
   }
 
   showError(control: AbstractControl | null): boolean {
@@ -87,7 +85,14 @@ export class ZonaFormDialogComponent {
 
   onVisibleChange(open: boolean): void {
     this.visibleChange.emit(open);
-    if (!open) this.saving.set(false);
+    if (!open) {
+      this.saving.set(false);
+      this.formError.set(null);
+    }
+  }
+
+  onShow(): void {
+    queueMicrotask(() => this.nombreInput?.nativeElement.focus());
   }
 
   onCancel(): void {
@@ -95,18 +100,31 @@ export class ZonaFormDialogComponent {
     this.visibleChange.emit(false);
   }
 
-  onSubmit(): void {
+  onSubmit(createAnother = false): void {
     this.form.markAllAsTouched();
     if (this.form.invalid || this.saving()) return;
     this.saving.set(true);
+    this.formError.set(null);
     const raw = this.form.getRawValue();
     this.save.emit({
       id: this.editingId(),
+      createAnother,
       body: {
         nombre: raw.nombre.trim(),
         departamento_id: raw.departamento_id
       }
     });
+  }
+
+  setFormError(msg: string): void {
+    this.saving.set(false);
+    this.formError.set(msg);
+  }
+
+  resetForAnother(): void {
+    this.saving.set(false);
+    this.formError.set(null);
+    queueMicrotask(() => this.nombreInput?.nativeElement.focus());
   }
 
   stopSaving(): void {
