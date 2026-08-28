@@ -52,6 +52,17 @@ export class ImportadorService {
   private departamentosService = inject(DepartamentosService);
   private plantillasSvc = inject(PlantillasUnidadService);
   private publicacionSvc = inject(PublicacionService);
+  /** Serializa patches de revisión: un editarFilas pisa el getFullList del anterior (autocancel). */
+  private writeChain: Promise<void> = Promise.resolve();
+
+  private enqueueWrite<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.writeChain.then(fn, fn);
+    this.writeChain = run.then(
+      () => undefined,
+      () => undefined
+    );
+    return run;
+  }
 
   listarImportaciones(): Signal<ImportacionesResponse[]> {
     return this.importacionesService.list(undefined, { sort: '-created' });
@@ -130,6 +141,14 @@ export class ImportadorService {
   }
 
   async editarFilas(
+    ids: string[],
+    cambios: Record<string, unknown>,
+    importacionId?: string
+  ): Promise<void> {
+    return this.enqueueWrite(() => this.editarFilasNow(ids, cambios, importacionId));
+  }
+
+  private async editarFilasNow(
     ids: string[],
     cambios: Record<string, unknown>,
     importacionId?: string

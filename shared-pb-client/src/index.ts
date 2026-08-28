@@ -1,4 +1,5 @@
 export * from './lib/pocketbase.config';
+export * from './lib/is-pocketbase-auto-cancel';
 export * from './lib/base-collection.service';
 export * from './lib/auth.interceptor';
 export * from './lib/auth.service';

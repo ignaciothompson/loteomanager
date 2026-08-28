@@ -9,6 +9,7 @@ import {
   AuthService,
   VendedorAccesoService,
   type ReloadableSignal,
+  isPocketBaseAutoCancel,
 } from '@loteomanager/shared-pb-client';
 import { ComparativasRecord, ComparativasResponse } from '@loteomanager/shared-types';
 import { TableModule } from 'primeng/table';
@@ -230,11 +231,13 @@ export class ComparativasComponent {
         }
         data.set(await loader(barrioIds));
       } catch (err) {
+        if (isPocketBaseAutoCancel(err)) return;
         console.error('[comparativas] list reload failed', err);
       }
     };
-    data.reload = () => load();
-    void load();
+    data.reload = () => {
+      void load();
+    };
     return data;
   }
 }

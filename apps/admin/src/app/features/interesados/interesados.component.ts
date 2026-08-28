@@ -7,6 +7,7 @@ import {
   DefinicionesCacheService,
   VendedorAccesoService,
   type ReloadableSignal,
+  isPocketBaseAutoCancel,
 } from '@loteomanager/shared-pb-client';
 import { InteresadosRecord, InteresadosResponse, ExtraPersistido, sanitizeExtrasPayload } from '@loteomanager/shared-types';
 import { EstadoBadgeComponent } from '@loteomanager/shared-ui';
@@ -211,12 +212,16 @@ constructor() {
   ): ReloadableSignal<T[]> {
     const data = signal<T[]>([]) as ReloadableSignal<T[]>;
     const load = async () => {
-      const { barrioIds, waiting } = this.vendedorAcceso.resolveBarrioIds();
-      if (waiting) {
-        data.set([]);
-        return;
+      try {
+        const { barrioIds, waiting } = this.vendedorAcceso.resolveBarrioIds();
+        if (waiting) {
+          data.set([]);
+          return;
+        }
+        data.set(await loader(barrioIds));
+      } catch (err) {
+        if (isPocketBaseAutoCancel(err)) return;
       }
-      data.set(await loader(barrioIds));
     };
     data.reload = () => {
       void load();

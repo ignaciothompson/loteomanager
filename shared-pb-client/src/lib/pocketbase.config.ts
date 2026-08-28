@@ -19,5 +19,11 @@ export const POCKETBASE_URL = new InjectionToken<string>('POCKETBASE_URL', {
 
 export const POCKETBASE = new InjectionToken<PocketBase>('POCKETBASE', {
   providedIn: 'root',
-  factory: () => new PocketBase(inject(POCKETBASE_URL)),
+  factory: () => {
+    const pb = new PocketBase(inject(POCKETBASE_URL));
+    // Angular effects + tables fire overlapping getFullList/update; SDK default
+    // cancels the previous call and surfaces ClientResponseError 0.
+    pb.autoCancellation(false);
+    return pb;
+  },
 });

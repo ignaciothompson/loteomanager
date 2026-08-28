@@ -8,6 +8,7 @@ import {
   AuthService,
   VendedorAccesoService,
   type ReloadableSignal,
+  isPocketBaseAutoCancel,
 } from '@loteomanager/shared-pb-client';
 import {
   ComparativasResponse,
@@ -251,7 +252,7 @@ export class Dashboard {
         }
         data.set(await loader(barrioIds));
       } catch (err) {
-        if (isAutoCancel(err)) return;
+        if (isPocketBaseAutoCancel(err)) return;
         const detail = (err as { data?: unknown }).data ?? err;
         console.error(`[dashboard] ${label} reload failed`, detail);
       }
@@ -364,9 +365,4 @@ function formatDdMmYyyy(d: Date): string {
 function recordTimestamp(row: object): string {
   const r = row as { created?: string; updated?: string };
   return r.created || r.updated || '';
-}
-
-function isAutoCancel(err: unknown): boolean {
-  const e = err as { status?: number; message?: string };
-  return e.status === 0 || (typeof e.message === 'string' && e.message.toLowerCase().includes('autocancel'));
 }

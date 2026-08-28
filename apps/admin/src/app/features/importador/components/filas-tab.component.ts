@@ -13,6 +13,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { CheckboxModule } from 'primeng/checkbox';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { EstadoBadgeComponent } from '@loteomanager/shared-ui';
+import { isPocketBaseAutoCancel } from '@loteomanager/shared-pb-client';
 import { formatPrecio } from '../importador-ui';
 import { inferirPatronCodigo } from '../parser/patron-codigo';
 
@@ -312,6 +313,7 @@ export class FilasTabComponent implements OnChanges {
   }
 
   private fail(err: unknown): void {
+    if (isPocketBaseAutoCancel(err)) return;
     const msg = err instanceof Error ? err.message : 'Error al guardar';
     this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
   }
