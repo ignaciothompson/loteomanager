@@ -48,6 +48,7 @@ services:
         condition: service_healthy
     environment:
       - POCKETBASE_URL=${POCKETBASE_PUBLIC_URL:-http://localhost:8080}
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/healthz"]
       interval: 30s

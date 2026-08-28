@@ -1,31 +1,44 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { BaseCollectionService } from '../base-collection.service';
 import { ComparativasResponse, ComparativasRecord } from '@loteomanager/shared-types';
-import { ConfigService } from './config.service';
 
-/** Landing base URL for dev — override in production via config or env */
 const DEV_LANDING_URL = 'http://localhost:4000';
+
+declare global {
+  interface Window {
+    __env?: { POCKETBASE_URL?: string; LANDING_URL?: string };
+  }
+}
+
+function stripSlash(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+function landingFromWindow(): string | null {
+  if (typeof window === 'undefined') return null;
+  const fromEnv = window.__env?.LANDING_URL?.trim();
+  if (fromEnv) return stripSlash(fromEnv);
+
+  const origin = window.location.origin;
+  const host = window.location.hostname;
+  if (origin.includes('localhost:4200') || origin.includes('localhost:4300')) {
+    return DEV_LANDING_URL;
+  }
+  // Homelab: loteoadmin.* es el panel; la landing pública es loteoweb.*
+  if (host.startsWith('loteoadmin.')) {
+    return `${window.location.protocol}//${host.replace(/^loteoadmin\./, 'loteoweb.')}`;
+  }
+  return null;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class ComparativasService extends BaseCollectionService<ComparativasResponse> {
   protected override collectionName = 'comparativas';
-  private configService = inject(ConfigService);
 
   getLandingBaseUrl(): string {
-    // In production this will come from a config field (e.g. config.landing_base_url).
-    // For now: use window.location replacing admin port heuristic, or env-based.
-    if (typeof window === 'undefined') return DEV_LANDING_URL;
-
-    const origin = window.location.origin;
-    // Admin local → landing `npm run dev:landing` (port 4000)
-    if (origin.includes('localhost:4200')) return 'http://localhost:4000';
-    if (origin.includes('localhost:4300')) return 'http://localhost:4000';
-
-    // Production: assume landing and admin share same domain root
-    // (e.g. admin on admin.example.com, landing on example.com)
-    return origin;
+    return landingFromWindow() ?? DEV_LANDING_URL;
   }
 
   async crear(payload: Partial<ComparativasRecord>): Promise<{ record: ComparativasResponse; url: string }> {

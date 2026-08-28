@@ -22,6 +22,7 @@ declare global {
     interface Window {
         __env?: {
             POCKETBASE_URL?: string;
+            LANDING_URL?: string;
         };
     }
 }

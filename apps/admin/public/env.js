@@ -9,3 +9,4 @@
 // o setear `window.__env.POCKETBASE_URL` desde la consola del browser.
 window.__env = window.__env || {};
 window.__env.POCKETBASE_URL = window.__env.POCKETBASE_URL || 'http://localhost:8090';
+window.__env.LANDING_URL = window.__env.LANDING_URL || 'http://localhost:4000';
