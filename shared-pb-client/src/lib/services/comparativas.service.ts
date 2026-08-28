@@ -4,25 +4,40 @@ import { ComparativasResponse, ComparativasRecord } from '@loteomanager/shared-t
 
 const DEV_LANDING_URL = 'http://localhost:4000';
 
-function stripSlash(url: string): string {
-  return url.replace(/\/+$/, '');
+/** Acepta URL http(s). Rechaza loteopb / líneas pegadas tipo KEY=https://... */
+function sanitizeLandingUrl(raw: string): string | null {
+  let s = raw.trim();
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) {
+    const eq = s.indexOf('=');
+    if (eq > 0) s = s.slice(eq + 1).trim();
+  }
+  s = s.replace(/\/+$/, '');
+  try {
+    const u = new URL(s);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    const host = u.hostname.toLowerCase();
+    if (host.startsWith('loteopb.') || host.includes('pocketbase')) return null;
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
 }
 
 function landingFromWindow(): string | null {
   if (typeof window === 'undefined') return null;
-  const fromEnv = window.__env?.LANDING_URL?.trim();
-  if (fromEnv) return stripSlash(fromEnv);
 
   const origin = window.location.origin;
   const host = window.location.hostname;
   if (origin.includes('localhost:4200') || origin.includes('localhost:4300')) {
     return DEV_LANDING_URL;
   }
-  // Homelab: loteoadmin.* es el panel; la landing pública es loteoweb.*
+  // Homelab: /c/:token vive en loteoweb, nunca en admin ni en PB.
   if (host.startsWith('loteoadmin.')) {
     return `${window.location.protocol}//${host.replace(/^loteoadmin\./, 'loteoweb.')}`;
   }
-  return null;
+
+  return sanitizeLandingUrl(window.__env?.LANDING_URL ?? '');
 }
 
 @Injectable({
