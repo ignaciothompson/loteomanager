@@ -18,15 +18,6 @@ import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { appRoutes } from './app.routes';
 
-declare global {
-    interface Window {
-        __env?: {
-            POCKETBASE_URL?: string;
-            LANDING_URL?: string;
-        };
-    }
-}
-
 function resolvePocketbaseUrl(): string {
     const fromWindow = typeof window !== 'undefined' ? window.__env?.POCKETBASE_URL : undefined;
     const url = fromWindow?.trim() || 'http://localhost:8080';

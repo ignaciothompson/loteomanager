@@ -13,12 +13,6 @@ import { POCKETBASE_URL } from '@loteomanager/shared-pb-client';
 import { providePrimeNG } from 'primeng/config';
 import { LandingWarmPreset } from './theme/landing-theme';
 
-declare global {
-  interface Window {
-    __env?: { POCKETBASE_URL?: string; TURNSTILE_SITE_KEY?: string };
-  }
-}
-
 function resolvePocketbaseUrl(): string {
   const fromWindow = typeof window !== 'undefined' ? window.__env?.POCKETBASE_URL : undefined;
   return (fromWindow?.trim() || 'http://localhost:8090').replace(/\/+$/, '');

@@ -1,6 +1,16 @@
 import { inject, InjectionToken } from '@angular/core';
 import PocketBase from 'pocketbase';
 
+declare global {
+  interface Window {
+    __env?: {
+      POCKETBASE_URL?: string;
+      LANDING_URL?: string;
+      TURNSTILE_SITE_KEY?: string;
+    };
+  }
+}
+
 /**
  * URL del backend PocketBase (origen sin trailing slash).
  *

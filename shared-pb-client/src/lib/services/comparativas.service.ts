@@ -4,12 +4,6 @@ import { ComparativasResponse, ComparativasRecord } from '@loteomanager/shared-t
 
 const DEV_LANDING_URL = 'http://localhost:4000';
 
-declare global {
-  interface Window {
-    __env?: { POCKETBASE_URL?: string; LANDING_URL?: string };
-  }
-}
-
 function stripSlash(url: string): string {
   return url.replace(/\/+$/, '');
 }
