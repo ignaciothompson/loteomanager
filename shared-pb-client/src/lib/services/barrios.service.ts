@@ -16,6 +16,8 @@ export type BarrioConUnidades = BarriosResponse & {
   unidadesReservadasCount: number;
   unidadesVendidasCount: number;
   pendientePublicarCount: number;
+  precioDesde: number | null;
+  moneda: string | null;
 };
 
 export type BarrioCatalogStats = {
@@ -118,13 +120,15 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
 
   async attachUnidadesDisponiblesWebCount(barrios: BarriosResponse[]): Promise<BarrioConUnidades[]> {
     const rows = await this.attachCatalogStats(barrios);
-    return rows.map(({ unidadesCount, ...b }) => ({
+    return rows.map(({ unidadesCount, precioDesde, moneda, ...b }) => ({
       ...b,
       unidadesCount,
       unidadesDisponiblesCount: unidadesCount,
       unidadesReservadasCount: 0,
       unidadesVendidasCount: 0,
       pendientePublicarCount: 0,
+      precioDesde,
+      moneda
     }));
   }
 
@@ -179,7 +183,7 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
     const ids = barrios.map((b) => b.id);
     const unidades = await this.pb.collection('unidades').getFullList({
       filter: ids.map((id) => `barrio_id="${id}"`).join(' || '),
-      fields: 'id,barrio_id,estado,pendiente_publicar'
+      fields: 'id,barrio_id,estado,pendiente_publicar,web_visible,precio,moneda'
     });
 
     const totals: Record<string, number> = {};
@@ -187,6 +191,14 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
     const reservadas: Record<string, number> = {};
     const vendidas: Record<string, number> = {};
     const pendientes: Record<string, number> = {};
+    const precioDesde: Record<string, number | null> = {};
+    const moneda: Record<string, string | null> = {};
+
+    for (const id of ids) {
+      precioDesde[id] = null;
+      moneda[id] = null;
+    }
+
     for (const u of unidades) {
       const bid = u['barrio_id'] as string;
       totals[bid] = (totals[bid] ?? 0) + 1;
@@ -201,6 +213,13 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
       if (u['pendiente_publicar'] === true) {
         pendientes[bid] = (pendientes[bid] ?? 0) + 1;
       }
+      if (estado === 'disponible' && u['web_visible'] !== false) {
+        const precio = u['precio'] as number | undefined;
+        if (precio != null && (precioDesde[bid] == null || precio < (precioDesde[bid] as number))) {
+          precioDesde[bid] = precio;
+          moneda[bid] = (u['moneda'] as string | undefined) ?? moneda[bid] ?? 'USD';
+        }
+      }
     }
 
     return barrios.map((b) => ({
@@ -210,6 +229,8 @@ export class BarriosService extends BaseCollectionService<BarriosResponse> {
       unidadesReservadasCount: reservadas[b.id] ?? 0,
       unidadesVendidasCount: vendidas[b.id] ?? 0,
       pendientePublicarCount: pendientes[b.id] ?? 0,
+      precioDesde: precioDesde[b.id] ?? null,
+      moneda: moneda[b.id] ?? null
     }));
   }
 

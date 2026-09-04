@@ -103,14 +103,24 @@ app-barrios .default-height > .barrios-cards-viewport {
   font-weight: 600;
 }
 
-/* Full-width table: nombre absorbs leftover space */
+/* Table grows for H-scroll; wrapper stays 100% */
 app-barrios .barrios-list-panel .p-datatable-table {
-  width: 100% !important;
+  width: max-content !important;
+  min-width: 100% !important;
   table-layout: fixed;
 }
 
+app-barrios .barrios-list-panel .p-datatable.listado-cfg {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
 .barrios-col-check {
-  width: 2.75rem !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  box-sizing: border-box;
 }
 
 .barrios-col-nombre {
@@ -131,7 +141,8 @@ app-barrios .barrios-list-panel .p-datatable-table {
 }
 
 .barrios-col-web {
-  width: 11.5rem;
+  width: 200px;
+  min-width: 200px;
   white-space: nowrap;
 }
 

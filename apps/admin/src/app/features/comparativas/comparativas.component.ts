@@ -102,19 +102,21 @@ export class ComparativasComponent {
       if (waiting) return;
 
       const qp = this.route.snapshot.queryParamMap.get('unidades_ids');
-      if (!qp) return;
+      const interesadoQp = this.route.snapshot.queryParamMap.get('interesado_id');
+      if (!qp && !interesadoQp) return;
 
-      const ids = qp
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (!ids.length) return;
+      if (qp) {
+        const ids = qp
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (ids.length) this.initialUnidadesIds.set(ids);
+      }
 
-      this.initialUnidadesIds.set(ids);
       this.displayDialog.set(true);
       void this.router.navigate([], {
         relativeTo: this.route,
-        queryParams: { unidades_ids: null },
+        queryParams: { unidades_ids: null, interesado_id: null },
         queryParamsHandling: 'merge',
         replaceUrl: true
       });

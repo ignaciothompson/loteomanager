@@ -3,3 +3,32 @@
   flex: 1 1 auto;
   min-height: 0;
 }
+
+.barrios-toolbar-search {
+  min-width: 12rem;
+  max-width: 18rem;
+}
+
+.listado-cfg-filter-th {
+  overflow: visible !important;
+}
+
+/* Sticky opaque — kill bleed from scrolled cols */
+:host ::ng-deep .listado-cfg-sticky {
+  background: var(--p-datatable-row-background, var(--p-content-background)) !important;
+}
+
+:host ::ng-deep th.listado-cfg-sticky,
+:host ::ng-deep .listado-cfg-filters-row th.listado-cfg-sticky {
+  background: var(--p-datatable-header-cell-background, var(--p-content-background)) !important;
+}
+
+:host ::ng-deep .listado-cfg-check {
+  overflow: hidden !important;
+  text-overflow: clip !important;
+}
+
+:host ::ng-deep .barrios-row__name {
+  overflow: visible;
+  text-overflow: unset;
+}

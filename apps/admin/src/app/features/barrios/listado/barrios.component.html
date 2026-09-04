@@ -18,54 +18,6 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="barrios-filters">
-            <p-select
-                [options]="departamentoOpts()"
-                [ngModel]="filterDepartamento()"
-                (ngModelChange)="onDepartamentoChange($event)"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Departamento"
-                [showClear]="true"
-                styleClass="w-full"
-                appendTo="body"
-            />
-            <p-select
-                [options]="zonaOpts()"
-                [ngModel]="filterZona()"
-                (ngModelChange)="filterZona.set($event)"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Zona"
-                [showClear]="true"
-                [disabled]="!filterDepartamento()"
-                styleClass="w-full"
-                appendTo="body"
-            />
-            <input
-                pInputText
-                type="text"
-                class="w-full"
-                placeholder="Nombre"
-                [ngModel]="filterNombre()"
-                (ngModelChange)="filterNombre.set($event)"
-            />
-            <div class="barrios-filters__actions">
-                @if (hasActiveFilters()) {
-                    <button
-                        pButton
-                        type="button"
-                        label="Limpiar"
-                        icon="pi pi-filter-slash"
-                        class="p-button-text"
-                        (click)="clearFilters()"
-                    ></button>
-                }
-            </div>
-        </div>
-    </div>
-
     <div
         class="card barrios-list-panel"
         [class.barrios-list-panel--cards]="viewMode() === 'cards'"
@@ -74,9 +26,59 @@
         <p-toast />
         <p-menu #rowMenu [model]="rowMenuItems" [popup]="true" appendTo="body" />
 
-        <div class="default-height__header flex justify-between items-center" [class.mb-4]="viewMode() === 'table'">
+        <div class="default-height__header flex justify-between items-center flex-wrap gap-2" [class.mb-4]="viewMode() === 'table'">
             <h5 class="m-0">Barrios</h5>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                <input
+                    pInputText
+                    type="search"
+                    placeholder="Buscar…"
+                    class="barrios-toolbar-search"
+                    [ngModel]="searchValue()"
+                    (ngModelChange)="onSearchInput($event)"
+                />
+                @if (hasActiveFilters()) {
+                    <button
+                        pButton
+                        type="button"
+                        [label]="
+                            prefs.activeFilterCount()
+                                ? 'Limpiar ' + prefs.activeFilterCount() + (prefs.activeFilterCount() === 1 ? ' filtro' : ' filtros')
+                                : 'Limpiar filtros'
+                        "
+                        icon="pi pi-filter-slash"
+                        class="p-button-text"
+                        (click)="clearFilters()"
+                    ></button>
+                }
+                @if (canCreateComparativa() && selectedCount() > 0) {
+                    <span class="listado-cfg-toolbar-notice">{{ selectionLabel() }}</span>
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-link"
+                        [label]="comparativaBarriosLabel()"
+                        class="p-button-outlined"
+                        [loading]="creatingComparativa()"
+                        [disabled]="creatingComparativa()"
+                        (click)="crearComparativaDesdeSeleccion()"
+                    ></button>
+                    <button
+                        pButton
+                        type="button"
+                        label="Limpiar selección"
+                        class="p-button-text"
+                        (click)="clearSelection()"
+                    ></button>
+                }
+                <button
+                    pButton
+                    type="button"
+                    icon="pi pi-table"
+                    [label]="'Columnas (' + prefs.visibleIds().length + ')'"
+                    class="p-button-outlined"
+                    (click)="columnasDrawerVisible.set(true)"
+                ></button>
                 <button
                     pButton
                     type="button"
@@ -96,75 +98,100 @@
             </div>
         </div>
 
-        @if (canCreateComparativa() && selectedCount() > 0) {
-            <div
-                class="barrios-selection-bar"
-                [class.barrios-selection-bar--active]="selectedCount() > 0"
-                aria-hidden="{{ selectedCount() === 0 }}"
-            >
-                <span class="barrios-selection-bar__count">{{ selectionLabel() }}</span>
-                <button
-                    pButton
-                    type="button"
-                    icon="pi pi-link"
-                    [label]="comparativaBarriosLabel()"
-                    class="p-button-outlined p-button-sm"
-                    [loading]="creatingComparativa()"
-                    [disabled]="creatingComparativa() || selectedCount() === 0"
-                    (click)="crearComparativaDesdeSeleccion()"
-                ></button>
-                <button
-                    pButton
-                    type="button"
-                    label="Limpiar"
-                    class="p-button-text p-button-sm"
-                    [disabled]="selectedCount() === 0"
-                    (click)="clearSelection()"
-                ></button>
-            </div>
-        }
-
         @if (viewMode() === 'table') {
-            <div class="default-height__scroll">
+            <div class="default-height__scroll listado-cfg-scroll">
                 <p-table
                     [value]="rows()"
                     [loading]="loading()"
+                    [rows]="10"
+                    [paginator]="true"
+                    [rowsPerPageOptions]="[10, 25, 50]"
                     [scrollable]="true"
                     scrollHeight="flex"
-                    [rows]="10"
-                    [paginator]="rows().length > 10"
+                    (onPage)="onPage($event)"
                     sortMode="single"
                     dataKey="id"
+                    styleClass="listado-cfg"
+                    tableStyleClass="listado-cfg-table"
+                    [tableStyle]="{ 'min-width': tableMinWidth() + 'px' }"
                 >
                     <ng-template pTemplate="header">
                         <tr>
-                            <th class="barrios-col-check">
+                            <th
+                                class="barrios-col-check listado-cfg-check listado-cfg-sticky"
+                                [ngStyle]="stickyStyle('__check')"
+                            >
                                 <p-checkbox
                                     [binary]="true"
                                     [ngModel]="allVisibleSelected()"
                                     [indeterminate]="someVisibleSelected()"
                                     (ngModelChange)="toggleSelectAll($event)"
                                     inputId="sel-all-barrios"
-                                    [attr.aria-label]="'Seleccionar todos los barrios visibles'"
+                                    [attr.aria-label]="'Seleccionar página visible'"
                                 />
                             </th>
-                            <th class="barrios-col-nombre" pSortableColumn="nombre">
-                                Nombre
-                                <p-sortIcon field="nombre" />
-                            </th>
-                            <th class="barrios-col-zona">Zona / Departamento</th>
-                            <th class="barrios-col-unidades" pSortableColumn="unidadesCount">
-                                Unidades
-                                <p-sortIcon field="unidadesCount" />
-                            </th>
-                            <th class="barrios-col-tipos">Tipos</th>
-                            <th class="barrios-col-web">Web</th>
+                            @for (col of visibleColumns(); track col.id) {
+                                <th
+                                    [style.width]="colWidth(col)"
+                                    [style.min-width]="colWidth(col)"
+                                    [class.listado-cfg-sticky]="isStickyCol(col.id)"
+                                    [class.listado-cfg-sticky--edge]="isStickyEdge(col.id)"
+                                    [class.listado-cfg-num-right]="col.alineacion === 'right'"
+                                    [class.listado-cfg-th--sortable]="col.ordenable"
+                                    [class.listado-cfg-th--filtered]="isColFiltered(col.id)"
+                                    [class.barrios-col-web]="col.id === 'web'"
+                                    class="listado-cfg-th"
+                                    [ngStyle]="isStickyCol(col.id) ? stickyStyle(col.id) : null"
+                                    (click)="col.ordenable && toggleSort(col)"
+                                >
+                                    <span class="listado-cfg-th-inner">
+                                        <span class="listado-cfg-th-label">{{ col.label }}</span>
+                                        @if (col.ordenable) {
+                                            <i
+                                                class="listado-cfg-sort pi"
+                                                [class]="sortIcon(col.id)"
+                                                [class.listado-cfg-sort--on]="isSortActive(col.id)"
+                                            ></i>
+                                        }
+                                    </span>
+                                </th>
+                            }
                             <th class="buttons-col barrios-actions-col"></th>
+                        </tr>
+                        <tr class="listado-cfg-filters-row">
+                            <th class="listado-cfg-check listado-cfg-sticky" [ngStyle]="stickyStyle('__check')"></th>
+                            @for (col of visibleColumns(); track col.id) {
+                                <th
+                                    class="listado-cfg-filter-th"
+                                    [style.width]="colWidth(col)"
+                                    [style.min-width]="colWidth(col)"
+                                    [class.listado-cfg-td--filtered]="isColFiltered(col.id)"
+                                    [class.listado-cfg-sticky]="isStickyCol(col.id)"
+                                    [class.listado-cfg-sticky--edge]="isStickyEdge(col.id)"
+                                    [class.barrios-col-web]="col.id === 'web'"
+                                    [ngStyle]="isStickyCol(col.id) ? stickyStyle(col.id) : null"
+                                >
+                                    <app-listado-filter-cell
+                                        [column]="col"
+                                        [value]="filterValue(col.id)"
+                                        (valueChange)="setColumnFilter(col.id, $event)"
+                                    />
+                                </th>
+                            }
+                            <th></th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-barrio>
-                        <tr class="barrios-row" (click)="onRowClick(barrio)">
-                            <td class="barrios-col-check" (click)="$event.stopPropagation()">
+                        <tr
+                            class="barrios-row"
+                            [class.listado-cfg-selected]="isSelected(barrio)"
+                            (click)="onRowClick(barrio)"
+                        >
+                            <td
+                                class="barrios-col-check listado-cfg-check listado-cfg-sticky"
+                                [ngStyle]="stickyStyle('__check')"
+                                (click)="$event.stopPropagation()"
+                            >
                                 <p-checkbox
                                     [binary]="true"
                                     [ngModel]="isSelected(barrio)"
@@ -172,69 +199,83 @@
                                     [inputId]="'sel-' + barrio.id"
                                 />
                             </td>
-                            <td class="barrios-col-nombre">
-                                <span class="barrios-row__name">{{ barrio.nombre }}</span>
-                            </td>
-                            <td class="barrios-col-zona">{{ geoLabel(barrio) }}</td>
-                            <td class="barrios-col-unidades">
-                                @if (!barrio.unidadesCount) {
-                                    <span class="barrios-empty-units">
-                                        Sin unidades —
-                                        <button
-                                            type="button"
-                                            class="barrios-link-cta"
-                                            (click)="cargarUnidades(barrio, $event)"
-                                        >
-                                            ＋ cargar unidades
-                                        </button>
-                                    </span>
-                                } @else {
-                                    <div class="barrios-units-cell">
-                                        <div class="barrios-stack-bar" aria-hidden="true">
-                                            @if (barSegWidths(barrio).disp > 0) {
-                                                <i class="barrios-stack-bar__seg barrios-stack-bar__seg--disp" [style.width.%]="barSegWidths(barrio).disp"></i>
+                            @for (col of visibleColumns(); track col.id) {
+                                <td
+                                    [style.width]="colWidth(col)"
+                                    [style.min-width]="colWidth(col)"
+                                    [class.listado-cfg-sticky]="isStickyCol(col.id)"
+                                    [class.listado-cfg-sticky--edge]="isStickyEdge(col.id)"
+                                    [class.listado-cfg-num-right]="col.alineacion === 'right'"
+                                    [class.listado-cfg-td--filtered]="isColFiltered(col.id)"
+                                    [class.listado-cfg-cell--badge]="col.id === 'web'"
+                                    [class.barrios-col-web]="col.id === 'web'"
+                                    [ngStyle]="isStickyCol(col.id) ? stickyStyle(col.id) : null"
+                                >
+                                    @if (col.id === 'unidades') {
+                                        @if (!barrio.unidadesCount) {
+                                            <span class="barrios-empty-units">
+                                                Sin unidades —
+                                                <button
+                                                    type="button"
+                                                    class="barrios-link-cta"
+                                                    (click)="cargarUnidades(barrio, $event)"
+                                                >
+                                                    ＋ cargar ahora
+                                                </button>
+                                            </span>
+                                        } @else {
+                                            <div class="barrios-units-cell">
+                                                <div class="barrios-stack-bar" aria-hidden="true">
+                                                    @if (barSegWidths(barrio).disp > 0) {
+                                                        <i class="barrios-stack-bar__seg barrios-stack-bar__seg--disp" [style.width.%]="barSegWidths(barrio).disp"></i>
+                                                    }
+                                                    @if (barSegWidths(barrio).res > 0) {
+                                                        <i class="barrios-stack-bar__seg barrios-stack-bar__seg--res" [style.width.%]="barSegWidths(barrio).res"></i>
+                                                    }
+                                                    @if (barSegWidths(barrio).vend > 0) {
+                                                        <i class="barrios-stack-bar__seg barrios-stack-bar__seg--vend" [style.width.%]="barSegWidths(barrio).vend"></i>
+                                                    }
+                                                </div>
+                                                <span class="barrios-counts">
+                                                    @for (p of countsParts(barrio); track p.key; let i = $index) {
+                                                        @if (i > 0) {
+                                                            <span class="barrios-counts__sep">·</span>
+                                                        }
+                                                        <em [class]="'barrios-counts__' + p.key">{{ p.n }}</em>
+                                                        <span>{{ p.label }}</span>
+                                                    }
+                                                </span>
+                                            </div>
+                                        }
+                                    } @else if (col.id === 'web') {
+                                        @let badge = pubBadge(barrio);
+                                        <span class="barrios-pub-pill" [attr.data-kind]="badge.kind">{{ badge.label }}</span>
+                                    } @else if (col.id === 'tipos_unidad') {
+                                        @let chips = tipoChipsVisible(barrio, 2);
+                                        <div class="barrios-chips">
+                                            @for (chip of chips.shown; track chip) {
+                                                <span class="barrios-chip">{{ chip }}</span>
                                             }
-                                            @if (barSegWidths(barrio).res > 0) {
-                                                <i class="barrios-stack-bar__seg barrios-stack-bar__seg--res" [style.width.%]="barSegWidths(barrio).res"></i>
+                                            @if (chips.extra > 0) {
+                                                <span
+                                                    class="barrios-chip barrios-chip--more"
+                                                    [pTooltip]="tipoChips(barrio).slice(2).join(' · ')"
+                                                    tooltipPosition="top"
+                                                >＋{{ chips.extra }}</span>
                                             }
-                                            @if (barSegWidths(barrio).vend > 0) {
-                                                <i class="barrios-stack-bar__seg barrios-stack-bar__seg--vend" [style.width.%]="barSegWidths(barrio).vend"></i>
+                                            @if (!chips.shown.length) {
+                                                <span class="text-muted-color">—</span>
                                             }
                                         </div>
-                                        <span class="barrios-counts">
-                                            @for (p of countsParts(barrio); track p.key; let i = $index) {
-                                                @if (i > 0) {
-                                                    <span class="barrios-counts__sep">·</span>
-                                                }
-                                                <em [class]="'barrios-counts__' + p.key">{{ p.n }}</em>
-                                                <span>{{ p.label }}</span>
-                                            }
-                                        </span>
-                                    </div>
-                                }
-                            </td>
-                            <td class="barrios-col-tipos">
-                                @let chips = tipoChipsVisible(barrio, 2);
-                                <div class="barrios-chips">
-                                    @for (chip of chips.shown; track chip) {
-                                        <span class="barrios-chip">{{ chip }}</span>
+                                    } @else {
+                                        <app-listado-cell
+                                            [column]="col"
+                                            [row]="barrio"
+                                            [moneda]="barrio.moneda"
+                                        />
                                     }
-                                    @if (chips.extra > 0) {
-                                        <span
-                                            class="barrios-chip barrios-chip--more"
-                                            [pTooltip]="tipoChips(barrio).slice(2).join(' · ')"
-                                            tooltipPosition="top"
-                                        >＋{{ chips.extra }}</span>
-                                    }
-                                    @if (!chips.shown.length) {
-                                        <span class="text-muted-color">—</span>
-                                    }
-                                </div>
-                            </td>
-                            <td class="barrios-col-web">
-                                @let badge = pubBadge(barrio);
-                                <span class="barrios-pub-pill" [attr.data-kind]="badge.kind">{{ badge.label }}</span>
-                            </td>
+                                </td>
+                            }
                             <td class="buttons-col barrios-actions-col" (click)="$event.stopPropagation()">
                                 <button
                                     pButton
@@ -267,11 +308,31 @@
                             </td>
                         </tr>
                     </ng-template>
+                    <ng-template pTemplate="loadingbody">
+                        @for (_ of [1, 2, 3, 4, 5]; track $index) {
+                            <tr>
+                                <td class="listado-cfg-check"><p-skeleton width="1.25rem" height="1.25rem" /></td>
+                                @for (col of visibleColumns(); track col.id) {
+                                    <td><p-skeleton width="80%" height="1rem" /></td>
+                                }
+                                <td><p-skeleton width="4rem" height="1rem" /></td>
+                            </tr>
+                        }
+                    </ng-template>
                     <ng-template pTemplate="emptymessage">
                         <tr>
-                            <td colspan="7">
+                            <td [attr.colspan]="colSpanEmpty()">
                                 @if (hasActiveFilters()) {
-                                    No hay barrios que coincidan con los filtros.
+                                    <div class="flex align-items-center gap-2 flex-wrap py-2">
+                                        <span>Ningún registro coincide con los filtros.</span>
+                                        <button
+                                            pButton
+                                            type="button"
+                                            label="Limpiar filtros"
+                                            class="p-button-text p-button-sm"
+                                            (click)="clearFilters()"
+                                        ></button>
+                                    </div>
                                 } @else {
                                     No hay barrios cargados.
                                 }
@@ -289,17 +350,13 @@
                 <div class="flex justify-center py-8">
                     <i class="pi pi-spin pi-spinner text-2xl" aria-hidden="true"></i>
                 </div>
-            } @else if (!rows().length) {
+            } @else if (!allRows().length) {
                 <p class="barrios-cards-empty">
-                    @if (hasActiveFilters()) {
-                        No hay barrios que coincidan con los filtros.
-                    } @else {
-                        No hay barrios cargados.
-                    }
+                    No hay barrios cargados.
                 </p>
             } @else {
                 <div class="barrios-cards">
-                    @for (barrio of rows(); track barrio.id) {
+                    @for (barrio of allRows(); track barrio.id) {
                         @let badge = pubBadge(barrio);
                         @let chips = tipoChipsVisible(barrio, 2);
                         <article class="barrios-card" (click)="onRowClick(barrio)">
@@ -390,6 +447,15 @@
         </div>
     }
 </div>
+
+<app-columnas-drawer
+    [visible]="columnasDrawerVisible()"
+    (visibleChange)="columnasDrawerVisible.set($event)"
+    [catalog]="catalog()"
+    [visibleIds]="prefs.visibleIds()"
+    (visibleIdsChange)="prefs.setVisibleIds($event)"
+    (restore)="prefs.restoreDefaults()"
+/>
 
 <app-barrio-ver-dialog
     [visible]="verDialogVisible()"
