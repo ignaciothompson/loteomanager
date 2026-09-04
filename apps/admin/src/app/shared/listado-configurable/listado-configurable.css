@@ -1,0 +1,155 @@
+/* Shared styles for configurable listados */
+
+/* Root wrapper — must stay in flex box (never max-content) */
+.listado-cfg.p-datatable,
+.default-height__scroll > .p-datatable {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Actual <table> — wide content scrolls inside table-container */
+table.listado-cfg-table,
+.listado-cfg-table.p-datatable-table {
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.listado-cfg-table th,
+.listado-cfg-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+  overflow: hidden;
+  padding-left: 1rem;
+  padding-right: 0.75rem;
+  box-sizing: border-box;
+}
+
+.listado-cfg-table th.listado-cfg-check,
+.listado-cfg-table td.listado-cfg-check {
+  overflow: hidden;
+  text-overflow: clip;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.listado-cfg-table th.listado-cfg-th {
+  cursor: default;
+  user-select: none;
+}
+
+.listado-cfg-table th.listado-cfg-th--sortable {
+  cursor: pointer;
+}
+
+.listado-cfg-table th.listado-cfg-th--filtered,
+.listado-cfg-table td.listado-cfg-td--filtered {
+  color: var(--p-primary-color);
+}
+
+.listado-cfg-table th.listado-cfg-th--filtered .listado-cfg-th-label {
+  color: var(--p-primary-color);
+}
+
+.listado-cfg-th-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.listado-cfg-sort {
+  font-size: 0.7rem;
+  opacity: 0;
+  color: var(--p-text-muted-color);
+}
+
+.listado-cfg-th--sortable:hover .listado-cfg-sort,
+.listado-cfg-sort--on {
+  opacity: 1;
+}
+
+.listado-cfg-sort--on {
+  color: var(--p-primary-color);
+}
+
+/* Opaque sticky — seal bleed between check / nombre / scrolled cols */
+.listado-cfg-sticky {
+  position: sticky !important;
+  z-index: 4;
+  background-color: var(--p-content-background) !important;
+  background-clip: padding-box;
+  isolation: isolate;
+}
+
+th.listado-cfg-sticky,
+.listado-cfg-filters-row th.listado-cfg-sticky {
+  z-index: 6;
+  background-color: var(--p-content-background) !important;
+}
+
+.listado-cfg-table tbody tr:hover > td.listado-cfg-sticky {
+  background-color: var(--p-content-background) !important;
+  filter: brightness(1.06);
+}
+
+.listado-cfg-sticky--edge {
+  border-right: 1px solid var(--p-content-border-color, #334155);
+  box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.45);
+}
+
+.listado-cfg-table tr.listado-cfg-selected > td {
+  background: color-mix(in srgb, var(--p-green-500, #22c55e) 10%, var(--p-content-background)) !important;
+}
+
+.listado-cfg-table tr.listado-cfg-selected > td.listado-cfg-sticky {
+  background: color-mix(in srgb, var(--p-green-500, #22c55e) 10%, var(--p-content-background)) !important;
+}
+
+.listado-cfg-toolbar-notice {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+}
+
+.listado-cfg-num-right {
+  text-align: right;
+}
+
+.listado-cfg-check {
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Seal 1px gap check↔nombre (subpixel / rem mismatch) */
+.listado-cfg-table th.listado-cfg-check.listado-cfg-sticky,
+.listado-cfg-table td.listado-cfg-check.listado-cfg-sticky {
+  z-index: 5;
+  box-shadow: 2px 0 0 0 var(--p-content-background);
+}
+
+.listado-cfg-filters-row th {
+  padding-top: 0.35rem;
+  padding-bottom: 0.45rem;
+  vertical-align: middle;
+}
+
+.listado-cfg-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* Ensure scroll host clips + shows bars (PrimeNG flex + H overflow) */
+.listado-cfg-scroll .p-datatable-table-container {
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+/* Web / badge cells: don't clip pills */
+.listado-cfg-table td.listado-cfg-cell--badge {
+  overflow: visible;
+}
