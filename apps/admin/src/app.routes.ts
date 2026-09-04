@@ -32,13 +32,27 @@ export const appRoutes: Routes = [
                 data: { title: 'Ingreso barrio' }
             },
             {
-                path: 'actualizacion-web',
+                path: 'actualizacion-masiva',
+                canActivate: [authGuard, permisoGuard('unidades.bulk_edit')],
+                loadComponent: () =>
+                    import('./app/features/actualizacion-masiva/actualizacion-masiva.component').then(
+                        (m) => m.ActualizacionMasivaComponent
+                    ),
+                data: { title: 'Actualización masiva' }
+            },
+            {
+                path: 'publicacion-web',
                 canActivate: [authGuard, permisoGuard('web.publish')],
                 loadComponent: () =>
-                    import('./app/features/actualizacion-web/actualizacion-web.component').then(
-                        (m) => m.ActualizacionWebComponent
+                    import('./app/features/publicacion-web/publicacion-web.component').then(
+                        (m) => m.PublicacionWebComponent
                     ),
-                data: { title: 'Actualización web' }
+                data: { title: 'Publicación web' }
+            },
+            {
+                path: 'actualizacion-web',
+                redirectTo: 'publicacion-web',
+                pathMatch: 'full'
             },
             {
                 path: 'lotes',

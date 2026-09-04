@@ -52,11 +52,18 @@ export class AppMenu {
                 }
             );
         }
+        if (this.permisos.can('unidades.bulk_edit')) {
+            inventarioItems.push({
+                label: 'Actualización masiva',
+                icon: 'pi pi-fw pi-pencil',
+                routerLink: ['/actualizacion-masiva']
+            });
+        }
         if (this.permisos.can('web.publish')) {
             inventarioItems.push({
-                label: 'Actualización Web',
+                label: 'Publicación web',
                 icon: 'pi pi-fw pi-cloud-upload',
-                routerLink: ['/actualizacion-web']
+                routerLink: ['/publicacion-web']
             });
         }
 

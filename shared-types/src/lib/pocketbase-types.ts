@@ -210,6 +210,7 @@ export type PublicacionHistorialRecord<Tsnapshot = unknown> = {
 	publicado_at?: IsoDateString
 	publicado_por?: RecordIdString
 	snapshot: Tsnapshot
+	unidades_count?: number
 }
 
 export const EstadosDefinicionesEntidadOptions = {

@@ -378,11 +378,11 @@ export class BarrioVerDialogComponent {
     }
     if (this.canPublishWeb()) {
       items.push({
-        label: 'Actualización Web',
+        label: 'Publicación web',
         icon: 'pi pi-globe',
         command: () => {
           this.visible.set(false);
-          void this.router.navigate(['/actualizacion-web']);
+          void this.router.navigate(['/publicacion-web']);
         }
       });
     }

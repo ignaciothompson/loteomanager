@@ -453,9 +453,9 @@ export class BarriosComponent {
     }
     if (this.canPublishWeb()) {
       items.push({
-        label: 'Actualización Web',
+        label: 'Publicación web',
         icon: 'pi pi-globe',
-        command: () => void this.router.navigate(['/actualizacion-web'])
+        command: () => void this.router.navigate(['/publicacion-web'])
       });
     }
     this.rowMenuItems = items;
