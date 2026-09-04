@@ -23,6 +23,7 @@ export * from './lib/services/vendedor-barrios.service';
 export * from './lib/services/extras-definiciones.service';
 export * from './lib/services/estados-definiciones.service';
 export * from './lib/services/definiciones-cache.service';
+export * from './lib/services/preferencias-listado.service';
 export * from './lib/permisos/permisos.constants';
 export * from './lib/permisos/permisos.service';
 export * from './lib/services/vendedor-acceso.service';

@@ -1,81 +1,179 @@
 <div class="default-height">
     <div class="card">
-        <div class="interesados-filters">
-            <input
-                pInputText
-                placeholder="Buscar por nombre..."
-                [ngModel]="filterNombre()"
-                (ngModelChange)="filterNombre.set($event)"
-            />
-            <p-select
-                [options]="estadoOpts()"
-                [ngModel]="filterEstado()"
-                (ngModelChange)="filterEstado.set($event)"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Estado"
-                [showClear]="true"
-                appendTo="body"
-            />
-            <div class="interesados-filters__actions">
+        <p-toast />
+
+        <div class="default-height__header flex justify-between items-center flex-wrap gap-2 mb-4">
+            <h5 class="m-0">Gestión de Interesados (Leads)</h5>
+            <div class="flex items-center gap-2 flex-wrap">
+                <input
+                    pInputText
+                    type="search"
+                    placeholder="Buscar…"
+                    class="interesados-toolbar-search"
+                    [ngModel]="searchValue()"
+                    (ngModelChange)="onSearchInput($event)"
+                />
                 @if (hasActiveFilters()) {
                     <button
                         pButton
                         type="button"
-                        label="Limpiar"
+                        [label]="
+                            prefs.activeFilterCount()
+                                ? 'Limpiar ' + prefs.activeFilterCount() + (prefs.activeFilterCount() === 1 ? ' filtro' : ' filtros')
+                                : 'Limpiar filtros'
+                        "
                         icon="pi pi-filter-slash"
                         class="p-button-text"
                         (click)="clearFilters()"
                     ></button>
                 }
+                @if (selectedCount() > 0) {
+                    <span class="listado-cfg-toolbar-notice">
+                        {{ selectedCount() === 1 ? '1 contacto seleccionado' : selectedCount() + ' contactos seleccionados' }}
+                    </span>
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-link"
+                        label="Generar comparativa"
+                        class="p-button-outlined"
+                        [disabled]="!canGenerateComparativa()"
+                        (click)="generarComparativa()"
+                    ></button>
+                    @if (comparativaHint(); as hint) {
+                        <span class="listado-cfg-toolbar-notice">{{ hint }}</span>
+                    }
+                    <button
+                        pButton
+                        type="button"
+                        [label]="'Cambiar estado (' + selectedCount() + ')'"
+                        class="p-button-outlined"
+                        (click)="openBulkEstado()"
+                    ></button>
+                    <button
+                        pButton
+                        type="button"
+                        label="Limpiar selección"
+                        class="p-button-text"
+                        (click)="clearSelection()"
+                    ></button>
+                }
+                <button
+                    pButton
+                    type="button"
+                    icon="pi pi-table"
+                    [label]="'Columnas (' + prefs.visibleIds().length + ')'"
+                    class="p-button-outlined"
+                    (click)="columnasDrawerVisible.set(true)"
+                ></button>
+                <button
+                    pButton
+                    type="button"
+                    icon="pi pi-plus"
+                    label="Nuevo Lead"
+                    class="p-button-success"
+                    (click)="openNew()"
+                ></button>
             </div>
         </div>
-    </div>
 
-    <div class="card">
-        <p-toast />
-
-        <div class="default-height__header flex justify-between items-center mb-4">
-            <h5 class="m-0">Gestión de Interesados (Leads)</h5>
-            <button
-                pButton
-                type="button"
-                icon="pi pi-plus"
-                label="Nuevo Lead"
-                class="p-button-success"
-                (click)="openNew()"
-            ></button>
-        </div>
-
-        <div class="default-height__scroll">
+        <div class="default-height__scroll listado-cfg-scroll">
             <p-table
-                [value]="interesadosFiltrados()"
-                [scrollable]="true"
-                scrollHeight="flex"
+                [value]="rows()"
                 [rows]="10"
                 [paginator]="true"
+                [rowsPerPageOptions]="[10, 25, 50]"
+                [scrollable]="true"
+                scrollHeight="flex"
+                (onPage)="onPage($event)"
+                dataKey="id"
+                styleClass="listado-cfg"
+                tableStyleClass="listado-cfg-table"
+                [tableStyle]="{ 'min-width': tableMinWidth() + 'px' }"
             >
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Teléfono</th>
-                        <th>Contexto</th>
-                        <th>Estado</th>
+                        <th class="listado-cfg-check listado-cfg-sticky" [ngStyle]="stickyStyle('__check')">
+                            <p-checkbox
+                                [binary]="true"
+                                [ngModel]="allVisibleSelected()"
+                                [indeterminate]="someVisibleSelected()"
+                                (ngModelChange)="toggleSelectAll($event)"
+                                inputId="sel-all-interesados"
+                            />
+                        </th>
+                        @for (col of visibleColumns(); track col.id) {
+                            <th
+                                class="listado-cfg-th"
+                                [class.listado-cfg-th--sortable]="col.ordenable"
+                                [class.listado-cfg-th--filtered]="isColFiltered(col.id)"
+                                [class.listado-cfg-sticky]="isStickyCol(col.id)"
+                                [class.listado-cfg-sticky--edge]="isStickyEdge(col.id)"
+                                [class.listado-cfg-num-right]="col.alineacion === 'right'"
+                                [style.width]="colWidth(col)"
+                                [style.min-width]="colWidth(col)"
+                                [ngStyle]="isStickyCol(col.id) ? stickyStyle(col.id) : null"
+                                (click)="col.ordenable && toggleSort(col)"
+                            >
+                                <span class="listado-cfg-th-inner">
+                                    <span class="listado-cfg-th-label">{{ col.label }}</span>
+                                    @if (col.ordenable) {
+                                        <i
+                                            class="listado-cfg-sort pi"
+                                            [class]="sortIcon(col.id)"
+                                            [class.listado-cfg-sort--on]="isSortActive(col.id)"
+                                        ></i>
+                                    }
+                                </span>
+                            </th>
+                        }
                         <th class="!text-right"></th>
+                    </tr>
+                    <tr class="listado-cfg-filters-row">
+                        <th class="listado-cfg-check listado-cfg-sticky" [ngStyle]="stickyStyle('__check')"></th>
+                        @for (col of visibleColumns(); track col.id) {
+                            <th
+                                class="listado-cfg-filter-th"
+                                [style.width]="colWidth(col)"
+                                [style.min-width]="colWidth(col)"
+                                [class.listado-cfg-td--filtered]="isColFiltered(col.id)"
+                                [class.listado-cfg-sticky]="isStickyCol(col.id)"
+                                [class.listado-cfg-sticky--edge]="isStickyEdge(col.id)"
+                                [ngStyle]="isStickyCol(col.id) ? stickyStyle(col.id) : null"
+                            >
+                                <app-listado-filter-cell
+                                    [column]="col"
+                                    [value]="filterValue(col.id)"
+                                    (valueChange)="setColumnFilter(col.id, $event)"
+                                />
+                            </th>
+                        }
+                        <th></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-interesado>
-                    <tr>
-                        <td>{{ interesado.nombre }}</td>
-                        <td>{{ interesado.email || '-' }}</td>
-                        <td>{{ interesado.telefono || '-' }}</td>
-                        <td>
-                            <span class="text-sm text-surface-600">{{ contextoLabel(interesado) }}</span>
+                    <tr [class.listado-cfg-selected]="isSelected(interesado)">
+                        <td class="listado-cfg-check listado-cfg-sticky" [ngStyle]="stickyStyle('__check')">
+                            <p-checkbox
+                                [binary]="true"
+                                [ngModel]="isSelected(interesado)"
+                                (ngModelChange)="toggleSelect(interesado, $event)"
+                                [inputId]="'sel-int-' + interesado.id"
+                            />
                         </td>
-                        <td>
-                            <lib-estado-badge [code]="interesado.estado" [entidad]="'interesados'" />
-                        </td>
+                        @for (col of visibleColumns(); track col.id) {
+                            <td
+                                [style.width]="colWidth(col)"
+                                [style.min-width]="colWidth(col)"
+                                [class.listado-cfg-sticky]="isStickyCol(col.id)"
+                                [class.listado-cfg-sticky--edge]="isStickyEdge(col.id)"
+                                [class.listado-cfg-num-right]="col.alineacion === 'right'"
+                                [class.listado-cfg-td--filtered]="isColFiltered(col.id)"
+                                [ngStyle]="isStickyCol(col.id) ? stickyStyle(col.id) : null"
+                            >
+                                <app-listado-cell [column]="col" [row]="interesado" />
+                            </td>
+                        }
                         <td class="!text-right">
                             @if (interesado.estado !== 'cerrado_ganado') {
                                 <button
@@ -109,9 +207,18 @@
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="6">
+                        <td [attr.colspan]="colSpanEmpty()">
                             @if (hasActiveFilters()) {
-                                No hay leads que coincidan con los filtros.
+                                <div class="flex align-items-center gap-2 flex-wrap py-2">
+                                    <span>Ningún registro coincide con los filtros.</span>
+                                    <button
+                                        pButton
+                                        type="button"
+                                        label="Limpiar filtros"
+                                        class="p-button-text p-button-sm"
+                                        (click)="clearFilters()"
+                                    ></button>
+                                </div>
                             } @else {
                                 No hay leads cargados.
                             }
@@ -123,6 +230,15 @@
     </div>
 </div>
 
+<app-columnas-drawer
+    [visible]="columnasDrawerVisible()"
+    (visibleChange)="columnasDrawerVisible.set($event)"
+    [catalog]="catalog()"
+    [visibleIds]="prefs.visibleIds()"
+    (visibleIdsChange)="prefs.setVisibleIds($event)"
+    (restore)="prefs.restoreDefaults()"
+/>
+
 <app-interesado-form-dialog
     [visible]="displayDialog()"
     (visibleChange)="displayDialog.set($event)"
@@ -131,3 +247,43 @@
     [extrasData]="currentExtras()"
     (save)="onSave($event)"
 />
+
+<p-dialog
+    header="Cambiar estado"
+    [modal]="true"
+    [style]="{ width: '24rem' }"
+    [visible]="bulkEstadoVisible()"
+    (visibleChange)="bulkEstadoVisible.set($event)"
+    [draggable]="false"
+>
+    <p class="text-sm mb-3">Nuevo estado para {{ selectedCount() }} contacto(s):</p>
+    <p-select
+        [options]="estadoOpts()"
+        [ngModel]="bulkEstado()"
+        (ngModelChange)="bulkEstado.set($event)"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Estado"
+        styleClass="w-full"
+        appendTo="body"
+    />
+    <div class="flex justify-end gap-2 mt-4">
+        <button
+            pButton
+            type="button"
+            label="Cancelar"
+            class="p-button-text"
+            [disabled]="bulkSaving()"
+            (click)="bulkEstadoVisible.set(false)"
+        ></button>
+        <button
+            pButton
+            type="button"
+            label="Aplicar"
+            class="p-button-success"
+            [loading]="bulkSaving()"
+            [disabled]="!bulkEstado() || bulkSaving()"
+            (click)="confirmBulkEstado()"
+        ></button>
+    </div>
+</p-dialog>

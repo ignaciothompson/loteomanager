@@ -4,20 +4,18 @@
   min-height: 0;
 }
 
-.interesados-filters {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 12rem auto;
-  gap: 0.75rem;
-  align-items: end;
+.interesados-toolbar-search {
+  min-width: 12rem;
+  max-width: 18rem;
 }
 
-.interesados-filters__actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+.listado-cfg-filters-row th {
+  padding-top: 0.35rem;
+  padding-bottom: 0.45rem;
+  vertical-align: middle;
+  background: var(--p-content-background, #fff);
 }
 
-.interesados-filters ::ng-deep .p-inputtext,
-.interesados-filters ::ng-deep .p-select {
-  width: 100%;
+.listado-cfg-filter-th {
+  overflow: visible;
 }
