@@ -1,7 +1,11 @@
 <p-toast />
 <p-confirmDialog />
 
-<div class="imp-review" [class.imp-review--footer]="!readonly() && !resultadoVista() && !loading()">
+<div
+  class="imp-review"
+  [class.imp-review--footer]="!readonly() && !resultadoVista() && !loading()"
+  [class.imp-review--done]="!!resultadoVista()"
+>
   @if (loading()) {
     <div class="flex justify-center py-8">
       <p-progressSpinner ariaLabel="Cargando revisión" />
@@ -16,46 +20,48 @@
         <p-tag value="Confirmada" severity="success" />
       </div>
     </div>
-    <div class="card imp-result">
-      <div class="imp-result__icon" aria-hidden="true">
-        <i class="pi pi-check-circle"></i>
-      </div>
-      <h5 class="imp-result__title mt-0 mb-2">Listo — se crearon {{ fraseResultado(r) }}</h5>
-      <p class="imp-result__sub text-500 m-0 mb-4">
-        Ya están en el sistema. Podés abrirlos o seguir importando.
-      </p>
+    <div class="imp-result-wrap">
+      <div class="card imp-result">
+        <div class="imp-result__icon" aria-hidden="true">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <h5 class="imp-result__title mt-0 mb-2">Listo — se crearon {{ fraseResultado(r) }}</h5>
+        <p class="imp-result__sub text-500 m-0 mb-4">
+          Ya están en el sistema. Podés abrirlos o seguir importando.
+        </p>
 
-      @if (r.omisiones.length) {
-        <div class="imp-result__omit">
-          <p class="text-sm font-semibold m-0 mb-2">No entró ({{ r.omisiones.length }})</p>
-          <ul class="text-sm pl-4 m-0">
-            @for (o of r.omisiones; track o.codigo + o.motivo) {
-              <li>{{ o.codigo }} — {{ o.motivo }}</li>
+        @if (r.omisiones.length) {
+          <div class="imp-result__omit">
+            <p class="text-sm font-semibold m-0 mb-2">No entró ({{ r.omisiones.length }})</p>
+            <ul class="text-sm pl-4 m-0">
+              @for (o of r.omisiones; track o.codigo + o.motivo) {
+                <li>{{ o.codigo }} — {{ o.motivo }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (r.plantillas_guardadas) {
+          <p class="text-sm text-500 mb-3">Se guardaron {{ r.plantillas_guardadas }} plantillas de formulario.</p>
+        }
+
+        @if (r.barrios.length) {
+          <div class="imp-result__barrios">
+            @for (b of r.barrios; track b.id) {
+              <p-button
+                [label]="'Ir a ' + b.nombre"
+                icon="pi pi-map"
+                severity="success"
+                (click)="irABarrio(b.id)"
+              />
             }
-          </ul>
+          </div>
+        }
+
+        <div class="imp-result__actions">
+          <p-button label="Nueva importación" icon="pi pi-plus" [outlined]="true" (click)="nuevaImportacion()" />
+          <p-button label="Volver al listado" [text]="true" (click)="irAtras()" />
         </div>
-      }
-
-      @if (r.plantillas_guardadas) {
-        <p class="text-sm text-500 mb-3">Se guardaron {{ r.plantillas_guardadas }} plantillas de formulario.</p>
-      }
-
-      @if (r.barrios.length) {
-        <div class="imp-result__barrios">
-          @for (b of r.barrios; track b.id) {
-            <p-button
-              [label]="'Ir a ' + b.nombre"
-              icon="pi pi-map"
-              severity="success"
-              (click)="irABarrio(b.id)"
-            />
-          }
-        </div>
-      }
-
-      <div class="imp-result__actions">
-        <p-button label="Nueva importación" icon="pi pi-plus" [outlined]="true" (click)="nuevaImportacion()" />
-        <p-button label="Volver al listado" [text]="true" (click)="irAtras()" />
       </div>
     </div>
   } @else {

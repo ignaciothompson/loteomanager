@@ -192,6 +192,19 @@
   padding-bottom: 4.5rem;
 }
 
+.imp-review--done .imp-review__head {
+  width: 100%;
+}
+
+.imp-result-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 1.5rem 1rem 2.5rem;
+}
+
 .imp-review__head {
   flex: 0 0 auto;
   margin-bottom: 0.75rem;
@@ -451,8 +464,9 @@
 
 .imp-result {
   text-align: left;
-  padding: 1.5rem 1.25rem;
-  max-width: 40rem;
+  padding: 2rem 1.75rem;
+  max-width: 32rem;
+  width: 100%;
 }
 
 .imp-result__icon {
