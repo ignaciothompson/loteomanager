@@ -1,0 +1,268 @@
+<div class="default-height masiva">
+  <p-toast />
+  <p-confirmDialog />
+
+  <div class="default-height__header masiva__head">
+    <div class="masiva__title-block">
+      <h1 class="masiva__title">Actualización masiva</h1>
+      <p class="masiva__sub">Editá unidades de un barrio. Esto no publica en la web.</p>
+    </div>
+    <div class="masiva__barrio">
+      <label class="masiva__label" for="masiva-barrio">Barrio</label>
+      <p-select
+        inputId="masiva-barrio"
+        [options]="barrioOpts()"
+        [ngModel]="barrioId()"
+        (ngModelChange)="onBarrioChange($event)"
+        placeholder="Elegí un barrio"
+        [filter]="true"
+        filterBy="label"
+        styleClass="w-full"
+        [showClear]="true"
+      />
+    </div>
+  </div>
+
+  @if (pendientesCount() > 0) {
+    <div class="masiva__banner">
+      <span>
+        {{ pendientesCount() }} barrio{{ pendientesCount() === 1 ? '' : 's' }} con cambios sin
+        publicar. La web sigue mostrando la versión anterior.
+      </span>
+      @if (canPublish()) {
+        <a routerLink="/publicacion-web" class="masiva__banner-link">Ir a Publicación web</a>
+      }
+    </div>
+  }
+
+  @if (!barrioId()) {
+    <div class="masiva__empty">
+      <i class="pi pi-map" aria-hidden="true"></i>
+      <h2>Elegí un barrio para empezar</h2>
+      <p>
+        La actualización masiva siempre trabaja dentro de un barrio. Seleccioná uno arriba para ver
+        sus unidades.
+      </p>
+    </div>
+  } @else {
+    <div class="masiva__action">
+      @if (!selectedCount()) {
+        <p class="masiva__hint m-0">Seleccioná unidades para modificar un campo.</p>
+      } @else {
+        <div class="masiva__action-row">
+          <span class="masiva__count">{{ selectedCount() }} seleccionada{{ selectedCount() === 1 ? '' : 's' }}</span>
+          <p-select
+            [options]="campoOpts"
+            [ngModel]="accionCampo()"
+            (ngModelChange)="accionCampo.set($event)"
+            styleClass="masiva__campo"
+          />
+          @if (accionCampo() === 'precio') {
+            <div class="masiva__precio-modos">
+              <label class="masiva__radio">
+                <p-radiobutton
+                  name="precioModo"
+                  value="porcentaje"
+                  [ngModel]="precioModo()"
+                  (ngModelChange)="precioModo.set($event)"
+                  inputId="pm-pct"
+                />
+                <span>Porcentaje</span>
+              </label>
+              <label class="masiva__radio">
+                <p-radiobutton
+                  name="precioModo"
+                  value="fijo"
+                  [ngModel]="precioModo()"
+                  (ngModelChange)="precioModo.set($event)"
+                  inputId="pm-fijo"
+                />
+                <span>Valor fijo</span>
+              </label>
+            </div>
+            @if (precioModo() === 'porcentaje') {
+              <div class="masiva__control">
+                <label class="masiva__sr" for="masiva-pct">Porcentaje</label>
+                <p-inputNumber
+                  inputId="masiva-pct"
+                  [ngModel]="porcentaje()"
+                  (ngModelChange)="porcentaje.set($event)"
+                  [minFractionDigits]="0"
+                  [maxFractionDigits]="2"
+                  suffix=" %"
+                />
+                <span class="masiva__hint-inline">10 = +10% · −5 = −5%</span>
+              </div>
+            } @else {
+              <div class="masiva__control">
+                <label class="masiva__sr" for="masiva-fijo">Valor fijo</label>
+                <p-inputNumber
+                  inputId="masiva-fijo"
+                  [ngModel]="precioFijo()"
+                  (ngModelChange)="precioFijo.set($event)"
+                  locale="es-UY"
+                  mode="decimal"
+                  [minFractionDigits]="0"
+                  [maxFractionDigits]="2"
+                />
+              </div>
+            }
+          } @else if (accionCampo() === 'estado') {
+            <p-select
+              [options]="estadoOpts()"
+              [ngModel]="estadoValue()"
+              (ngModelChange)="estadoValue.set($event)"
+              placeholder="Estado"
+              styleClass="masiva__campo"
+            />
+          } @else if (accionCampo() === 'en_oferta') {
+            <label class="masiva__radio">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="enOfertaValue()"
+                (ngModelChange)="enOfertaValue.set($event)"
+                inputId="en-oferta"
+              />
+              <span>En oferta</span>
+            </label>
+          } @else {
+            <label class="masiva__radio">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="webVisibleValue()"
+                (ngModelChange)="webVisibleValue.set($event)"
+                inputId="web-vis"
+              />
+              <span>Visible en la web</span>
+            </label>
+          }
+          <p-button
+            [label]="'Aplicar a ' + selectedCount()"
+            icon="pi pi-check"
+            [loading]="applying()"
+            [disabled]="!previewValid()"
+            (onClick)="confirmarAplicar()"
+          />
+        </div>
+      }
+    </div>
+
+    <div class="default-height__scroll listado-cfg-scroll masiva__table">
+      <p-table
+        [value]="unidadesFiltradas()"
+        [paginator]="true"
+        [rows]="25"
+        scrollHeight="flex"
+        styleClass="listado-cfg"
+        tableStyleClass="listado-cfg-table"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="listado-cfg-check" [style.width.px]="checkColWidth">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="allFilteredSelected()"
+                [indeterminate]="someFilteredSelected()"
+                (ngModelChange)="toggleAll($event)"
+                inputId="sel-all-unidades"
+              />
+            </th>
+            @for (col of catalog(); track col.id) {
+              <th
+                [style.width]="colWidth(col)"
+                [style.min-width]="colWidth(col)"
+                [class.listado-cfg-num-right]="col.alineacion === 'right'"
+                class="listado-cfg-th"
+              >
+                {{ col.label }}
+              </th>
+            }
+            @if (previewValid() && selectedCount()) {
+              <th class="listado-cfg-th masiva__despues">Después</th>
+            }
+          </tr>
+          <tr class="listado-cfg-filters-row">
+            <th class="listado-cfg-check"></th>
+            @for (col of catalog(); track col.id) {
+              <th class="listado-cfg-filter-th" [style.width]="colWidth(col)">
+                <app-listado-filter-cell
+                  [column]="col"
+                  [value]="filterValue(col.id)"
+                  (valueChange)="setColumnFilter(col.id, $event)"
+                />
+              </th>
+            }
+            @if (previewValid() && selectedCount()) {
+              <th></th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-u>
+          <tr [class.listado-cfg-selected]="isSelected(u.id)">
+            <td class="listado-cfg-check">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="isSelected(u.id)"
+                (ngModelChange)="toggleOne(u.id, $event)"
+                [inputId]="'sel-u-' + u.id"
+              />
+            </td>
+            @for (col of catalog(); track col.id) {
+              <td [class.listado-cfg-num-right]="col.alineacion === 'right'">
+                @switch (col.id) {
+                  @case ('codigo') {
+                    {{ u.codigo }}
+                  }
+                  @case ('tipo') {
+                    {{ tipoLabel(u.tipo_unidad) }}
+                  }
+                  @case ('estado') {
+                    <lib-estado-badge [code]="u.estado" entidad="unidades" />
+                  }
+                  @case ('precio') {
+                    <span class="listado-cell-num">{{ precioText(u) }}</span>
+                  }
+                  @case ('m2') {
+                    <span class="listado-cell-num">{{ m2Text(u) }}</span>
+                  }
+                  @case ('web') {
+                    {{ u.web_visible ? 'Sí' : 'No' }}
+                  }
+                  @case ('pendiente') {
+                    @if (u.pendiente_publicar) {
+                      <span class="masiva__sin-pub">Sin publicar</span>
+                    } @else {
+                      <span class="text-surface-400">—</span>
+                    }
+                  }
+                }
+              </td>
+            }
+            @if (previewValid() && selectedCount()) {
+              <td>
+                @if (previewAfter(u); as after) {
+                  <span class="masiva__preview">
+                    <s class="masiva__preview-old">{{ previewBefore(u) }}</s>
+                    <span aria-hidden="true">→</span>
+                    <span class="masiva__preview-new">{{ after }}</span>
+                  </span>
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="catalog().length + 1 + (previewValid() && selectedCount() ? 1 : 0)" class="text-center text-surface-500">
+              @if (unidades().length && !unidadesFiltradas().length) {
+                Ninguna unidad coincide con los filtros.
+              } @else {
+                Este barrio no tiene unidades.
+              }
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+</div>

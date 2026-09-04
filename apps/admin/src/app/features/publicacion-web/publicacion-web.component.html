@@ -1,0 +1,200 @@
+<div class="pub-web" [class.pub-web--panel]="!!panelBarrioId()">
+  <p-toast />
+  <p-confirmDialog />
+
+  <div class="pub-web__main">
+    <div class="card pub-web__head">
+      <div>
+        <h1 class="pub-web__title">Publicación web</h1>
+        <p class="pub-web__summary">
+          {{ pendientes().length }} barrio{{ pendientes().length === 1 ? '' : 's' }} con cambios ·
+          {{ unidadesAfectadas() }} unidad{{ unidadesAfectadas() === 1 ? '' : 'es' }} afectada{{ unidadesAfectadas() === 1 ? '' : 's' }}
+        </p>
+      </div>
+      <div class="pub-web__head-actions">
+        <p-button
+          [label]="'Publicar seleccionados (' + selectedIds().length + ')'"
+          icon="pi pi-cloud-upload"
+          [loading]="publishing()"
+          [disabled]="!selectedIds().length"
+          (onClick)="confirmarPublicarSeleccionados()"
+        />
+        <p-button
+          label="Publicar todo"
+          severity="secondary"
+          [outlined]="true"
+          [loading]="publishing()"
+          [disabled]="!pendientes().length"
+          (onClick)="confirmarPublicarTodo()"
+        />
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="pub-web__state">
+        <i class="pi pi-spin pi-spinner text-2xl"></i>
+      </div>
+    } @else if (!pendientes().length) {
+      <div class="pub-web__state">
+        <i class="pi pi-check-circle" aria-hidden="true"></i>
+        <h2>No hay cambios sin publicar</h2>
+        <p>Todo lo que está en el admin ya se ve en la web.</p>
+      </div>
+    } @else {
+      <div class="pub-web__list">
+        @for (row of pendientes(); track row.barrio.id) {
+          <div
+            class="pub-web__row"
+            [class.pub-web__row--sel]="panelBarrioId() === row.barrio.id"
+          >
+            <div class="pub-web__row-head">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="row.selected"
+                (ngModelChange)="toggleSelect(row.barrio.id, $event)"
+                [inputId]="'pub-' + row.barrio.id"
+              />
+              <button type="button" class="pub-web__row-btn" (click)="toggleExpand(row.barrio.id)">
+                <i class="pi" [class.pi-chevron-down]="row.expanded" [class.pi-chevron-right]="!row.expanded"></i>
+                <span class="pub-web__nombre">{{ row.barrio.nombre }}</span>
+                <span class="pub-web__chips">
+                  @for (c of conteos(row.diffs); track c.tipo) {
+                    <p-tag [severity]="chipSeverity(c.tipo)" [value]="chipLabel(c.tipo, c.n)" />
+                  }
+                </span>
+                @if (nuncaPublicado(row.barrio)) {
+                  <span class="pub-web__nunca">nunca publicado</span>
+                } @else if (fechaPub(row.barrio); as f) {
+                  <span class="pub-web__fecha">última publicación {{ f }}</span>
+                }
+              </button>
+            </div>
+            @if (row.expanded) {
+              <div class="pub-web__diff">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Unidad</th>
+                      <th>Cambio</th>
+                      <th>Campo</th>
+                      <th>Antes</th>
+                      <th>Después</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (d of row.diffs; track (d.unidadId ?? d.codigo) + d.tipo) {
+                      @for (c of d.campos; track c.campo; let i = $index) {
+                        <tr>
+                          <td>{{ i === 0 ? d.codigo : '' }}</td>
+                          <td>
+                            @if (i === 0) {
+                              <p-tag [severity]="chipSeverity(d.tipo)" [value]="tipoLabel(d.tipo)" />
+                            }
+                          </td>
+                          <td>{{ c.campo }}</td>
+                          <td class="pub-web__num">{{ c.antes }}</td>
+                          <td class="pub-web__num">{{ c.despues }}</td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+      </div>
+      <p class="pub-web__note">
+        La publicación actúa por barrio completo: se regenera la versión pública con todas las unidades
+        visibles, no solo con las que cambiaron.
+      </p>
+    }
+  </div>
+
+  @if (panelBarrioId() && panelOpenMobile()) {
+    <div class="org-abm-scrim pub-web__scrim" (click)="closePanelMobile()"></div>
+  }
+
+  <aside class="org-abm-panel pub-web__panel" [class.pub-web__panel--open]="panelOpenMobile()">
+  @if (!panelBarrioId()) {
+      <div class="org-abm-panel__head">
+        <h5 class="org-abm-panel__title">Resumen</h5>
+      </div>
+      <div class="org-abm-panel__body">
+        <p class="org-abm-panel__sub">
+          {{ pendientes().length }} barrios con cambios · {{ unidadesAfectadas() }} unidades
+          afectadas
+        </p>
+        <p class="org-abm-panel__sub">
+          {{ publicadosSobreTotal().pub }} publicados sobre {{ publicadosSobreTotal().total }}
+        </p>
+        @if (ultimaPublicacion(); as u) {
+          <p class="org-abm-panel__sub">Última publicación {{ u }}</p>
+        } @else {
+          <p class="org-abm-panel__empty">Todavía no hay publicaciones registradas.</p>
+        }
+        <p class="pub-web__muted">Elegí un barrio de la lista para ver su historial.</p>
+      </div>
+    } @else {
+      @if (panelBarrio(); as row) {
+        <div class="org-abm-panel__head">
+          <h5 class="org-abm-panel__title">{{ row.barrio.nombre }}</h5>
+          <button
+            type="button"
+            class="org-abm-panel__close pub-web__panel-close"
+            (click)="closePanelMobile()"
+            aria-label="Cerrar"
+          >
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="org-abm-panel__body">
+          @if (nuncaPublicado(row.barrio)) {
+            <p class="pub-web__nunca">Nunca publicado</p>
+          } @else if (fechaPub(row.barrio); as f) {
+            <p class="org-abm-panel__sub">Publicado {{ f }}</p>
+          }
+          <p class="org-abm-panel__sub">{{ row.diffs.length }} cambios pendientes</p>
+          <div class="org-abm-panel__actions">
+            <span></span>
+            <p-button
+              label="Publicar este barrio"
+              icon="pi pi-cloud-upload"
+              [loading]="publishing()"
+              [disabled]="publishing()"
+              (onClick)="confirmarPublicarEste()"
+            />
+          </div>
+
+          <h6 class="pub-web__hist-title">Historial</h6>
+          @if (!versiones().length) {
+            @if (nuncaPublicado(row.barrio)) {
+              <p class="org-abm-panel__empty">
+                Todavía no se publicó nunca. La primera publicación va a quedar guardada acá.
+              </p>
+            } @else {
+              <p class="org-abm-panel__empty">
+                No hay versiones guardadas todavía. Las próximas publicaciones quedan acá.
+              </p>
+            }
+          } @else {
+            <ol class="pub-web__timeline">
+              @for (v of versiones(); track v.id; let i = $index) {
+                <li>
+                  <div class="pub-web__tl-date">{{ formatFecha(v.publicadoEn) }}</div>
+                  <div>{{ v.publicadoPor }} · {{ v.unidadesCount }} unidades</div>
+                  @if (i === 0) {
+                    <span class="pub-web__en-web">en la web</span>
+                  }
+                </li>
+              }
+            </ol>
+          }
+          <p class="pub-web__muted">
+            Se guarda la versión de cada publicación. Volver a una anterior queda para más adelante.
+          </p>
+        </div>
+      }
+    }
+  </aside>
+</div>

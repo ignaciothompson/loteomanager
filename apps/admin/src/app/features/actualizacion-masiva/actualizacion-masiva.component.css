@@ -1,0 +1,187 @@
+:host {
+  display: block;
+}
+
+.masiva__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.masiva__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.masiva__sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--p-text-muted-color);
+}
+
+.masiva__barrio {
+  min-width: 16rem;
+  flex: 0 1 20rem;
+}
+
+.masiva__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.masiva__banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--p-amber-400, #fbbf24) 40%, var(--p-content-border-color));
+  background: color-mix(in srgb, var(--p-amber-400, #fbbf24) 12%, transparent);
+  font-size: 0.875rem;
+}
+
+.masiva__banner-link {
+  font-weight: 600;
+  color: var(--p-primary-color);
+  text-decoration: none;
+}
+
+.masiva__empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  color: var(--p-text-muted-color);
+  padding: 3rem 1rem;
+}
+
+.masiva__empty i {
+  font-size: 2rem;
+  opacity: 0.7;
+}
+
+.masiva__empty h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--p-text-color);
+}
+
+.masiva__empty p {
+  margin: 0;
+  max-width: 28rem;
+}
+
+.masiva__action {
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  background: var(--p-content-background);
+}
+
+.masiva__action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.masiva__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.masiva__hint-inline {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+  white-space: nowrap;
+}
+
+.masiva__hint {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.masiva__campo {
+  min-width: 10rem;
+  flex: 0 0 auto;
+}
+
+.masiva__count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.masiva__action-row > p-button {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.masiva__precio-modos,
+.masiva__radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.masiva__control {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.masiva__table {
+  min-height: 0;
+}
+
+.masiva__sin-pub {
+  color: var(--p-amber-500, #f59e0b);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.masiva__despues {
+  min-width: 12rem;
+}
+
+.masiva__preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.masiva__preview-old {
+  color: var(--p-text-muted-color);
+}
+
+.masiva__preview-new {
+  color: var(--p-green-400, #4ade80);
+  font-weight: 600;
+}
+
+.listado-cell-num {
+  font-variant-numeric: tabular-nums;
+}

@@ -3,12 +3,18 @@ import type {
   BarrioWebSnapshot,
   BarrioWebSnapshotUnidad,
   BarriosResponse,
+  CambioCampo,
+  DiffUnidad,
   PublicacionHistorialResponse,
-  UnidadPublicacionDiff,
+  TipoUnidadIngreso,
   UnidadesResponse,
+  UsersResponse,
+  VersionPublicacion,
 } from '@loteomanager/shared-types';
+import { formatPrecio, TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
 import { BarriosService } from './barrios.service';
 import { UnidadesService } from './unidades.service';
+import { DefinicionesCacheService } from './definiciones-cache.service';
 import { POCKETBASE } from '../pocketbase.config';
 
 function mapUnidadSnapshot(u: UnidadesResponse): BarrioWebSnapshotUnidad {
@@ -54,15 +60,26 @@ function unidadComparableKey(u: BarrioWebSnapshotUnidad): string {
   });
 }
 
-function fmtPrecio(precio: number | null | undefined, moneda: string): string {
+function fmtMoneda(precio: number | null | undefined, moneda: string): string {
   if (precio == null) return '—';
-  return `${moneda} ${precio.toLocaleString('es-UY')}`;
+  const cur = moneda === 'UYU' || moneda === 'ARS' ? 'ARS' : 'USD';
+  return formatPrecio(precio, cur);
 }
+
+function tipoLabel(tipo: string): string {
+  return TIPO_UNIDAD_LABELS[tipo as TipoUnidadIngreso] ?? tipo;
+}
+
+type HistorialExpand = PublicacionHistorialResponse & {
+  created?: string;
+  expand?: { publicado_por?: Pick<UsersResponse, 'name' | 'email'> };
+};
 
 @Injectable({ providedIn: 'root' })
 export class PublicacionService {
   private barriosSvc = inject(BarriosService);
   private unidadesSvc = inject(UnidadesService);
+  private definiciones = inject(DefinicionesCacheService);
   private pb = inject(POCKETBASE);
 
   async publicarBarrio(barrioId: string): Promise<void> {
@@ -71,10 +88,6 @@ export class PublicacionService {
       `barrio_id="${barrioId}" && web_visible = true`,
       { sort: 'codigo' },
     );
-
-    if (barrio.snapshot) {
-      await this.guardarHistorial(barrio);
-    }
 
     const snapshot: BarrioWebSnapshot = {
       barrio: {
@@ -96,13 +109,21 @@ export class PublicacionService {
     await this.barriosSvc.update(barrioId, {
       snapshot,
       publicado: true,
-      publicado_at: new Date().toISOString(),
+      publicado_at: snapshot.generado_at,
     } as Partial<BarriosResponse>);
 
+    try {
+      await this.guardarVersion(barrioId, snapshot, unidades.length);
+    } catch (err) {
+      console.error('[publicacion] no se pudo guardar la versión', err);
+    }
+
     await Promise.all(
-      unidades.map((u) =>
-        this.unidadesSvc.update(u.id, { pendiente_publicar: false }),
-      ),
+      (
+        await this.unidadesSvc.listAsync(
+          `barrio_id="${barrioId}" && pendiente_publicar = true`,
+        )
+      ).map((u) => this.unidadesSvc.update(u.id, { pendiente_publicar: false })),
     );
   }
 
@@ -128,7 +149,6 @@ export class PublicacionService {
 
     for (const b of barrios) {
       if (ids.has(b.id)) continue;
-      // Diff solo si ya publicó alguna vez o está marcado publicado (snapshot stale/null)
       if (!b.publicado && !b.snapshot) continue;
       const diffs = await this.diffBarrio(b.id, b);
       if (diffs.length) ids.add(b.id);
@@ -140,7 +160,7 @@ export class PublicacionService {
   async diffBarrio(
     barrioId: string,
     barrioPreloaded?: BarriosResponse,
-  ): Promise<UnidadPublicacionDiff[]> {
+  ): Promise<DiffUnidad[]> {
     const barrio = barrioPreloaded ?? (await this.barriosSvc.getAsync(barrioId));
     const snapshot = this.parseSnapshot(barrio.snapshot);
     const snapUnidades = snapshot?.unidades ?? [];
@@ -157,7 +177,7 @@ export class PublicacionService {
       ),
     ]);
 
-    const diffs: UnidadPublicacionDiff[] = [];
+    const diffs: DiffUnidad[] = [];
     const liveIds = new Set<string>();
 
     for (const u of visibles) {
@@ -168,20 +188,17 @@ export class PublicacionService {
         diffs.push({
           unidadId: u.id,
           codigo: u.codigo,
-          kind: 'nueva',
-          despues: `${u.tipo_unidad} · ${fmtPrecio(u.precio, u.moneda)}`,
+          tipo: 'nueva',
+          campos: [{ campo: 'Cambio', antes: '—', despues: 'Entra al catálogo' }],
         });
         continue;
       }
       if (unidadComparableKey(prev) !== unidadComparableKey(mapped)) {
-        const campo = this.firstChangedField(prev, mapped);
         diffs.push({
           unidadId: u.id,
           codigo: u.codigo,
-          kind: 'modificada',
-          campo: campo.name,
-          antes: campo.antes,
-          despues: campo.despues,
+          tipo: 'modificada',
+          campos: this.camposCambiados(prev, mapped),
         });
       }
     }
@@ -193,21 +210,49 @@ export class PublicacionService {
         diffs.push({
           unidadId: prev.id,
           codigo: prev.codigo,
-          kind: 'oculta',
-          campo: 'web_visible',
-          antes: 'Sí',
-          despues: 'No',
+          tipo: 'oculta',
+          campos: [
+            {
+              campo: 'Cambio',
+              antes: '—',
+              despues: 'Sale del catálogo (Web = No)',
+            },
+          ],
         });
       } else {
         diffs.push({
           unidadId: prev.id,
           codigo: prev.codigo,
-          kind: 'eliminada',
+          tipo: 'eliminada',
+          campos: [
+            { campo: 'Cambio', antes: '—', despues: 'Ya no existe en el admin' },
+          ],
         });
       }
     }
 
     return diffs;
+  }
+
+  async listarVersiones(barrioId: string): Promise<VersionPublicacion[]> {
+    const rows = (await this.pb.collection('publicacion_historial').getFullList({
+      filter: `barrio_id="${barrioId}"`,
+      sort: '-publicado_at',
+      expand: 'publicado_por',
+    })) as HistorialExpand[];
+
+    return rows.map((r) => {
+      const user = r.expand?.publicado_por;
+      const nombre = user?.name?.trim() || user?.email || 'Usuario';
+      const snap = this.parseSnapshot(r.snapshot);
+      return {
+        id: r.id,
+        barrioId: r.barrio_id,
+        publicadoEn: r.publicado_at || r.created || '',
+        publicadoPor: nombre,
+        unidadesCount: r.unidades_count ?? snap?.unidades.length ?? 0,
+      };
+    });
   }
 
   parseSnapshot(raw: unknown): BarrioWebSnapshot | null {
@@ -229,37 +274,34 @@ export class PublicacionService {
     }
   }
 
-  /** Guarda el snapshot vigente de un barrio como entrada de historial antes de sobreescribirlo. */
-  private async guardarHistorial(barrio: BarriosResponse): Promise<void> {
-    const userId = this.pb.authStore.model?.['id'] as string | undefined;
-    await this.pb.collection('publicacion_historial').create({
-      barrio_id: barrio.id,
-      snapshot: barrio.snapshot,
-      publicado_at: barrio.publicado_at || new Date().toISOString(),
-      publicado_por: userId || undefined,
-    });
-  }
-
-  /** Lista el historial de publicaciones de un barrio, más reciente primero. */
   async listHistorial(barrioId: string): Promise<PublicacionHistorialResponse[]> {
     return this.pb.collection('publicacion_historial').getFullList({
       filter: `barrio_id="${barrioId}"`,
-      sort: '-created',
+      sort: '-publicado_at',
     }) as unknown as Promise<PublicacionHistorialResponse[]>;
   }
 
-  /** Restaura un snapshot histórico como el snapshot vigente del barrio (rollback). */
+  /** Restaura un snapshot histórico como el snapshot vigente del barrio. */
   async rollback(barrioId: string, historialId: string): Promise<void> {
-    const entry = await this.pb
+    const entry = (await this.pb
       .collection('publicacion_historial')
-      .getOne(historialId) as unknown as PublicacionHistorialResponse;
+      .getOne(historialId)) as unknown as PublicacionHistorialResponse;
     if (entry.barrio_id !== barrioId) {
       throw new Error('El registro de historial no pertenece a este barrio.');
     }
 
     const barrio = await this.barriosSvc.getAsync(barrioId);
     if (barrio.snapshot) {
-      await this.guardarHistorial(barrio);
+      const snap = this.parseSnapshot(barrio.snapshot);
+      try {
+        await this.guardarVersion(
+          barrioId,
+          snap ?? (barrio.snapshot as BarrioWebSnapshot),
+          snap?.unidades.length ?? 0,
+        );
+      } catch (err) {
+        console.error('[publicacion] no se pudo archivar el snapshot vigente', err);
+      }
     }
 
     await this.barriosSvc.update(barrioId, {
@@ -269,23 +311,59 @@ export class PublicacionService {
     } as Partial<BarriosResponse>);
   }
 
-  private firstChangedField(
+  private async guardarVersion(
+    barrioId: string,
+    snapshot: BarrioWebSnapshot,
+    unidadesCount: number,
+  ): Promise<void> {
+    const userId = this.pb.authStore.model?.['id'] as string | undefined;
+    await this.pb.collection('publicacion_historial').create({
+      barrio_id: barrioId,
+      snapshot,
+      publicado_at: snapshot.generado_at,
+      publicado_por: userId || undefined,
+      unidades_count: unidadesCount,
+    });
+  }
+
+  private estadoLabel(code: string): string {
+    return this.definiciones.estadoPorCode('unidades', code)?.nombre ?? code;
+  }
+
+  private camposCambiados(
     prev: BarrioWebSnapshotUnidad,
     next: BarrioWebSnapshotUnidad,
-  ): { name: string; antes: string; despues: string } {
+  ): CambioCampo[] {
     const pairs: Array<[string, string, string]> = [
-      ['precio', fmtPrecio(prev.precio, prev.moneda), fmtPrecio(next.precio, next.moneda)],
-      ['estado', prev.estado, next.estado],
-      ['en_oferta', prev.en_oferta ? 'Sí' : 'No', next.en_oferta ? 'Sí' : 'No'],
-      ['precio_oferta', fmtPrecio(prev.precio_oferta, prev.moneda), fmtPrecio(next.precio_oferta, next.moneda)],
-      ['area', prev.area != null ? `${prev.area}` : '—', next.area != null ? `${next.area}` : '—'],
-      ['orientacion', prev.orientacion ?? '—', next.orientacion ?? '—'],
-      ['tipo', prev.tipo, next.tipo],
-      ['codigo', prev.codigo, next.codigo],
+      ['Precio', fmtMoneda(prev.precio, prev.moneda), fmtMoneda(next.precio, next.moneda)],
+      ['Estado', this.estadoLabel(prev.estado), this.estadoLabel(next.estado)],
+      ['En oferta', prev.en_oferta ? 'Sí' : 'No', next.en_oferta ? 'Sí' : 'No'],
+      [
+        'Precio oferta',
+        fmtMoneda(prev.precio_oferta, prev.moneda),
+        fmtMoneda(next.precio_oferta, next.moneda),
+      ],
+        [
+        'm²',
+        prev.area != null ? prev.area.toLocaleString('es-UY') : '—',
+        next.area != null ? next.area.toLocaleString('es-UY') : '—',
+      ],
+      ['Orientación', prev.orientacion ?? '—', next.orientacion ?? '—'],
+      ['Tipo', tipoLabel(prev.tipo), tipoLabel(next.tipo)],
+      ['Código', prev.codigo, next.codigo],
     ];
-    for (const [name, antes, despues] of pairs) {
-      if (antes !== despues) return { name, antes, despues };
+    const out: CambioCampo[] = [];
+    for (const [campo, antes, despues] of pairs) {
+      if (antes !== despues) out.push({ campo, antes, despues });
     }
-    return { name: 'datos', antes: '…', despues: '…' };
+    const extrasPrev = JSON.stringify(prev.extras ?? {});
+    const extrasNext = JSON.stringify(next.extras ?? {});
+    if (extrasPrev !== extrasNext) {
+      out.push({ campo: 'Extras', antes: 'valores anteriores', despues: 'valores nuevos' });
+    }
+    if (!out.length) {
+      out.push({ campo: 'Datos', antes: '…', despues: '…' });
+    }
+    return out;
   }
 }
