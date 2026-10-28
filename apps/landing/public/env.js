@@ -3,3 +3,6 @@ window.__env.POCKETBASE_URL = window.__env.POCKETBASE_URL || 'http://localhost:8
 // Vacío en local: no carga widget Cloudflare (evita Brunhilde/401).
 // En prod, /env.js dinámico del SSR inyecta TURNSTILE_SITE_KEY desde env del container.
 window.__env.TURNSTILE_SITE_KEY = window.__env.TURNSTILE_SITE_KEY || '';
+// CARTO raster tiles (desde 2026-09-25). Pedí una en https://carto.com/basemaps/apikey/
+// Pegá la key acá para `npm run dev:landing`. No commitear el valor real.
+window.__env.CARTO_BASEMAPS_KEY = window.__env.CARTO_BASEMAPS_KEY || '';

@@ -10,3 +10,6 @@
 window.__env = window.__env || {};
 window.__env.POCKETBASE_URL = window.__env.POCKETBASE_URL || 'http://localhost:8090';
 window.__env.LANDING_URL = window.__env.LANDING_URL || 'http://localhost:4000';
+// CARTO raster tiles (desde 2026-09-25). Pedí una en https://carto.com/basemaps/apikey/
+// Pegá la key acá para `npm run dev:admin`. No commitear el valor real.
+window.__env.CARTO_BASEMAPS_KEY = window.__env.CARTO_BASEMAPS_KEY || '';

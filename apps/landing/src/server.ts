@@ -105,10 +105,12 @@ app.get('/env.js', (_req, res) => {
     process.env['POCKETBASE_URL'] ??
     'http://localhost:8090';
   const turnstile = process.env['TURNSTILE_SITE_KEY'] ?? '';
+  const cartoKey = process.env['CARTO_BASEMAPS_KEY'] ?? '';
   res.type('application/javascript');
   res.send(`window.__env = window.__env || {};
 window.__env.POCKETBASE_URL = window.__env.POCKETBASE_URL || ${JSON.stringify(pbUrl)};
 window.__env.TURNSTILE_SITE_KEY = window.__env.TURNSTILE_SITE_KEY || ${JSON.stringify(turnstile)};
+window.__env.CARTO_BASEMAPS_KEY = window.__env.CARTO_BASEMAPS_KEY || ${JSON.stringify(cartoKey)};
 `);
 });
 

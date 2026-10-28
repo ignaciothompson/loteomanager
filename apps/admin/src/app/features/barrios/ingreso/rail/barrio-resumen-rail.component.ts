@@ -18,12 +18,7 @@ import { ButtonModule } from 'primeng/button';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import type { Map as LeafletMap, Marker } from 'leaflet';
 import type { TipoUnidadIngreso } from '@loteomanager/shared-types';
-import { TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
-
-const CARTO_DARK =
-  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-const CARTO_ATTR =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+import { CARTO_ATTR, cartoTileUrl, TIPO_UNIDAD_LABELS } from '@loteomanager/shared-utils';
 
 @Component({
   selector: 'app-barrio-resumen-rail',
@@ -138,7 +133,7 @@ export class BarrioResumenRailComponent implements AfterViewInit, OnDestroy {
         touchZoom: false,
       }).setView([lat, lng], 14);
 
-      L.tileLayer(CARTO_DARK, { attribution: CARTO_ATTR, maxZoom: 19 }).addTo(map);
+      L.tileLayer(cartoTileUrl('dark_all'), { attribution: CARTO_ATTR, maxZoom: 19 }).addTo(map);
       this.marker = L.marker([lat, lng], { interactive: false }).addTo(map);
       this.map = map;
 

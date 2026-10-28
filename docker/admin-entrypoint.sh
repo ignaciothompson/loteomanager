@@ -5,6 +5,7 @@ ENV_JS_PATH="/usr/share/nginx/html/env.js"
 REDIRECT_INC="/etc/nginx/landing-redirect.inc"
 RAW_URL="${POCKETBASE_URL:-}"
 RAW_LANDING="${PUBLIC_BASE_URL:-}"
+RAW_CARTO="${CARTO_BASEMAPS_KEY:-}"
 
 trimmed_url=$(printf '%s' "$RAW_URL" | tr -d '\r\n\t ')
 
@@ -54,6 +55,7 @@ fi
   printf '%s\n' 'window.__env = window.__env || {};'
   printf "window.__env['POCKETBASE_URL'] = '%s';\n" "$(printf '%s' "$PB_URL" | sed -e "s/'/\\\\'/g")"
   printf "window.__env['LANDING_URL'] = '%s';\n" "$(printf '%s' "$LANDING_URL" | sed -e "s/'/\\\\'/g")"
+  printf "window.__env['CARTO_BASEMAPS_KEY'] = '%s';\n" "$(printf '%s' "$(printf '%s' "$RAW_CARTO" | tr -d '\r\n\t ')" | sed -e "s/'/\\\\'/g")"
 } > "$ENV_JS_PATH"
 
 if [ -n "$LANDING_URL" ]; then
@@ -69,5 +71,10 @@ fi
 echo "[admin-entrypoint] Wrote ${ENV_JS_PATH}"
 echo "[admin-entrypoint] Effective POCKETBASE_URL=${PB_URL}"
 echo "[admin-entrypoint] Effective LANDING_URL=${LANDING_URL:-'(empty — JS usa loteoadmin→loteoweb)'}"
+if [ -n "$(printf '%s' "$RAW_CARTO" | tr -d '\r\n\t ')" ]; then
+  echo "[admin-entrypoint] Effective CARTO_BASEMAPS_KEY=set"
+else
+  echo "[admin-entrypoint] Effective CARTO_BASEMAPS_KEY=(empty — tiles watermark)"
+fi
 
 exec nginx -g 'daemon off;'

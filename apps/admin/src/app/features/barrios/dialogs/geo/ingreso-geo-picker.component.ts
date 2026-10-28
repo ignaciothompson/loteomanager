@@ -16,17 +16,14 @@ import { FormsModule } from '@angular/forms';
 import { AutoCompleteCompleteEvent, AutoCompleteModule, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import type { Map as LeafletMap, Marker } from 'leaflet';
 import {
+  CARTO_ATTR,
+  cartoTileUrl,
   isInUruguay,
   leafletUruguayMaxBounds,
   URUGUAY_CENTER,
   URUGUAY_DEFAULT_ZOOM,
 } from '@loteomanager/shared-utils';
 import { GeocodeService, type GeocodeHit } from '../../services/geocode.service';
-
-const CARTO_LIGHT =
-  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-const CARTO_ATTR =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 const MARKER_ICON_RETINA = '/leaflet/marker-icon-2x.png';
 const MARKER_ICON = '/leaflet/marker-icon.png';
@@ -189,7 +186,7 @@ export class IngresoGeoPickerComponent implements AfterViewInit, OnDestroy {
       scrollWheelZoom: true,
     }).setView([startLat, startLng], zoom);
 
-    L.tileLayer(CARTO_LIGHT, { attribution: CARTO_ATTR, maxZoom: 19 }).addTo(map);
+    L.tileLayer(cartoTileUrl('voyager'), { attribution: CARTO_ATTR, maxZoom: 19 }).addTo(map);
 
     const marker = L.marker([startLat, startLng], { draggable: true }).addTo(map);
     marker.on('dragend', () => {

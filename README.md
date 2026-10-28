@@ -335,6 +335,7 @@ Ver `.env.example` para la lista completa. Las variables críticas son:
 |---|---|
 | `TURNSTILE_SITE_KEY` | Site key pública (se incluye en HTML) |
 | `TURNSTILE_SECRET_KEY` | Secret key (solo server-side) |
+| `CARTO_BASEMAPS_KEY` | Key de tiles CARTO (`?key=`). Pedí una en [carto.com/basemaps/apikey](https://carto.com/basemaps/apikey/). En local pegala también en `apps/*/public/env.js`. |
 
 ### Despliegue (producción)
 

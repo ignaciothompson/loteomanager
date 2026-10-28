@@ -55,6 +55,7 @@ services:
     environment:
       - POCKETBASE_URL=${POCKETBASE_PUBLIC_URL}
       - PUBLIC_BASE_URL
+      - CARTO_BASEMAPS_KEY
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/healthz"]
       interval: 30s
@@ -84,6 +85,7 @@ services:
       - PB_SERVICE_PASSWORD=${PB_SERVICE_PASSWORD}
       - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
       - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
+      - CARTO_BASEMAPS_KEY=${CARTO_BASEMAPS_KEY}
       - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
       - INMOBILIARIA_NOMBRE=${INMOBILIARIA_NOMBRE:-LoteoManager}
     healthcheck:

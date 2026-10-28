@@ -7,6 +7,7 @@ declare global {
       POCKETBASE_URL?: string;
       LANDING_URL?: string;
       TURNSTILE_SITE_KEY?: string;
+      CARTO_BASEMAPS_KEY?: string;
     };
   }
 }
