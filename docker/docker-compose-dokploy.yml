@@ -55,7 +55,7 @@ services:
     environment:
       - POCKETBASE_URL=${POCKETBASE_PUBLIC_URL}
       - PUBLIC_BASE_URL
-      - CARTO_BASEMAPS_KEY
+      - CARTO_BASEMAPS_KEY=${CARTO_BASEMAPS_KEY:-}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/healthz"]
       interval: 30s

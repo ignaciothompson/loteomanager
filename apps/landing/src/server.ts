@@ -107,10 +107,12 @@ app.get('/env.js', (_req, res) => {
   const turnstile = process.env['TURNSTILE_SITE_KEY'] ?? '';
   const cartoKey = process.env['CARTO_BASEMAPS_KEY'] ?? '';
   res.type('application/javascript');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
   res.send(`window.__env = window.__env || {};
 window.__env.POCKETBASE_URL = window.__env.POCKETBASE_URL || ${JSON.stringify(pbUrl)};
 window.__env.TURNSTILE_SITE_KEY = window.__env.TURNSTILE_SITE_KEY || ${JSON.stringify(turnstile)};
-window.__env.CARTO_BASEMAPS_KEY = window.__env.CARTO_BASEMAPS_KEY || ${JSON.stringify(cartoKey)};
+window.__env.CARTO_BASEMAPS_KEY = ${JSON.stringify(cartoKey)};
 `);
 });
 
@@ -296,6 +298,11 @@ app.use(
     maxAge: '1y',
     index: false,
     redirect: false,
+    setHeaders(res, filePath) {
+      if (filePath.replace(/\\/g, '/').endsWith('/env.js')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      }
+    },
   }),
 );
 

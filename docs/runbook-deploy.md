@@ -43,7 +43,7 @@ En la sección de Environment Variables de la aplicación, agregar todas las var
 | `INMOBILIARIA_NOMBRE` | Nombre comercial visible |
 | `TURNSTILE_SITE_KEY` | Dashboard de Cloudflare Turnstile → tu site |
 | `TURNSTILE_SECRET_KEY` | Idem (mantener seguro) |
-| `CARTO_BASEMAPS_KEY` | [carto.com/basemaps/apikey](https://carto.com/basemaps/apikey/) — sin cuenta. Se inyecta en `env.js` de admin y landing. |
+| `CARTO_BASEMAPS_KEY` | [carto.com/basemaps/apikey](https://carto.com/basemaps/apikey/) — sin cuenta. **Obligatoria en Dokploy** (no viaja con git). Tras agregarla, redeploy/restart de `admin-web` y `landing-ssr`. Verificar en `https://<admin>/env.js` y `https://<web>/env.js` que `CARTO_BASEMAPS_KEY` no esté vacío. |
 | `CLOUDFLARE_TUNNEL_TOKEN` | Dashboard del Tunnel → Connect → token |
 
 ### 3. Configurar el Cloudflare Tunnel
