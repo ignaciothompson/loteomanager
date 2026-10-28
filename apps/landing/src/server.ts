@@ -107,7 +107,9 @@ app.get('/env.js', (_req, res) => {
   const turnstile = process.env['TURNSTILE_SITE_KEY'] ?? '';
   const cartoKey = process.env['CARTO_BASEMAPS_KEY'] ?? '';
   res.type('application/javascript');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate');
+  res.setHeader('CDN-Cache-Control', 'no-store');
+  res.setHeader('Cloudflare-CDN-Cache-Control', 'no-store');
   res.setHeader('Pragma', 'no-cache');
   res.send(`window.__env = window.__env || {};
 window.__env.POCKETBASE_URL = window.__env.POCKETBASE_URL || ${JSON.stringify(pbUrl)};
